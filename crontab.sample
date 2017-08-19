@@ -5,6 +5,8 @@
 
 20 22 * * * ~/bin/cloud-status/find-projs-by-host.sh > ~/cloud-status-reports/projs-grouped-by-host.txt
 
+20 22 * * * ~/bin/cloud-status/create-cpu-usage-by-env-table.pl ~/cloud-status-reports/check-env-results.txt > ~/cloud-status-reports/cpu-usage-by-env.txt
+
 # check for expiring certs every other sunday
 30 22 1-7,15-21,29-31 * * [ `date +\%u` = 0 ] && ~/bin/cloud-status/report-expiring-soon.sh
 
