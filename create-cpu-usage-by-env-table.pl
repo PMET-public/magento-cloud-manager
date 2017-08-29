@@ -3,7 +3,7 @@
 
 my %table;
 while (my $line = <>) {
-  $line =~ s/\r\n//;
+  $line =~ s/\r?\n//;
   my @cols = split(/ /,$line);
   my $type = (split(/-/, $cols[3]))[0];
   my $env = $cols[5];
