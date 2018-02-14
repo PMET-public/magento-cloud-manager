@@ -9,7 +9,7 @@ const MC_CLI = '~/.magento-cloud/bin/magento-cloud';
 
 function updateEnvironment(project, environment = 'master') {
   return exec(`${MC_CLI} environment:info -p ${project} -e "${environment}" --format=tsv`)
-    .then(({ stdout, stderr }) => {
+    .then( ({ stdout, stderr }) => {
       if (stderr) {
         throw stderr;
       }
@@ -47,12 +47,12 @@ async function updateAllCurrentProjectsEnvironmentsFromAPI() {
   const projects = stdout.trim().split('\n');
   // rate limit the calls to get a project's environments
   // also rate limit the calls to get an environment's detailed info
-  projects.forEach((project) => {
-    promises.push(limit(() => {
+  projects.forEach( project => {
+    promises.push( limit(() => {
       getProjectEnvironmentsFromAPI(project)
-        .then( (environments) => {
+        .then( environments => {
           environments.forEach((environment) => {
-            promises.push(limit(() => updateEnvironment(project, environment)));
+            promises.push( limit(() => updateEnvironment(project, environment)) );
           });
         });
     }));
@@ -62,9 +62,15 @@ async function updateAllCurrentProjectsEnvironmentsFromAPI() {
 }
 
 
-exports.setEnvironmentInactive = function (project, environment) {
-  db.prepare('UPDATE environments SET active = 0 where project_id = ? and id = ?')
+function setEnvironmentInactive(project, environment) {
+  const result = db.prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment);
+}
+
+function setEnvironmentFailed(project, environment) {
+  const result = db.prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
+    .run(project, environment);
+  console.log(result);
 }
 
 // need to delete from child first
@@ -76,7 +82,7 @@ async function deleteInactiveEnvironments() {
     throw stderr;
   }
   const projects = stdout.trim().split('\n');
-  projects.forEach((project) => {
+  projects.forEach( project => {
     promises.push(limit(() => {
       exec(`${MC_CLI} environment:delete -p ${project} --inactive --no-wait -y`)
         .catch( error => {
@@ -88,5 +94,5 @@ async function deleteInactiveEnvironments() {
   //console.log(result);
 }
 
-
-updateAllCurrentProjectsEnvironmentsFromAPI();
+exports.setEnvironmentInactive = setEnvironmentInactive;
+exports.setEnvironmentFailed = setEnvironmentFailed;

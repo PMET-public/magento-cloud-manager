@@ -14,7 +14,7 @@ function updateApplicationState(project, environment = 'master') {
     md5sum composer.lock
     stat -t composer.lock | awk '{print \\$12}'"`;
   return exec(cmd)
-    .then(({ stdout, stderr}) => {
+    .then( ({ stdout, stderr}) => {
       if (stderr) {
         throw stderr;
       }
@@ -35,13 +35,17 @@ function updateApplicationState(project, environment = 'master') {
 
 async function updateAllApplicationStates() {
   const promises = [];
-  db.prepare('select id, project_id from environments where active = 1 limit 5').all()
-    .forEach(({id: environment, project_id: project}) => {
+  db.prepare('SELECT id, project_id FROM environments WHERE active = 1').all()
+    .forEach( ({id: environment, project_id: project}) => {
       //console.log(environment, project);
-      promises.push(sshLimit(() => updateApplicationState(project, environment)));
+      promises.push( sshLimit(() => updateApplicationState(project, environment) ));
     });
   //const result = await Promise.all(promises);
   //console.log(result);
 }
 
 updateAllApplicationStates();
+
+//updateApplicationState("dx7mnl3a22cou", "Shopial");
+//updateApplicationState("6h4sexqr4xp3i", "master");
+//updateApplicationState('ovrhy7snrch6u', "Multisite-Test");
