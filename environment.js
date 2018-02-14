@@ -9,16 +9,15 @@ const MC_CLI = '~/.magento-cloud/bin/magento-cloud';
 
 function updateEnvironment(project, environment = 'master') {
   return exec(`${MC_CLI} environment:info -p ${project} -e "${environment}" --format=tsv`)
-    .then( ({ stdout, stderr }) => {
+    .then(({ stdout, stderr }) => {
       if (stderr) {
         throw stderr;
       }
       const title = stdout.replace(/[\s\S]*title\s*([^\n]+)[\s\S]*/,'$1').replace(/"/g,'');
       const active = /\nstatus\s+active/.test(stdout) ? 1 : 0;
       const createdAt = Date.parse(stdout.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/,'$1')) / 1000;
-      db.prepare(
-        'INSERT OR REPLACE INTO environments (id, project_id, title, active, created_at) VALUES (?, ?, ?, ?, ?)'
-      ).run(environment, project, title, active, createdAt);
+      db.prepare('INSERT OR REPLACE INTO environments (id, project_id, title, active, created_at) VALUES (?, ?, ?, ?, ?)')
+        .run(environment, project, title, active, createdAt);
     })
     .catch( error => {
       console.error(error);
@@ -40,11 +39,11 @@ function getProjectEnvironmentsFromAPI(project) {
 
 
 async function updateAllCurrentProjectsEnvironmentsFromAPI() {
+  const promises = [];
   const {stdout, stderr} = await exec(`${MC_CLI} projects --pipe`);
   if (stderr) {
     throw stderr;
   }
-  const promises = [];
   const projects = stdout.trim().split('\n');
   // rate limit the calls to get a project's environments
   // also rate limit the calls to get an environment's detailed info
@@ -63,12 +62,16 @@ async function updateAllCurrentProjectsEnvironmentsFromAPI() {
 }
 
 
+exports.setEnvironmentInactive = function (project, environment) {
+  db.prepare('UPDATE environments SET active = 0 where project_id = ? and id = ?')
+    .run(project, environment);
+}
+
 // need to delete from child first
 // or how to warn if inactive parent & active child?
 async function deleteInactiveEnvironments() {
   const promises = [];
-  const cmd = `${MC_CLI} projects --pipe | head -5`;
-  const {stdout, stderr} = await exec(cmd);
+  const {stdout, stderr} = await exec(`${MC_CLI} projects --pipe | head -5`);
   if (stderr) {
     throw stderr;
   }
