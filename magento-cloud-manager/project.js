@@ -1,12 +1,4 @@
-const util = require('util');
-const child_process = require('child_process');
-const exec = util.promisify(child_process.exec);
-const Database = require('better-sqlite3');
-const db = new Database('sql/cloud.db');
-const pLimit = require('p-limit');
-const apilimit = pLimit(5);
-const MC_CLI = '~/.magento-cloud/bin/magento-cloud';
-
+const {exec, db, apiLimit, sshLimit, MC_CLI} = require('./common');
 
 function getProjectsFromApi() {
   return exec(`${MC_CLI} projects --pipe`)
@@ -53,7 +45,7 @@ function updateProjects() {
   getProjectsFromApi()
     .then( projects => {
       projects.forEach( project => {
-        promises.push( apilimit(() => updateProject(project)) );
+        promises.push( apiLimit(() => updateProject(project)) );
       });
     })
     .catch( error => {
@@ -65,3 +57,5 @@ function updateProjects() {
 
 exports.getProjectsFromApi = getProjectsFromApi;
 exports.updateProjects = updateProjects;
+
+updateProjects();
