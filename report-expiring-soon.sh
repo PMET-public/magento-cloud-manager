@@ -5,6 +5,7 @@
 # turn on debugging
 # set -x
 
+# import env vars from secrets file
 source <(sed -n '/^[[:alnum:]_]*=[^\$()\`]*$/p'  ~/bin/cloud-status/.secrets)
 
 deadline=$(date -d '20 days' +%Y-%m-%d)
