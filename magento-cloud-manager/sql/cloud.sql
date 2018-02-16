@@ -43,11 +43,12 @@ CREATE TABLE "performance_tests" (
 	`timestamp`	DATETIME NOT NULL
 );
 CREATE TABLE "applications_states" (
-	`id`	TEXT NOT NULL,
+	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
 	`environment_id`	TEXT NOT NULL,
 	`ee_composer_version`	TEXT NOT NULL,
-	`composer_lock_hash`	TEXT NOT NULL,
+	`composer_lock_md5`	TEXT NOT NULL,
+	`composer_lock_mtime`	INTEGER NOT NULL,
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE "environments" (
@@ -55,8 +56,8 @@ CREATE TABLE "environments" (
 	`project_id`	TEXT NOT NULL,
 	`title`	TEXT NOT NULL,
 	`active`	BOOLEAN NOT NULL CHECK(active IN ( 0 , 1 )),
+	`failure`	BOOLEAN NOT NULL DEFAULT 0 CHECK(failure in ( 0 , 1 )),
 	`created_at`	INTEGER NOT NULL,
-	`deleted_at`	INTEGER,
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(`id`,`project_id`,`created_at`)
 );
