@@ -1,11 +1,4 @@
-const util = require('util');
-const child_process = require('child_process');
-const exec = util.promisify(child_process.exec);
-const Database = require('better-sqlite3');
-const db = new Database('sql/cloud.db');
-const pLimit = require('p-limit');
-const apiLimit = pLimit(10);
-const MC_CLI = '~/.magento-cloud/bin/magento-cloud';
+const {exec, db, apiLimit, sshLimit, MC_CLI, winston} = require('./common');
 const { setEnvironmentFailed } = require('./environment');
 const { getProjectsFromApi } = require('./project');
 
@@ -28,13 +21,14 @@ function parseActivityList(activities) {
   return { successes: successes, failures: failures};
 }
 
-function fetchActivities(project, type) {
+function getActivitiesFromApi(project, type) {
   return exec(`${MC_CLI} activity:list -p ${project} -e master -a --type=environment.${type} --limit=9999 --format=tsv`)
-    .then( ({stdout, stderr}) => {
+    .then(({stdout, stderr}) => {
       return stdout.trim().split('\n').slice(1);
     })
-    .catch( error => {
+    .catch(error => {
       if (!/No activities found/.test(error.stderr)) {
+        winston.error(error);
         throw error;
       }
       return [];
@@ -44,39 +38,32 @@ function fetchActivities(project, type) {
 function mergeMostRecentActivityResultByEnv(arr1, arr2) {
   const combinedResults = {};
   const combinedKeys = new Set(Object.keys(arr1).concat(Object.keys(arr2)));
-  combinedKeys.forEach( env => {
+  combinedKeys.forEach(env => {
     let time1 = arr1[env], time2 = arr2[env];
     combinedResults[env] = typeof time2 === 'undefined' || (typeof time1 !== 'undefined' && time2 < time1 ) ? time1 : time2;
   });
   return combinedResults;
 }
 
-async function searchProjectsActivitiesForFailedEnviornments() {
+async function searchActivitiesForFailures() {
   const promises = [];
-  getProjectsFromApi()
-    .then( projects => {
-      projects.forEach( project => {
-        promises.push( apiLimit(() => {
-          Promise.all([fetchActivities(project, 'branch'), fetchActivities(project, 'push')])
-            .then( ([branchActivities, pushActivities]) => {
-              const branchResults = parseActivityList(branchActivities);
-              const pushResults = parseActivityList(pushActivities);
-              const combinedSuccesses = mergeMostRecentActivityResultByEnv(branchResults.successes, pushResults.successes);
-              const combinedFailures = mergeMostRecentActivityResultByEnv(branchResults.failures, pushResults.failures);
-              for (let environment in combinedFailures) {
-                if (typeof combinedSuccesses[environment] === 'undefined' || combinedSuccesses[environment] < combinedFailures[environment]) {
-                  setEnvironmentFailed(project, environment);
-                }
-              }
-            });
-        }));
-      });
-    })
-    .catch( error => {
-      console.error(error);
-    });
-  //const result = await Promise.all(promises);
-  //console.log(result);
+  (await getProjectsFromApi()).forEach(project => {
+    promises.push(apiLimit(async () => {
+      const branchActivities = await getActivitiesFromApi(project, 'branch');
+      const pushActivities = await getActivitiesFromApi(project, 'push');
+      const branchResults = parseActivityList(branchActivities);
+      const pushResults = parseActivityList(pushActivities);
+      const combinedSuccesses = mergeMostRecentActivityResultByEnv(branchResults.successes, pushResults.successes);
+      const combinedFailures = mergeMostRecentActivityResultByEnv(branchResults.failures, pushResults.failures);
+      for (let environment in combinedFailures) {
+        if (typeof combinedSuccesses[environment] === 'undefined' || combinedSuccesses[environment] < combinedFailures[environment]) {
+          setEnvironmentFailed(project, environment);
+        }
+      }
+    }));
+  });
+  const result = await Promise.all(promises);
+  return result;
 }
 
-searchProjectsActivitiesForFailedEnviornments();
+exports.searchActivitiesForFailures = searchActivitiesForFailures;

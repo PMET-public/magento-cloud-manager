@@ -1,9 +1,10 @@
-const {exec, db, apiLimit, sshLimit, MC_CLI} = require('./common');
+const {exec, db, apiLimit, sshLimit, MC_CLI, winston} = require('./common');
 
 function getProjectsFromApi() {
   return exec(`${MC_CLI} projects --pipe`)
-    .then( ({ stdout, stderr }) => {
+    .then(({ stdout, stderr }) => {
       if (stderr) {
+        winston.error(stderr);
         throw stderr;
       }
       return stdout.trim().split('\n');
@@ -12,8 +13,9 @@ function getProjectsFromApi() {
 
 function updateProject(project) {
   return exec(`${MC_CLI} project:info -p ${project} --format=tsv`)
-    .then( ({ stdout, stderr }) => {
+    .then(({ stdout, stderr }) => {
       if (stderr) {
+        winston.error(stderr);
         throw stderr;
       }
       const projectInfo = stdout;
@@ -32,30 +34,20 @@ function updateProject(project) {
           allowed_environments, storage, user_licenses, active, client_ssh_key) VALUES
           (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
         .run(project, title, region, projectUrl, gitUrl, createdAt, planSize, allowedEnvironments, storage, userLicenses, 1, clientSshKey);
-    })
-    .catch( error => {
-      console.error(error);
     });
 }
 
-function updateProjects() {
-  const promises = [];
+async function updateProjects() {
   //mark all projects inactive; the api call will then update only active ones
   db.prepare('UPDATE projects SET active = 0;').run();
-  getProjectsFromApi()
-    .then( projects => {
-      projects.forEach( project => {
-        promises.push( apiLimit(() => updateProject(project)) );
-      });
-    })
-    .catch( error => {
-      console.error(error);
-    });
-  // const result = await Promise.all(projectPromises);
-  // console.error(result);
+
+  const promises = [];
+  (await getProjectsFromApi()).forEach(project => {
+    promises.push(apiLimit(() => updateProject(project)) );
+  });
+
+  return await Promise.all(promises);
 }
 
 exports.getProjectsFromApi = getProjectsFromApi;
 exports.updateProjects = updateProjects;
-
-updateProjects();

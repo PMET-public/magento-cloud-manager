@@ -1,14 +1,14 @@
-const util = require('util');
-const child_process = require('child_process');
-const exec = util.promisify(child_process.exec);
-const sqlite3 = require('sqlite3');
-const MC_CLI = '~/.magento-cloud/bin/magento-cloud';
-const db = new sqlite3.Database('sql/cloud.db');
-const pLimit = require('p-limit');
-const limit = pLimit(10);
-const apiLimit = pLimit(20);
-const sshLimit = pLimit(10);
+const project = require('./magento-cloud-manager/project');
+const environment = require('./magento-cloud-manager/environment');
+const activity = require('./magento-cloud-manager/activity');
+const application = require('./magento-cloud-manager/application');
+const host = require('./magento-cloud-manager/host');
 
-
-
-
+(async function () {
+  let result;
+  //result = await project.updateProjects();
+  //result = await activity.searchActivitiesForFailures();
+  result = await environment.deleteInactiveEnvironments();
+  result = await application.updateAllApplicationsStates();
+  result = await host.updateHostsForAllProjects();
+})();

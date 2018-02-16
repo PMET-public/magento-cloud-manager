@@ -1,11 +1,4 @@
-const util = require('util');
-const child_process = require('child_process');
-const exec = util.promisify(child_process.exec);
-const Database = require('better-sqlite3');
-const db = new Database('sql/cloud.db');
-const pLimit = require('p-limit');
-const sshLimit = pLimit(10);
-const MC_CLI = '~/.magento-cloud/bin/magento-cloud';
+const {exec, db, apiLimit, sshLimit, MC_CLI, winston} = require('./common');
 const { setEnvironmentInactive } = require('./environment.js');
 
 function updateApplicationState(project, environment = 'master') {
@@ -14,8 +7,9 @@ function updateApplicationState(project, environment = 'master') {
     md5sum composer.lock
     stat -t composer.lock | awk '{print \\$12}'"`;
   return exec(cmd)
-    .then( ({ stdout, stderr}) => {
+    .then(({ stdout, stderr}) => {
       if (stderr) {
+        winston.error(stderr);
         throw stderr;
       }
       let [ EEComposerVersion, composerLockMd5, composerLockMtime ] = stdout.trim().split('\n');
@@ -25,27 +19,21 @@ function updateApplicationState(project, environment = 'master') {
         VALUES (?, ?, ?, ?, ?);`)
         .run(project, environment, EEComposerVersion, composerLockMd5, composerLockMtime);
     })
-    .catch( error => {
+    .catch(error => {
       if (/Specified environment not found/.test(error.stderr)) {
         setEnvironmentInactive(project, environment);
       }
-      console.error(error);
     });
 }
 
-async function updateAllApplicationStates() {
+async function updateAllApplicationsStates() {
   const promises = [];
   db.prepare('SELECT id, project_id FROM environments WHERE active = 1').all()
-    .forEach( ({id: environment, project_id: project}) => {
-      //console.log(environment, project);
-      promises.push( sshLimit(() => updateApplicationState(project, environment) ));
+    .forEach(({id: environment, project_id: project}) => {
+      promises.push(sshLimit(() => updateApplicationState(project, environment) ));
     });
-  //const result = await Promise.all(promises);
-  //console.log(result);
+  return await Promise.all(promises);
 }
 
-updateAllApplicationStates();
-
-//updateApplicationState("dx7mnl3a22cou", "Shopial");
-//updateApplicationState("6h4sexqr4xp3i", "master");
-//updateApplicationState('ovrhy7snrch6u', "Multisite-Test");
+exports.updateApplicationState = updateApplicationState;
+exports.updateAllApplicationsStates = updateAllApplicationsStates;

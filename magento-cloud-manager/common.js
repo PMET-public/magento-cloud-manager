@@ -1,17 +1,29 @@
 const util = require('util');
 const child_process = require('child_process');
-//const exec = util.promisify(child_process.exec);
+const exec = util.promisify(child_process.exec);
 const Database = require('better-sqlite3');
-//const db = new Database('sql/cloud.db');
+
 const pLimit = require('p-limit');
-//const apiLimit = pLimit(10);
-//const MC_CLI = '~/.magento-cloud/bin/magento-cloud';
+const winston = require('winston');
+winston.add(winston.transports.File, {filename: `${__dirname}/somefile.log`});
 
+const db = new Database(`${__dirname}/sql/cloud.db`);
+//let prepare = db.prepare;
+const {prepare} = db;
+db.prepare = function () {
+  winston.info(arguments[0]);
+  return prepare.apply(this, arguments);
+};
 
-exports.exec = util.promisify(child_process.exec);
-exports.db = new Database('sql/cloud.db');
-exports.apiLimit = pLimit(15);
-exports.sshLimit = pLimit(10);
+exports.db = db;
+
+exports.exec = function () {
+  winston.info(arguments[0]);
+  return exec.apply(this, arguments);
+};
+
+exports.winston = winston;
+exports.apiLimit = pLimit(8);
+exports.sshLimit = pLimit(4);
 exports.MC_CLI = '~/.magento-cloud/bin/magento-cloud';
 
-const {exec, db, apiLimit, sshLimit, MC_CLI} = require('./common');

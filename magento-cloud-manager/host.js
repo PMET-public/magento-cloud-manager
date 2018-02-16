@@ -1,11 +1,5 @@
-const util = require('util');
-const child_process = require('child_process');
-const exec = util.promisify(child_process.exec);
-const Database = require('better-sqlite3');
-const db = new Database('sql/cloud.db');
-const pLimit = require('p-limit');
-const limit = pLimit(20);
-const MC_CLI = '~/.magento-cloud/bin/magento-cloud';
+const {exec, db, apiLimit, sshLimit, MC_CLI, winston} = require('./common');
+const { getProjectsFromApi } = require('./project');
 
 function updateHost(project, environment = 'master') {
   return exec(`${MC_CLI} ssh -p ${project} -e "${environment}" "
@@ -14,8 +8,9 @@ function updateHost(project, environment = 'master') {
     cat /proc/meminfo | awk '/MemTotal/ {print \\$2 }'
     nproc
     cat /proc/loadavg"`)
-    .then( ({ stdout, stderr }) => {
+    .then(({ stdout, stderr }) => {
       if (stderr) {
+        winston.error(stderr);
         throw stderr;
       }
       const [ bootTime, hexIpAddr, totalMemory, cpus, loadAvg ] = stdout.trim().split('\n');
@@ -25,29 +20,17 @@ function updateHost(project, environment = 'master') {
           load_avg_5, load_avg_15, running_processes, total_processes, last_process_id) VALUES
           (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`)
         .run(project, environment, bootTime, ipAddr, totalMemory, cpus, loadAvg1, loadAvg5, loadAvg15, runningProcesses, totalProcesses, lastPID);
-    })
-    .catch( error => {
-      console.error(error);
     });
 }
 
 async function updateHostsForAllProjects() {
   const promises = [];
-  exec(`${MC_CLI} projects --pipe`)
-    .then( async ({ stdout, stderr }) => {
-      if (stderr) {
-        throw stderr;
-      }
-      const projectIds = stdout.trim().split('\n');
-      projectIds.forEach((id) => {
-        promises.push(limit(() => updateHost(id)));
-      });
-    })
-    .catch( error => {
-      console.error(error);
-    });
-  // const result = await Promise.all(projectPromises);
-  // console.error(result);
+  (await getProjectsFromApi()).forEach(project => {
+    promises.push(sshLimit(() => updateHost(project)));
+  });
+  return await Promise.all(promises);
 }
 
-updateHostsForAllProjects();
+exports.updateHost = updateHost;
+exports.updateHostsForAllProjects = updateHostsForAllProjects;
+
