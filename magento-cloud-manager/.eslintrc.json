@@ -21,10 +21,6 @@
       "error",
       "single"
     ],
-    "semi": [
-      "error",
-      "always"
-    ],
     "no-unused-vars": [
       "warn",
       {
