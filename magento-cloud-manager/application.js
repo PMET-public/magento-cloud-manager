@@ -9,7 +9,6 @@ function updateApplicationState(project, environment = 'master') {
   return exec(cmd)
     .then(({ stdout, stderr}) => {
       if (stderr) {
-        winston.error(stderr);
         throw stderr;
       }
       let [ EEComposerVersion, composerLockMd5, composerLockMtime ] = stdout.trim().split('\n');
@@ -20,9 +19,10 @@ function updateApplicationState(project, environment = 'master') {
         .run(project, environment, EEComposerVersion, composerLockMd5, composerLockMtime);
     })
     .catch(error => {
-      if (/Specified environment not found/.test(error.stderr)) {
-        setEnvironmentInactive(project, environment);
+      if (typeof error.stderr !== 'undefined' && /Specified environment not found/.test(error.stderr)) {
+        return setEnvironmentInactive(project, environment);
       }
+      winston.error(error);
     });
 }
 
@@ -30,7 +30,7 @@ async function updateAllApplicationsStates() {
   const promises = [];
   db.prepare('SELECT id, project_id FROM environments WHERE active = 1').all()
     .forEach(({id: environment, project_id: project}) => {
-      promises.push(sshLimit(() => updateApplicationState(project, environment) ));
+      promises.push(sshLimit(() => updateApplicationState(project, environment)));
     });
   return await Promise.all(promises);
 }

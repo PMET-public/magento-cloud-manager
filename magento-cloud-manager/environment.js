@@ -5,24 +5,26 @@ function updateEnvironment(project, environment = 'master') {
   return exec(`${MC_CLI} environment:info -p ${project} -e "${environment}" --format=tsv`)
     .then(({ stdout, stderr }) => {
       if (stderr) {
-        winston.error(stderr);
         throw stderr;
       }
       const title = stdout.replace(/[\s\S]*title\s*([^\n]+)[\s\S]*/,'$1').replace(/"/g,'');
       const active = /\nstatus\s+active/.test(stdout) ? 1 : 0;
       const createdAt = Date.parse(stdout.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/,'$1')) / 1000;
-      db.prepare('INSERT OR REPLACE INTO environments (id, project_id, title, active, created_at) VALUES (?, ?, ?, ?, ?)')
+      return db.prepare('INSERT OR REPLACE INTO environments (id, project_id, title, active, created_at) VALUES (?, ?, ?, ?, ?)')
         .run(environment, project, title, active, createdAt);
+    })
+    .catch(error => {
+      winston.error(error);
     });
 }
 
 function setEnvironmentInactive(project, environment) {
-  db.prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
+  return db.prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment);
 }
 
 function setEnvironmentFailed(project, environment) {
-  db.prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
+  return db.prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment);
 }
 
@@ -31,10 +33,12 @@ function getEnvironmentsFromAPI(project) {
   return exec(`${MC_CLI} environments -p ${project} --pipe`)
     .then(({ stdout, stderr }) => {
       if (stderr) {
-        winston.error(stderr);
         throw stderr;
       }
       return stdout.trim().split('\n');
+    })
+    .catch(error => {
+      winston.error(error);
     });
 }
 
@@ -49,7 +53,8 @@ async function updateAllCurrentProjectsEnvironmentsFromAPI() {
       });
     }));
   });
-  return await Promise.all(promises);
+  const result = await Promise.all(promises);
+  return result;
 }
 
 // need to delete from child first
@@ -59,6 +64,11 @@ async function deleteInactiveEnvironments() {
   (await getProjectsFromApi()).forEach(project => {
     promises.push(apiLimit(() => {
       exec(`${MC_CLI} environment:delete -p ${project} --inactive --no-wait -y`)
+        .then(({ stdout, stderr }) => {
+          if (stderr) {
+            throw stderr;
+          }
+        })
         .catch(error => {
           winston.error(error);
         });

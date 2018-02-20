@@ -62,8 +62,7 @@ async function searchActivitiesForFailures() {
       }
     }));
   });
-  const result = await Promise.all(promises);
-  return result;
+  return await Promise.all(promises);
 }
 
 exports.searchActivitiesForFailures = searchActivitiesForFailures;

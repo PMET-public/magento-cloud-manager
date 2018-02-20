@@ -5,10 +5,9 @@ const Database = require('better-sqlite3');
 
 const pLimit = require('p-limit');
 const winston = require('winston');
-winston.add(winston.transports.File, {filename: `${__dirname}/somefile.log`});
+winston.add(winston.transports.File, {filename: `${__dirname}/log.json`});
 
 const db = new Database(`${__dirname}/sql/cloud.db`);
-//let prepare = db.prepare;
 const {prepare} = db;
 db.prepare = function () {
   winston.info(arguments[0]);
