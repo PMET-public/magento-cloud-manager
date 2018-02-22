@@ -25,3 +25,9 @@ exports.winston = winston
 exports.apiLimit = pLimit(8)
 exports.sshLimit = pLimit(4)
 exports.MC_CLI = '~/.magento-cloud/bin/magento-cloud'
+
+const fetch = require('node-fetch')
+exports.fetch = function() {
+  winston.info(arguments[0])
+  return fetch.apply(this, arguments)
+}

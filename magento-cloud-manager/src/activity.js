@@ -1,4 +1,4 @@
-const {exec, db, apiLimit, sshLimit, MC_CLI, winston} = require('./common')
+const {exec, db, apiLimit, MC_CLI, winston} = require('./common')
 const {setEnvironmentFailed} = require('./environment')
 const {getProjectsFromApi} = require('./project')
 

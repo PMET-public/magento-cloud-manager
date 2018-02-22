@@ -5,6 +5,7 @@
   "main": "lib.js",
   "dependencies": {
     "better-sqlite3": "^4.1.0",
+    "node-fetch": "^2.0.0",
     "p-limit": "^1.2.0",
     "sqlite3": "^3.1.13",
     "winston": "^2.4.0"
