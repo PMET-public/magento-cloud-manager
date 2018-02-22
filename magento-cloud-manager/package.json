@@ -4,6 +4,9 @@
   "description": "",
   "main": "lib.js",
   "dependencies": {
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0",
+    "react-scripts": "1.1.1",
     "better-sqlite3": "^4.1.0",
     "node-fetch": "^2.0.0",
     "p-limit": "^1.2.0",
@@ -16,8 +19,11 @@
     "prettier-eslint-cli": "^4.7.1"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "format": "prettier-eslint --write \"src/**/*.js\""
+    "format": "prettier-eslint --write \"src/**/*.js\"",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
   },
   "repository": {
     "type": "git",
