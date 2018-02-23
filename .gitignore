@@ -1,2 +1,4 @@
-.secrets
+.secrets.json
 id_rsa.magento
+node_modules
+*.bak

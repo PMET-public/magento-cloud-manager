@@ -1,38 +1,21 @@
 {
   "name": "cloud-status",
   "version": "0.0.1",
-  "description": "",
-  "main": "lib.js",
+  "private": true,
+  "proxy": "http://localhost:3001/",
   "dependencies": {
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
-    "react-scripts": "1.1.1",
-    "better-sqlite3": "^4.1.0",
-    "node-fetch": "^2.0.0",
-    "p-limit": "^1.2.0",
-    "sqlite3": "^3.1.13",
-    "winston": "^2.4.0"
+    "react-table": "^6.7.6",
+    "semantic-ui": "^2.2.10"
   },
   "devDependencies": {
-    "eslint": "^4.17.0",
-    "prettier-eslint": "^8.8.1",
-    "prettier-eslint-cli": "^4.7.1"
+    "react-scripts": "1.1.1"
   },
   "scripts": {
-    "format": "prettier-eslint --write \"src/**/*.js\"",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/PMET-public/cloud-status.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/PMET-public/cloud-status/issues"
-  },
-  "homepage": "https://github.com/PMET-public/cloud-status#readme"
+  }
 }
