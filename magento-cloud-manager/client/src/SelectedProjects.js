@@ -1,14 +1,14 @@
-import React from "react";
+import React from 'react'
 
 export default function SelectedProjects(props) {
-  const { projects } = props;
+  const {projects} = props
 
   const projectRows = projects.map((project, idx) => (
     <tr key={idx} onClick={() => props.onProjectClick(idx)}>
       <td>{project.id}</td>
       <td className="right aligned">{project.title}</td>
     </tr>
-  ));
+  ))
 
   return (
     <table className="ui selectable structured large table striped">
@@ -23,19 +23,15 @@ export default function SelectedProjects(props) {
           <th>Title</th>
         </tr>
       </thead>
-      <tbody>
-        {projectRows}
-      </tbody>
-     <tfoot>
+      <tbody>{projectRows}</tbody>
+      <tfoot>
         <tr>
           <th>Total</th>
-          <th className="right aligned" id="total-kcal">
-
-          </th>
+          <th className="right aligned" id="total-kcal" />
         </tr>
       </tfoot>
     </table>
-  );
+  )
 }
 
 // function sum(foods, prop) {

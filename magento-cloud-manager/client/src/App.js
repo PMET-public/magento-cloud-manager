@@ -17,30 +17,23 @@ class App extends Component {
   }
 
   removeProjectItem = itemIndex => {
-    const filteredProjects = this.state.selectedProjects.filter(
-      (item, idx) => itemIndex !== idx
-    );
-    this.setState({ selectedProjects: filteredProjects });
-  };
+    const filteredProjects = this.state.selectedProjects.filter((item, idx) => itemIndex !== idx)
+    this.setState({selectedProjects: filteredProjects})
+  }
 
   addProject = project => {
-    const newProjects = this.state.selectedProjects.concat(project);
-    this.setState({ selectedProjects: newProjects });
-  };
-
-
+    const newProjects = this.state.selectedProjects.concat(project)
+    this.setState({selectedProjects: newProjects})
+  }
 
   render() {
     const {hostsStates, selectedProjects} = this.state
     return (
       <div>
-        <SelectedProjects
-        projects={this.state.selectedProjects}
-        onProjectClick={this.removeProjectItem}
-        />
+        <SelectedProjects projects={this.state.selectedProjects} onProjectClick={this.removeProjectItem} />
         <ProjectSearch onProjectClick={this.addProject} />
-        <br/>
-        <div style={{"padding": "25px"}}>
+        <br />
+        <div style={{padding: '25px'}}>
           <HostUtilization />
         </div>
       </div>
