@@ -27,7 +27,7 @@ class ProjectSearch extends React.Component {
         showRemoveIcon: true
       });
 
-      Client.search(value, projects => {
+      Client.search(`/api/projects?q=${value}`, projects => {
         this.setState({
           projects: projects.slice(0, MATCHING_ITEM_LIMIT)
         });

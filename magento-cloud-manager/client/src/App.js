@@ -1,14 +1,17 @@
 import React, {Component} from 'react'
-import ReactTable from 'react-table'
-import 'react-table/react-table.css'
 import ProjectSearch from './ProjectSearch'
 import SelectedProjects from './SelectedProjects'
+import HostUtilization from './HostUtilization'
+import matchSorter from 'match-sorter'
+import Client from './Client'
 
 class App extends Component {
   constructor() {
     super()
     this.state = {
-      data: [],
+      /* hostsStates: Client.search('/api/hosts_states/current', rows => {
+        return rows
+      } ), */
       selectedProjects: []
     }
   }
@@ -26,8 +29,9 @@ class App extends Component {
   };
 
 
+
   render() {
-    const {data} = this.state
+    const {hostsStates, selectedProjects} = this.state
     return (
       <div>
         <SelectedProjects
@@ -35,6 +39,10 @@ class App extends Component {
         onProjectClick={this.removeProjectItem}
         />
         <ProjectSearch onProjectClick={this.addProject} />
+        <br/>
+        <div style={{"padding": "25px"}}>
+          <HostUtilization />
+        </div>
       </div>
     )
   }

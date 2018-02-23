@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 function search(query, cb) {
-  return fetch(`/api/projects?q=${query}`, {
+  return fetch(query, {
     accept: "application/json"
   })
     .then(checkStatus)

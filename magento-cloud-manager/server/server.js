@@ -18,7 +18,6 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static('client/build'))
 }
 
-const COLUMNS = ['id','title']
 app.get('/api/projects', (req, res) => {
   const param = req.query.q
 
@@ -29,24 +28,24 @@ app.get('/api/projects', (req, res) => {
     return
   }
 
-  res.json(db
-    .prepare('SELECT id, title FROM projects WHERE id like "%?%"')
-    .all(param))
+  let rows = db.prepare('SELECT id, title FROM projects WHERE id like ?').all('%' + param + '%')
 
+  res.json(rows)
+})
 
-  /* if (r[0]) {
-    res.json(
-      r[0].values.map(entry => {
-        const e = {}
-        COLUMNS.forEach((c, idx) => {
-          e[c] = entry[idx]
-        })
-        return e
-      })
+app.get('/api/hosts_states/current', (req, res) => {
+  let rows = db
+    .prepare(
+      `SELECT
+        boot_time, cpus, ip, group_concat(distinct (p.title || ' (' || p.id || ')' )) projects, region, cpus, 
+        cast(avg(s.load_avg_15) as int) load, cast ((avg(s.load_avg_15) *100 / s.cpus) as int) utilization
+      FROM 
+        hosts_states s left join projects p on s.project_id = p.id
+      GROUP BY boot_time, cpus, ip
+      ORDER BY boot_time;`
     )
-  } else {
-    res.json([])
-  } */
+    .all()
+  res.json(rows)
 })
 
 app.listen(app.get('port'), () => {
