@@ -1,5 +1,34 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: sans-serif;
+  font-family: Roboto;
 }
+
+
+.cell-status-normal {
+  background-color: #85cc00;
+  transition: all .5s ease-out;
+}
+
+.cell-status-caution {
+  background-color: #ffbf00;
+  transition: all .5s ease-out;
+}
+
+.cell-status-warning {
+  background-color: rgba(255, 35, 0, 0.8);
+  animation: warning-pulse 2s alternate;
+  animation-iteration-count: 5;
+}
+
+@keyframes warning-pulse {
+  0% {
+    background-color: rgba(255, 35, 0, 0.2);
+  }
+
+  100% {
+    background-color: rgba(255, 35, 0, 0.8);
+  }
+}
+
+

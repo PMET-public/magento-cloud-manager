@@ -2,6 +2,7 @@ import React, {Component} from 'react'
 import ProjectSearch from './ProjectSearch'
 import SelectedProjects from './SelectedProjects'
 import HostUtilization from './HostUtilization'
+import Environments from './Environments'
 import matchSorter from 'match-sorter'
 import Client from './Client'
 
@@ -35,6 +36,7 @@ class App extends Component {
         <br />
         <div style={{padding: '25px'}}>
           <HostUtilization />
+          <Environments />
         </div>
       </div>
     )

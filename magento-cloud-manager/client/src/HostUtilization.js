@@ -1,6 +1,7 @@
 import React, {Component} from 'react'
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
+import UniqueOptions from './UniqueOptions'
 
 class HostUtilization extends Component {
   constructor() {
@@ -29,25 +30,21 @@ class HostUtilization extends Component {
               })
             })
         }}
+        minRows={0}
         filterable
         defaultFilterMethod={this.matchRow}
         className={'-striped -highlight'}
         columns={[
           {
             Header: 'Projects',
-            accessor: 'projects'
+            accessor: 'projects',
+            Cell: cell => cell.value.replace(/,/g, ', ')
           },
           {
             Header: 'Region',
             accessor: 'region',
             filterMethod: (filter, row) => {
-              if (filter.value === 'all') {
-                return true
-              }
-              if (filter.value === 'true') {
-                return row[filter.id] >= 21
-              }
-              return row[filter.id] < 21
+              return filter.value === 'all' ? true : filter.value === row[filter.id]
             },
             Filter: ({filter, onChange}) => (
               <select
@@ -56,8 +53,7 @@ class HostUtilization extends Component {
                 value={filter ? filter.value : 'all'}
               >
                 <option value="all">Show All</option>
-                <option value="true">US</option>
-                <option value="false">US-3</option>
+                <UniqueOptions data={this.state.data} accessor={'region'} />
               </select>
             ),
             maxWidth: 100,
@@ -82,7 +78,32 @@ class HostUtilization extends Component {
             accessor: 'utilization',
             filterable: false,
             maxWidth: 60,
-            style: {textAlign: 'right'}
+            style: {textAlign: 'right'},
+            Cell: cell => (
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  backgroundColor: '#dadada',
+                  borderRadius: '2px'
+                }}
+              >
+                <span style={{float: 'right', marginRight: '3px'}}>{cell.value}</span>
+                <div
+                  className={
+                    cell.value > 100
+                      ? 'cell-status-warning'
+                      : cell.value > 80 ? 'cell-status-caution' : 'cell-status-normal'
+                  }
+                  style={{
+                    width: `${cell.value}%`,
+                    maxWidth: '100%',
+                    height: '100%',
+                    borderRadius: '2px'
+                  }}
+                />
+              </div>
+            )
           }
         ]}
       />

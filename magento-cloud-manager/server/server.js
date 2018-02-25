@@ -40,9 +40,22 @@ app.get('/api/hosts_states/current', (req, res) => {
         boot_time, cpus, ip, group_concat(distinct (p.title || ' (' || p.id || ')' )) projects, region, cpus, 
         cast(avg(s.load_avg_15) as int) load, cast ((avg(s.load_avg_15) *100 / s.cpus) as int) utilization
       FROM 
-        hosts_states s left join projects p on s.project_id = p.id
+        hosts_states s LEFT JOIN projects p ON s.project_id = p.id
       GROUP BY boot_time, cpus, ip
       ORDER BY boot_time;`
+    )
+    .all()
+  res.json(rows)
+})
+
+app.get('/api/environments', (req, res) => {
+  let rows = db
+    .prepare(
+      `SELECT
+          e.*, p.region
+      FROM 
+          environments e LEFT JOIN projects p ON e.project_id = p.id
+      ORDER BY e.created_at DESC`
     )
     .all()
   res.json(rows)
