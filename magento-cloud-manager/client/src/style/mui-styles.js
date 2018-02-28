@@ -1,6 +1,6 @@
 const drawerWidth = 240
 
-export default (theme) => ({
+export default theme => ({
   root: {
     flexGrow: 1,
     height: '100%',
@@ -38,8 +38,8 @@ export default (theme) => ({
     '&:focus': {
       backgroundColor: theme.palette.primary.main,
       '& $primary, & $icon': {
-        color: theme.palette.common.white,
-      },
-    },
+        color: theme.palette.common.white
+      }
+    }
   }
 })

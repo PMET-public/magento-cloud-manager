@@ -5,9 +5,8 @@ import ResponsiveDrawer from './ResponsiveDrawer'
 import registerServiceWorker from './registerServiceWorker'
 import {MuiThemeProvider} from 'material-ui/styles'
 import theme from './style/mui-theme'
-import Reboot from 'material-ui/Reboot';
+import Reboot from 'material-ui/Reboot'
 import './style/index.css'
-
 
 ReactDOM.render(
   <div>

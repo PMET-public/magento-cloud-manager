@@ -55,7 +55,7 @@ class ResponsiveDrawer extends Component {
               keepMounted: true // Better open performance on mobile.
             }}
           >
-            <DrawerContent/>
+            <DrawerContent />
           </Drawer>
         </Hidden>
         <Hidden smDown implementation="css">
@@ -66,10 +66,10 @@ class ResponsiveDrawer extends Component {
               paper: classes.drawerPaper
             }}
           >
-            <DrawerContent/>
+            <DrawerContent />
           </Drawer>
         </Hidden>
-        <Main/>
+        <Main />
       </div>
     )
   }
