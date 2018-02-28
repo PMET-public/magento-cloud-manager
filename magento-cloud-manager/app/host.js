@@ -79,20 +79,23 @@ async function updateHostsUsingSampleProjects() {
   cotenantGroups.forEach(cotenants => {
     let hostsThatAreActuallyTheSame = []
     const nextNewHostIndex = hostsProjects.length
-    cotenants.forEach( cotenant => {
-      hostsThatAreActuallyTheSame.push(typeof projectHosts[cotenant] === 'undefined' ? nextNewHostIndex : projectHosts[cotenant])
+    cotenants.forEach(cotenant => {
+      hostsThatAreActuallyTheSame.push(
+        typeof projectHosts[cotenant] === 'undefined' ? nextNewHostIndex : projectHosts[cotenant]
+      )
     })
-    hostsThatAreActuallyTheSame = [...new Set(hostsThatAreActuallyTheSame)]
-      .sort(function(a, b){return b-a}) // uniqify & in descending order to reduce operations
+    hostsThatAreActuallyTheSame = [...new Set(hostsThatAreActuallyTheSame)].sort(function(a, b) {
+      return b - a
+    }) // uniqify & in descending order to reduce operations
     const minHost = Math.min(...hostsThatAreActuallyTheSame)
     if (minHost === nextNewHostIndex) {
       // no cotenants were found on an existing host, append new host with these cotenants
       hostsProjects[nextNewHostIndex] = cotenants
-      cotenants.forEach(cotenant => projectHosts[cotenant] = nextNewHostIndex)
+      cotenants.forEach(cotenant => (projectHosts[cotenant] = nextNewHostIndex))
     } else {
       // add the contenants to the minHost
       hostsProjects[minHost] = hostsProjects[minHost].concat(cotenants)
-      cotenants.forEach(cotenant => projectHosts[cotenant] = minHost)
+      cotenants.forEach(cotenant => (projectHosts[cotenant] = minHost))
       // combine with projects from the other hosts in hostsThatAreActuallyTheSame
       // set the combined list of projects to the host with the lowest index
       hostsThatAreActuallyTheSame.forEach(curHostIndex => {
@@ -102,9 +105,11 @@ async function updateHostsUsingSampleProjects() {
             // remove host that was combined
             hostsProjects = hostsProjects.filter((projects, index) => index !== curHostIndex)
             Object.entries(projectHosts).forEach(([project, prevHostIndex]) => {
-              if (prevHostIndex === curHostIndex) { // find projects with this host index
-                projectHosts[project] = minHost  // update to the new host index
-              } else if (prevHostIndex > curHostIndex) { // since 1 less host, decrement any index above the old one
+              if (prevHostIndex === curHostIndex) {
+                // find projects with this host index
+                projectHosts[project] = minHost // update to the new host index
+              } else if (prevHostIndex > curHostIndex) {
+                // since 1 less host, decrement any index above the old one
                 projectHosts[project] = projectHosts[project] - 1
               }
             })
@@ -115,7 +120,9 @@ async function updateHostsUsingSampleProjects() {
       hostsProjects[minHost] = [...new Set((hostsProjects[minHost] || []).concat(cotenants))]
     }
   })
-  let n = 0, pids = [], cotenantCount = {}
+  let n = 0,
+    pids = [],
+    cotenantCount = {}
   hostsProjects.forEach((host, i) => {
     host.forEach(cotenant => {
       n++
@@ -123,15 +130,12 @@ async function updateHostsUsingSampleProjects() {
       cotenantCount[cotenant] = typeof cotenantCount[cotenant] === 'undefined' ? 1 : cotenantCount[cotenant] + 1
     })
   })
-  const insertValues = [];
+  const insertValues = []
   Object.entries(projectHosts).forEach(([projectId, hostId]) => insertValues.push(`(${hostId},"${projectId}")`))
-  db.exec('DELETE FROM project_hosts; INSERT INTO project_hosts (id, project_id) VALUES ' + insertValues.join(',') + ';')
-
+  db.exec(
+    'DELETE FROM project_hosts; INSERT INTO project_hosts (id, project_id) VALUES ' + insertValues.join(',') + ';'
+  )
 }
-
-
-
-
 
 exports.updateHost = updateHost
 exports.updateHostsUsingAllProjects = updateHostsUsingAllProjects
