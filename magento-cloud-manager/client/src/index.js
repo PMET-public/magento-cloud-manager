@@ -3,34 +3,21 @@ import ReactDOM from 'react-dom'
 import {BrowserRouter} from 'react-router-dom'
 import ResponsiveDrawer from './ResponsiveDrawer'
 import registerServiceWorker from './registerServiceWorker'
-import {MuiThemeProvider, createMuiTheme} from 'material-ui/styles'
-import './index.css'
-
-
-const theme = createMuiTheme({
-  palette: {
-    secondary: {
-      light: '#6d6d6d',
-      main: '#424242',
-      dark: '#1b1b1b',
-      contrastText: '#fff',
-    },
-    primary: {
-      light: '#ff9e40',
-      main: '#ff6d00',
-      dark: '#c43c00',
-      contrastText: '#fff',
-    },
-  },
-});
+import {MuiThemeProvider} from 'material-ui/styles'
+import theme from './style/mui-theme'
+import Reboot from 'material-ui/Reboot';
+import './style/index.css'
 
 
 ReactDOM.render(
-  <MuiThemeProvider theme={theme}>
-    <BrowserRouter>
-      <ResponsiveDrawer />
-    </BrowserRouter>
-  </MuiThemeProvider>,
+  <div>
+    <Reboot />
+    <MuiThemeProvider theme={theme}>
+      <BrowserRouter>
+        <ResponsiveDrawer />
+      </BrowserRouter>
+    </MuiThemeProvider>
+  </div>,
   document.getElementById('root')
 )
 registerServiceWorker()

@@ -60,27 +60,78 @@ async function updateHostsUsingAllProjects() {
 
 async function updateHostsUsingSampleProjects() {
   const promises = []
-  // get a list of projects on the same host (detected by same boot time, # cpus, & ip address)
-  const groupedProjects = db
+  const projectHosts = {} // a dictionary to lookup each project's host
+  let hostsProjects = [] // list of projects associated with each host
+
+  // identify cotenants - projects grouped by same boot time, # cpus, & ip address
+  const cotenantGroups = db
     .prepare(
-      `SELECT GROUP_CONCAT(DISTINCT p.id) projects FROM hosts_states h LEFT JOIN 
-    projects p ON h.project_id = p.id GROUP BY h.boot_time, h.cpus, h.ip`
+      `SELECT GROUP_CONCAT(DISTINCT p.id) cotenant_groups 
+      FROM hosts_states h LEFT JOIN projects p ON h.project_id = p.id 
+      GROUP BY h.boot_time, h.cpus, h.ip
+      ORDER BY h.timestamp desc`
     )
     .all()
-  for (let {projects} of groupedProjects) {
-    promises.push(
-      sshLimit(async () => {
-        // cycle through the grouped hosts until able to update 1
-        for (let project of projects.split(',')) {
-          const result = await updateHost(project)
-          if (result.changes) {
-            break
+    .map(row => row['cotenant_groups'].split(','))
+  // since hosts reboot, are assigned new IPs, upsized, etc., the groupings based on those values are incomplete
+  // however, projects should not migrate from hosts often (ever?)
+  // so any project cotenancy can be merged with another if they share a host
+  cotenantGroups.forEach(cotenants => {
+    let hostsThatAreActuallyTheSame = []
+    const nextNewHostIndex = hostsProjects.length
+    cotenants.forEach( cotenant => {
+      hostsThatAreActuallyTheSame.push(typeof projectHosts[cotenant] === 'undefined' ? nextNewHostIndex : projectHosts[cotenant])
+    })
+    hostsThatAreActuallyTheSame = [...new Set(hostsThatAreActuallyTheSame)]
+      .sort(function(a, b){return b-a}) // uniqify & in descending order to reduce operations
+    const minHost = Math.min(...hostsThatAreActuallyTheSame)
+    if (minHost === nextNewHostIndex) {
+      // no cotenants were found on an existing host, append new host with these cotenants
+      hostsProjects[nextNewHostIndex] = cotenants
+      cotenants.forEach(cotenant => projectHosts[cotenant] = nextNewHostIndex)
+    } else {
+      // add the contenants to the minHost
+      hostsProjects[minHost] = hostsProjects[minHost].concat(cotenants)
+      cotenants.forEach(cotenant => projectHosts[cotenant] = minHost)
+      // combine with projects from the other hosts in hostsThatAreActuallyTheSame
+      // set the combined list of projects to the host with the lowest index
+      hostsThatAreActuallyTheSame.forEach(curHostIndex => {
+        if (curHostIndex !== minHost) {
+          if (curHostIndex !== nextNewHostIndex) {
+            hostsProjects[minHost] = hostsProjects[minHost].concat(hostsProjects[curHostIndex])
+            // remove host that was combined
+            hostsProjects = hostsProjects.filter((projects, index) => index !== curHostIndex)
+            Object.entries(projectHosts).forEach(([project, prevHostIndex]) => {
+              if (prevHostIndex === curHostIndex) { // find projects with this host index
+                projectHosts[project] = minHost  // update to the new host index
+              } else if (prevHostIndex > curHostIndex) { // since 1 less host, decrement any index above the old one
+                projectHosts[project] = projectHosts[project] - 1
+              }
+            })
           }
         }
       })
-    )
-  }
+      // finally, uniqify cotenants
+      hostsProjects[minHost] = [...new Set((hostsProjects[minHost] || []).concat(cotenants))]
+    }
+  })
+  let n = 0, pids = [], cotenantCount = {}
+  hostsProjects.forEach((host, i) => {
+    host.forEach(cotenant => {
+      n++
+      pids.push(cotenant)
+      cotenantCount[cotenant] = typeof cotenantCount[cotenant] === 'undefined' ? 1 : cotenantCount[cotenant] + 1
+    })
+  })
+  const insertValues = [];
+  Object.entries(projectHosts).forEach(([projectId, hostId]) => insertValues.push(`(${hostId},"${projectId}")`))
+  db.exec('DELETE FROM project_hosts; INSERT INTO project_hosts (id, project_id) VALUES ' + insertValues.join(',') + ';')
+
 }
+
+
+
+
 
 exports.updateHost = updateHost
 exports.updateHostsUsingAllProjects = updateHostsUsingAllProjects

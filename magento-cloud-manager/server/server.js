@@ -52,7 +52,8 @@ app.get('/api/environments', (req, res) => {
   let rows = db
     .prepare(
       `SELECT
-          e.*, p.region
+          e.*, p.region, p.title project_title,
+          CASE WHEN missing=1 THEN 'missing' WHEN failure=1 THEN 'failure' WHEN e.active=0 THEN 'inactive' ELSE 'active' END AS status
       FROM 
           environments e LEFT JOIN projects p ON e.project_id = p.id
       ORDER BY e.created_at DESC`
@@ -60,6 +61,20 @@ app.get('/api/environments', (req, res) => {
     .all()
   res.json(rows)
 })
+
+app.get('/api/applications-states', (req, res) => {
+  let rows = db
+    .prepare(
+      `SELECT
+            a.*, p.region, p.title project_title
+        FROM 
+            applications_states a LEFT JOIN projects p ON a.project_id = p.id
+        ORDER BY composer_lock_mtime ASC`
+    )
+    .all()
+  res.json(rows)
+})
+
 
 app.listen(app.get('port'), () => {
   console.log(`Find the server at: http://localhost:${app.get('port')}/`) // eslint-disable-line no-console

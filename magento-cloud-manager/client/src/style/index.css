@@ -4,6 +4,10 @@ body {
   font-family: Roboto;
 }
 
+a {
+  text-decoration: none;
+}
+
 
 .cell-status-normal {
   background-color: #85cc00;

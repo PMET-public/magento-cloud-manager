@@ -1,7 +1,7 @@
 import React, {Component} from 'react'
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
-import UniqueOptions from './UniqueOptions'
+import UniqueOptions from '../util/UniqueOptions'
 
 class HostUtilization extends Component {
   constructor() {
@@ -36,7 +36,7 @@ class HostUtilization extends Component {
         className={'-striped -highlight'}
         columns={[
           {
-            Header: 'Projects',
+            Header: 'Project Names',
             accessor: 'projects',
             Cell: cell => cell.value.replace(/,/g, ', ')
           },
@@ -52,7 +52,7 @@ class HostUtilization extends Component {
                 style={{width: '100%'}}
                 value={filter ? filter.value : 'all'}
               >
-                <option value="all">Show All</option>
+                <option value="">Show All</option>
                 <UniqueOptions data={this.state.data} accessor={'region'} />
               </select>
             ),

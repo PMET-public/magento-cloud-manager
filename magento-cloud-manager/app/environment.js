@@ -8,13 +8,14 @@ function updateEnvironment(project, environment = 'master') {
         throw stderr
       }
       const title = stdout.replace(/[\s\S]*title\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
+      const machineName = stdout.replace(/[\s\S]*machine_name\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const active = /\nstatus\s+active/.test(stdout) ? 1 : 0
       const createdAt = Date.parse(stdout.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/, '$1')) / 1000
       return db
         .prepare(
-          'INSERT OR REPLACE INTO environments (id, project_id, title, active, created_at) VALUES (?, ?, ?, ?, ?)'
+          'INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, created_at) VALUES (?, ?, ?, ?, ?, ?)'
         )
-        .run(environment, project, title, active, createdAt)
+        .run(environment, project, title, machineName, active, createdAt)
     })
     .catch(error => {
       winston.error(error)
