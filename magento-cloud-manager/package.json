@@ -9,6 +9,6 @@
     "prettier-eslint-cli": "^4.7.1"
   },
   "scripts": {
-    "format": "prettier-eslint --write \"server/**/*.js\" \"client/**/*.js\"" 
+    "format": "prettier-eslint --write \"server/**/*.js\" \"client/**/*.js\" \"app/**/*.js\""
   }
 }
