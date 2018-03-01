@@ -1,7 +1,7 @@
-const {exec, db, apiLimit, sshLimit, MC_CLI, winston} = require('./common')
+const {exec, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
 const {getProjectsFromApi} = require('./project')
 
-function updateHost(project, environment = 'master') {
+exports.updateHost = function updateHost(project, environment = 'master') {
   return exec(`${MC_CLI} ssh -p ${project} -e "${environment}" "
     cat /proc/stat | awk '/btime/ {print \\$2}'
     cat /proc/net/route | awk '/eth0	00000000	/ {print \\$3}'
@@ -12,6 +12,7 @@ function updateHost(project, environment = 'master') {
       if (stderr) {
         throw stderr
       }
+      logger.info(stdout)
       const [bootTime, hexIpAddr, totalMemory, cpus, loadAvg] = stdout.trim().split('\n')
       const ipAddr = hexIpAddr
         .match(/../g)
@@ -46,11 +47,11 @@ function updateHost(project, environment = 'master') {
         )
     })
     .catch(error => {
-      winston.error(error)
+      logger.error(error)
     })
 }
 
-async function updateHostsUsingAllProjects() {
+exports.updateHostsUsingAllProjects = async function updateHostsUsingAllProjects() {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(sshLimit(() => updateHost(project)))
@@ -58,7 +59,7 @@ async function updateHostsUsingAllProjects() {
   return await Promise.all(promises)
 }
 
-async function updateHostsUsingSampleProjects() {
+exports.updateProjectHostRelationships = async function updateProjectHostRelationships() {
   const promises = []
   const projectHosts = {} // a dictionary to lookup each project's host
   let hostsProjects = [] // list of projects associated with each host
@@ -120,23 +121,9 @@ async function updateHostsUsingSampleProjects() {
       hostsProjects[minHost] = [...new Set((hostsProjects[minHost] || []).concat(cotenants))]
     }
   })
-  let n = 0,
-    pids = [],
-    cotenantCount = {}
-  hostsProjects.forEach((host, i) => {
-    host.forEach(cotenant => {
-      n++
-      pids.push(cotenant)
-      cotenantCount[cotenant] = typeof cotenantCount[cotenant] === 'undefined' ? 1 : cotenantCount[cotenant] + 1
-    })
-  })
   const insertValues = []
   Object.entries(projectHosts).forEach(([projectId, hostId]) => insertValues.push(`(${hostId},"${projectId}")`))
   db.exec(
     'DELETE FROM project_hosts; INSERT INTO project_hosts (id, project_id) VALUES ' + insertValues.join(',') + ';'
   )
 }
-
-exports.updateHost = updateHost
-exports.updateHostsUsingAllProjects = updateHostsUsingAllProjects
-exports.updateHostsUsingSampleProjects = updateHostsUsingSampleProjects

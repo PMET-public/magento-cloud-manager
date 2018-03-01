@@ -1,7 +1,7 @@
-const {exec, db, apiLimit, sshLimit, MC_CLI, winston} = require('./common')
+const {exec, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
 const {setEnvironmentInactive} = require('./environment.js')
 
-function updateApplicationState(project, environment = 'master') {
+exports.updateApplicationState = function updateApplicationState(project, environment = 'master') {
   const cmd = `${MC_CLI} ssh -p ${project} -e "${environment}" "
     egrep -m 1 'magento/product-enterprise-edition\\":|\\"2\\.[0-9]\\.[0-9]\\.x-dev' composer.lock || echo 'not found'
     md5sum composer.lock
@@ -25,11 +25,11 @@ function updateApplicationState(project, environment = 'master') {
       if (typeof error.stderr !== 'undefined' && /Specified environment not found/.test(error.stderr)) {
         return setEnvironmentInactive(project, environment)
       }
-      winston.error(error)
+      logger.error(error)
     })
 }
 
-async function updateAllApplicationsStates() {
+exports.updateAllApplicationsStates = async function updateAllApplicationsStates() {
   const promises = []
   db
     .prepare('SELECT id, project_id FROM environments WHERE active = 1')
@@ -39,6 +39,3 @@ async function updateAllApplicationsStates() {
     })
   return await Promise.all(promises)
 }
-
-exports.updateApplicationState = updateApplicationState
-exports.updateAllApplicationsStates = updateAllApplicationsStates

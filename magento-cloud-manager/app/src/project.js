@@ -1,24 +1,26 @@
-const {exec, db, apiLimit, sshLimit, MC_CLI, winston} = require('./common')
+const {exec, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
 
-function getProjectsFromApi() {
+exports.getProjectsFromApi = function getProjectsFromApi() {
   return exec(`${MC_CLI} projects --pipe`)
     .then(({stdout, stderr}) => {
       if (stderr) {
         throw stderr
       }
+      logger.debug(stdout)
       return stdout.trim().split('\n')
     })
     .catch(error => {
-      winston.error(error)
+      logger.error(error)
     })
 }
 
-function updateProject(project) {
+exports.updateProject = function updateProject(project) {
   return exec(`${MC_CLI} project:info -p ${project} --format=tsv`)
     .then(({stdout, stderr}) => {
       if (stderr) {
         throw stderr
       }
+      logger.info(stdout)
       const projectInfo = stdout
       const title = projectInfo.replace(/[\s\S]*title\t"?([^"\n]*)"?[\s\S]*/, '$1')
       const gitUrl = projectInfo.replace(/[\s\S]*url: '([^']*)'[\s\S]*/, '$1')
@@ -52,11 +54,11 @@ function updateProject(project) {
         )
     })
     .catch(error => {
-      winston.error(error)
+      logger.error(error)
     })
 }
 
-async function updateProjects() {
+exports.updateProjects = async function updateProjects() {
   //mark all projects inactive; the api call will then update only active ones
   db.prepare('UPDATE projects SET active = 0;').run()
   const promises = []
@@ -65,6 +67,3 @@ async function updateProjects() {
   })
   return await Promise.all(promises)
 }
-
-exports.getProjectsFromApi = getProjectsFromApi
-exports.updateProjects = updateProjects

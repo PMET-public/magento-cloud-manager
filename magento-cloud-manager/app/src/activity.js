@@ -1,4 +1,4 @@
-const {exec, db, apiLimit, MC_CLI, winston} = require('./common')
+const {exec, db, apiLimit, MC_CLI, logger} = require('./common')
 const {setEnvironmentFailed} = require('./environment')
 const {getProjectsFromApi} = require('./project')
 
@@ -31,7 +31,7 @@ function getActivitiesFromApi(project, type) {
     })
     .catch(error => {
       if (!/No activities found/.test(error.stderr)) {
-        winston.error(error)
+        logger.error(error)
         throw error
       }
       return []
@@ -50,7 +50,7 @@ function mergeMostRecentActivityResultByEnv(arr1, arr2) {
   return combinedResults
 }
 
-async function searchActivitiesForFailures() {
+exports.searchActivitiesForFailures = async function searchActivitiesForFailures() {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
@@ -74,5 +74,3 @@ async function searchActivitiesForFailures() {
   })
   return await Promise.all(promises)
 }
-
-exports.searchActivitiesForFailures = searchActivitiesForFailures

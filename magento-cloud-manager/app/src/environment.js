@@ -1,4 +1,4 @@
-const {exec, db, apiLimit, MC_CLI, winston} = require('./common')
+const {exec, db, apiLimit, MC_CLI, logger} = require('./common')
 const {getProjectsFromApi} = require('./project')
 
 function updateEnvironment(project, environment = 'master') {
@@ -18,23 +18,23 @@ function updateEnvironment(project, environment = 'master') {
         .run(environment, project, title, machineName, active, createdAt)
     })
     .catch(error => {
-      winston.error(error)
+      logger.error(error)
     })
 }
 
-function setEnvironmentInactive(project, environment) {
+exports.setEnvironmentInactive = function setEnvironmentInactive(project, environment) {
   return db
     .prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
 }
 
-function setEnvironmentFailed(project, environment) {
+exports.setEnvironmentFailed = function setEnvironmentFailed(project, environment) {
   return db
     .prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
 }
 
-function getEnvironmentsFromAPI(project) {
+exports.getEnvironmentsFromAPI = function getEnvironmentsFromAPI(project) {
   return exec(`${MC_CLI} environments -p ${project} --pipe`)
     .then(({stdout, stderr}) => {
       if (stderr) {
@@ -43,11 +43,11 @@ function getEnvironmentsFromAPI(project) {
       return stdout.trim().split('\n')
     })
     .catch(error => {
-      winston.error(error)
+      logger.error(error)
     })
 }
 
-async function updateAllCurrentProjectsEnvironmentsFromAPI() {
+exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function updateAllCurrentProjectsEnvironmentsFromAPI() {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
@@ -65,28 +65,23 @@ async function updateAllCurrentProjectsEnvironmentsFromAPI() {
 
 // need to delete from child first
 // or how to warn if inactive parent & active child?
-async function deleteInactiveEnvironments() {
+exports.deleteInactiveEnvironments = async function deleteInactiveEnvironments() {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
       apiLimit(() => {
-        exec(`${MC_CLI} environment:delete -p ${project} --inactive --no-wait -y`)
+        exec(`${MC_CLI} environment:delete -p ${project} --inactive --no-delete-branch --no-wait -y`)
           .then(({stdout, stderr}) => {
             if (stderr) {
               throw stderr
             }
+            logger.debug(stdout)
           })
           .catch(error => {
-            winston.error(error)
+            logger.error(error)
           })
       })
     )
   })
   return await Promise.all(promises)
 }
-
-exports.setEnvironmentInactive = setEnvironmentInactive
-exports.setEnvironmentFailed = setEnvironmentFailed
-exports.getEnvironmentsFromAPI = getEnvironmentsFromAPI
-exports.updateAllCurrentProjectsEnvironmentsFromAPI = updateAllCurrentProjectsEnvironmentsFromAPI
-exports.deleteInactiveEnvironments = deleteInactiveEnvironments

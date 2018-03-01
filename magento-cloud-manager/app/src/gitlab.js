@@ -1,4 +1,4 @@
-const {exec, db, apiLimit, MC_CLI, winston, fetch} = require('./common')
+const {exec, db, apiLimit, MC_CLI, logger, fetch} = require('./common')
 
 const {gitlabToken} = require('../.secrets.json')
 const {gitlabDomain, gitlabProjectIds} = require('../config.json')
@@ -18,7 +18,7 @@ async function getNumberOfResultPages(apiPath) {
     method: 'GET'
   })
     .then(response => response.headers.get('X-Total-Pages'))
-    .catch(error => winston.error(error))
+    .catch(error => logger.error(error))
   return promise
 }
 
@@ -66,7 +66,7 @@ async function enableDeployKey(projectId, keyId) {
     for (let keyId of allCloudKeyIds) {
       if (projectDeployKeyIds.indexOf(keyId) === -1) {
         let result = await enableDeployKey(projectId, keyId)
-        winston.info(result)
+        logger.info(result)
       }
     }
   }
