@@ -46,7 +46,7 @@ commander
   .action((args, options) => {
     if (commander.verbose) enableVerbose()
     if (options.all) {
-      updateProjects();
+      updateProjects()
     } else {
       args.forEach(pid => updateProject(pid))
     }
@@ -69,7 +69,7 @@ commander
   .action((args, options) => {
     if (commander.verbose) enableVerbose()
     if (typeof options.all !== 'undefined') {
-      updateAllApplicationsStates();
+      updateAllApplicationsStates()
     }
     if (!(options.project && options.env)) {
       help()
@@ -77,8 +77,6 @@ commander
       process.exit(1)
     }
   })
-
-
 
 commander.parse(process.argv)
 

@@ -11,11 +11,9 @@ const logger = winston.createLogger({
 logger.simpleConsole = new winston.transports.Console({
   level: 'info',
   format: winston.format.combine(
-    winston.format.printf((info) => {
-      const {
-        level, message, ...args
-      } = info;
-      return `${message}`;
+    winston.format.printf(info => {
+      const {level, message, ...args} = info
+      return `${message}`
     })
   )
 })
@@ -27,13 +25,11 @@ logger.verboseConsole = new winston.transports.Console({
     winston.format.colorize(),
     winston.format.timestamp(),
     winston.format.align(),
-    winston.format.printf((info) => {
-      const {
-        timestamp, level, message, ...args
-      } = info;
+    winston.format.printf(info => {
+      const {timestamp, level, message, ...args} = info
 
-      const ts = timestamp.slice(0, 19).replace('T', ' ');
-      return `${ts} [${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`;
+      const ts = timestamp.slice(0, 19).replace('T', ' ')
+      return `${ts} [${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`
     })
   )
 })
