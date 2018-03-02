@@ -1,0 +1,105 @@
+#!/usr/bin/env node
+
+const yargs = require('yargs')
+const colors = require('colors')
+const {logger} = require('../src/common')
+const {updateHost, updateHostsUsingAllProject, updateProjectHostRelationships} = require('../src/host')
+const {updateProject, updateProjects} = require('../src/project')
+const {deleteInactiveEnvironments} = require('../src/environment')
+const {updateApplicationState, updateAllApplicationsStates} = require('../src/application-state')
+
+yargs
+  .usage('$0 <cmd> [args]')
+  .wrap(yargs.terminalWidth())
+  .alias('h', 'help')
+  .demandCommand(1, `${colors.bgRed(colors.white('  Please provide at least 1 command.  '))}`)
+  .check(function (arg) {
+    if (arg.verbose) {
+      logger.remove(logger.simpleConsole).add(logger.verboseConsole)
+    }
+    return true
+  }, true)
+  .option('v', {
+    alias: 'verbose',
+    global: true,
+    type: 'boolean'
+  })
+  .option('a', {
+    alias: 'all',
+    description: 'Apply the command to all relevant hosts, projects, environments, etc.',
+    global: true,
+    type: 'boolean'
+  })
+
+yargs
+  .command(
+    'host:update [pids...]',
+    'Update DB with info about hosts for provided projects',
+    yargs => {
+      yargs.positional('pids', {
+        type: 'string',
+        describe: 'List of project IDs'
+      })
+    },
+    argv => {
+      if (argv.all) {
+        updateHostsUsingAllProject();
+      } else {
+        argv.pids.forEach(pid => updateHost(pid))
+      }
+    }
+  )
+
+yargs
+  .command(
+    'project:update [pids...]',
+    'Update DB with info about provided projects',
+    yargs => {
+      yargs.positional('pids', {
+        type: 'string',
+        describe: 'List of project IDs'
+      })
+    },
+    argv => {
+      if (argv.all) {
+        updateProjects()
+      } else {
+        argv.pids.forEach(pid => updateProject(pid))
+      }
+    }
+  )
+
+yargs
+  .command(
+    'app:update <pid> [env]',
+    'Update DB with info about deployed app',
+    yargs => {
+      yargs.positional('pid', {
+        type: 'string',
+        describe: 'The project ID'
+      })
+      yargs.positional('env', {
+        type: 'string',
+        describe: 'The environment ID'
+      })
+    },
+    argv => {
+      if (argv.all) {
+        console.log('all')
+      } else {
+        updateApplicationState(argv.pid, argv.env ? argv.env : 'master')
+      }
+    }
+  )
+
+
+
+yargs
+  .command(
+    'environments:delete-inactive',
+    'Delete ALL inactive environments across ALL projects',
+    () => {},
+    argv => deleteInactiveEnvironments()
+  )
+
+yargs.argv
