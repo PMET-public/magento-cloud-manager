@@ -32,7 +32,7 @@ exports.updateProject = function updateProject(project) {
       const allowedEnvironments = projectInfo.replace(/[\s\S]*environments: ([^\n]*)[\s\S]*/, '$1')
       const storage = projectInfo.replace(/[\s\S]*storage: ([^\n]*)[\s\S]*/, '$1')
       const userLicenses = projectInfo.replace(/[\s\S]*user_licenses: ([^"]*)[\s\S]*/, '$1')
-      return db
+      const result = db
         .prepare(
           `INSERT OR REPLACE INTO projects (id, title, region, project_url, git_url, created_at, plan_size,
           allowed_environments, storage, user_licenses, active, client_ssh_key) VALUES
@@ -52,6 +52,8 @@ exports.updateProject = function updateProject(project) {
           1,
           clientSshKey
         )
+      logger.debug(JSON.stringify(result))
+      return result
     })
     .catch(error => {
       logger.error(error)
@@ -60,7 +62,8 @@ exports.updateProject = function updateProject(project) {
 
 exports.updateProjects = async function updateProjects() {
   //mark all projects inactive; the api call will then update only active ones
-  db.prepare('UPDATE projects SET active = 0;').run()
+  const result = db.prepare('UPDATE projects SET active = 0;').run()
+  logger.debug(JSON.stringify(result))
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(apiLimit(() => updateProject(project)))

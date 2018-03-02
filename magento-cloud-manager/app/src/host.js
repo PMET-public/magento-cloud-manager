@@ -25,7 +25,7 @@ exports.updateHost = function updateHost(project, environment = 'master') {
         .replace('/', ' ')
         .trim()
         .split(' ')
-      return db
+      const result = db
         .prepare(
           `INSERT INTO hosts_states (project_id, environment_id, boot_time, ip, total_memory, cpus, load_avg_1, 
           load_avg_5, load_avg_15, running_processes, total_processes, last_process_id) VALUES
@@ -45,6 +45,8 @@ exports.updateHost = function updateHost(project, environment = 'master') {
           totalProcesses,
           lastPID
         )
+      logger.debug(JSON.stringify(result))
+      return result
     })
     .catch(error => {
       logger.error(error)
@@ -59,7 +61,7 @@ exports.updateHostsUsingAllProjects = async function updateHostsUsingAllProjects
   return await Promise.all(promises)
 }
 
-exports.updateProjectHostRelationships = async function updateProjectHostRelationships() {
+exports.updateProjectHostRelationships = function updateProjectHostRelationships() {
   const promises = []
   const projectHosts = {} // a dictionary to lookup each project's host
   let hostsProjects = [] // list of projects associated with each host
@@ -73,7 +75,8 @@ exports.updateProjectHostRelationships = async function updateProjectHostRelatio
       ORDER BY h.timestamp desc`
     )
     .all()
-    .map(row => row['cotenant_groups'].split(','))
+  logger.debug(JSON.stringify(cotenantGroups))
+  cotenantGroups.map(row => row['cotenant_groups'].split(','))
   // since hosts reboot, are assigned new IPs, upsized, etc., the groupings based on those values are incomplete
   // however, projects should not migrate from hosts often (ever?)
   // so any project cotenancy can be merged with another if they share a host
@@ -123,7 +126,9 @@ exports.updateProjectHostRelationships = async function updateProjectHostRelatio
   })
   const insertValues = []
   Object.entries(projectHosts).forEach(([projectId, hostId]) => insertValues.push(`(${hostId},"${projectId}")`))
-  db.exec(
+  const result = db.exec(
     'DELETE FROM project_hosts; INSERT INTO project_hosts (id, project_id) VALUES ' + insertValues.join(',') + ';'
   )
+  logger.debug(JSON.stringify(result))
+  return result
 }

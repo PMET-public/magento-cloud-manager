@@ -11,11 +11,13 @@ function updateEnvironment(project, environment = 'master') {
       const machineName = stdout.replace(/[\s\S]*machine_name\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const active = /\nstatus\s+active/.test(stdout) ? 1 : 0
       const createdAt = Date.parse(stdout.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/, '$1')) / 1000
-      return db
+      const result = db
         .prepare(
           'INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, created_at) VALUES (?, ?, ?, ?, ?, ?)'
         )
         .run(environment, project, title, machineName, active, createdAt)
+      logger.debug(JSON.stringify(result))
+      return result
     })
     .catch(error => {
       logger.error(error)
@@ -23,15 +25,19 @@ function updateEnvironment(project, environment = 'master') {
 }
 
 exports.setEnvironmentInactive = function setEnvironmentInactive(project, environment) {
-  return db
+  const result = db
     .prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
+  logger.debug(JSON.stringify(result))
+  return result
 }
 
 exports.setEnvironmentFailed = function setEnvironmentFailed(project, environment) {
-  return db
+  const result = db
     .prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
+  logger.debug(JSON.stringify(result))
+  return result
 }
 
 exports.getEnvironmentsFromAPI = function getEnvironmentsFromAPI(project) {
