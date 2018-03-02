@@ -7,6 +7,7 @@ function updateEnvironment(project, environment = 'master') {
       if (stderr) {
         throw stderr
       }
+      logger.debug(stdout)
       const title = stdout.replace(/[\s\S]*title\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const machineName = stdout.replace(/[\s\S]*machine_name\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const active = /\nstatus\s+active/.test(stdout) ? 1 : 0
@@ -24,7 +25,7 @@ function updateEnvironment(project, environment = 'master') {
     })
 }
 
-exports.setEnvironmentInactive = function setEnvironmentInactive(project, environment) {
+exports.setEnvironmentInactive = function(project, environment) {
   const result = db
     .prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
@@ -32,7 +33,7 @@ exports.setEnvironmentInactive = function setEnvironmentInactive(project, enviro
   return result
 }
 
-exports.setEnvironmentFailed = function setEnvironmentFailed(project, environment) {
+exports.setEnvironmentFailed = function(project, environment) {
   const result = db
     .prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
@@ -40,12 +41,13 @@ exports.setEnvironmentFailed = function setEnvironmentFailed(project, environmen
   return result
 }
 
-exports.getEnvironmentsFromAPI = function getEnvironmentsFromAPI(project) {
+exports.getEnvironmentsFromAPI = function(project) {
   return exec(`${MC_CLI} environments -p ${project} --pipe`)
     .then(({stdout, stderr}) => {
       if (stderr) {
         throw stderr
       }
+      logger.debug(stdout)
       return stdout.trim().split('\n')
     })
     .catch(error => {
@@ -53,12 +55,12 @@ exports.getEnvironmentsFromAPI = function getEnvironmentsFromAPI(project) {
     })
 }
 
-exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function updateAllCurrentProjectsEnvironmentsFromAPI() {
+exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function() {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
       apiLimit(async () => {
-        const environments = await getEnvironmentsFromAPI(project)
+        const environments = await exports.getEnvironmentsFromAPI(project)
         environments.forEach(environment => {
           updateEnvironment(project, environment)
         })
@@ -71,12 +73,12 @@ exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function updateAllCu
 
 // need to delete from child first
 // or how to warn if inactive parent & active child?
-exports.deleteInactiveEnvironments = async function deleteInactiveEnvironments() {
+exports.deleteInactiveEnvironments = async function() {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
       apiLimit(() => {
-        exec(`${MC_CLI} environment:delete -p ${project} --inactive --no-delete-branch --no-wait -y`)
+        exec(`${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`)
           .then(({stdout, stderr}) => {
             if (stderr) {
               throw stderr

@@ -24,14 +24,15 @@ function parseActivityList(activities) {
 function getActivitiesFromApi(project, type) {
   return exec(`${MC_CLI} activity:list -p ${project} -e master -a --type=environment.${type} --limit=9999 --format=tsv`)
     .then(({stdout, stderr}) => {
+      logger.debug(stdout)
       return stdout
         .trim()
         .split('\n')
         .slice(1)
     })
     .catch(error => {
+      logger.error(error)
       if (!/No activities found/.test(error.stderr)) {
-        logger.error(error)
         throw error
       }
       return []
@@ -50,7 +51,7 @@ function mergeMostRecentActivityResultByEnv(arr1, arr2) {
   return combinedResults
 }
 
-exports.searchActivitiesForFailures = async function searchActivitiesForFailures() {
+exports.searchActivitiesForFailures = async function() {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(

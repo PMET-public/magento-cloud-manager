@@ -12,7 +12,7 @@ logger.simpleConsole = new winston.transports.Console({
   level: 'info',
   format: winston.format.combine(
     winston.format.printf(info => {
-      const {level, message, stderr, ...args} = info
+      const {level, message, stderr} = info
       return `${stderr ? stderr : message}`
     })
   )

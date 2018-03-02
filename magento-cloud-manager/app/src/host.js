@@ -1,7 +1,7 @@
 const {exec, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
 const {getProjectsFromApi} = require('./project')
 
-exports.updateHost = function updateHost(project, environment = 'master') {
+exports.updateHost = function(project, environment = 'master') {
   return exec(`${MC_CLI} ssh -p ${project} -e "${environment}" "
     cat /proc/stat | awk '/btime/ {print \\$2}'
     cat /proc/net/route | awk '/eth0	00000000	/ {print \\$3}'
@@ -12,7 +12,7 @@ exports.updateHost = function updateHost(project, environment = 'master') {
       if (stderr) {
         throw stderr
       }
-      logger.info(stdout)
+      logger.debug(stdout)
       const [bootTime, hexIpAddr, totalMemory, cpus, loadAvg] = stdout.trim().split('\n')
       const ipAddr = hexIpAddr
         .match(/../g)
@@ -53,15 +53,25 @@ exports.updateHost = function updateHost(project, environment = 'master') {
     })
 }
 
-exports.updateHostsUsingAllProjects = async function updateHostsUsingAllProjects() {
+exports.updateHostsUsingAllProjects = async function() {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
-    promises.push(sshLimit(() => updateHost(project)))
+    promises.push(sshLimit(() => exports.updateHost(project)))
   })
   return await Promise.all(promises)
 }
 
-exports.updateProjectHostRelationships = function updateProjectHostRelationships() {
+exports.updateHostsUsingSampleProjects = async function() {
+  const promises = []
+  const result = db.prepare('SELECT MIN(project_id) project FROM project_hosts GROUP BY id').all()
+  logger.debug(JSON.stringify(result))
+  result.forEach(project => {
+    promises.push(sshLimit(() => exports.updateHost(project)))
+  })
+  return await Promise.all(promises)
+}
+
+exports.updateProjectHostRelationships = function() {
   const promises = []
   const projectHosts = {} // a dictionary to lookup each project's host
   let hostsProjects = [] // list of projects associated with each host

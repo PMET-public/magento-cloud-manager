@@ -6,7 +6,6 @@
   "dependencies": {
     "better-sqlite3": "^4.1.0",
     "colors": "^1.1.2",
-    "commander": "^2.14.1",
     "node-fetch": "^2.0.0",
     "p-limit": "^1.2.0",
     "sqlite3": "^3.1.13",

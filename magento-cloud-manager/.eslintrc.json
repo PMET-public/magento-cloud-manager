@@ -6,6 +6,9 @@
   "extends": "eslint:recommended",
   "parserOptions": {
     "sourceType": "script",
+    "ecmaFeatures": {
+      "experimentalObjectRestSpread": true
+    },
     "ecmaVersion": 2017
   },
   "rules": {

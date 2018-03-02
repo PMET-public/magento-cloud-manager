@@ -3,10 +3,11 @@
 const yargs = require('yargs')
 const colors = require('colors')
 const {logger} = require('../src/common')
-const {updateHost, updateHostsUsingAllProject, updateProjectHostRelationships} = require('../src/host')
+const {updateHost, updateHostsUsingAllProject, updateHostsUsingSampleProjects, updateProjectHostRelationships} = require('../src/host')
 const {updateProject, updateProjects} = require('../src/project')
 const {deleteInactiveEnvironments} = require('../src/environment')
 const {updateApplicationState, updateAllApplicationsStates} = require('../src/application-state')
+const {searchActivitiesForFailures} = require('../src/activity')
 
 yargs
   .usage('$0 <cmd> [args]')
@@ -26,14 +27,14 @@ yargs
   })
   .option('a', {
     alias: 'all',
-    description: 'Apply the command to all relevant hosts, projects, environments, etc.',
+    description: 'If relevant, apply the command to all hosts, projects, or environments, etc.',
     global: true,
     type: 'boolean'
   })
 
 yargs
   .command(
-    'host:update [pids...]',
+    ['host:update [pids...]', 'hu'],
     'Update DB with info about hosts for provided projects',
     yargs => {
       yargs.positional('pids', {
@@ -52,7 +53,24 @@ yargs
 
 yargs
   .command(
-    'project:update [pids...]',
+    ['host:sample', 'hs'],
+    'Update DB with info about hosts using 1 proj per host sample',
+    () => {},
+    argv => updateHostsUsingSampleProjects()
+  )
+
+
+yargs
+  .command(
+    ['host:project-match', 'hp'],
+    'Update DB matching hosts and projects',
+    () => {},
+    argv => updateProjectHostRelationships()
+  )
+
+yargs
+  .command(
+    ['project:update [pids...]', 'pu'],
     'Update DB with info about provided projects',
     yargs => {
       yargs.positional('pids', {
@@ -71,7 +89,7 @@ yargs
 
 yargs
   .command(
-    'app:update <pid> [env]',
+    ['app:update <pid> [env]', 'au'],
     'Update DB with info about deployed app',
     yargs => {
       yargs.positional('pid', {
@@ -85,21 +103,27 @@ yargs
     },
     argv => {
       if (argv.all) {
-        console.log('all')
+        updateAllApplicationsStates()
       } else {
         updateApplicationState(argv.pid, argv.env ? argv.env : 'master')
       }
     }
   )
 
-
-
 yargs
   .command(
-    'environments:delete-inactive',
+    ['env:delete-inactive', 'ed'],
     'Delete ALL inactive environments across ALL projects',
     () => {},
     argv => deleteInactiveEnvironments()
+  )
+
+yargs
+  .command(
+    ['activity:find-failures', 'af'],
+    'Update envs in DB that failed to deploy',
+    () => {},
+    argv => searchActivitiesForFailures()
   )
 
 yargs.argv
