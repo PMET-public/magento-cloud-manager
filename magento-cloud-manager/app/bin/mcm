@@ -3,7 +3,7 @@
 const yargs = require('yargs')
 const colors = require('colors')
 const {logger} = require('../src/common')
-const {updateHost, updateHostsUsingAllProject, updateHostsUsingSampleProjects, updateProjectHostRelationships} = require('../src/host')
+const {updateHost, updateHostsUsingAllProjects, updateHostsUsingSampleProjects, updateProjectHostRelationships} = require('../src/host')
 const {updateProject, updateProjects} = require('../src/project')
 const {deleteInactiveEnvironments} = require('../src/environment')
 const {updateApplicationState, updateAllApplicationsStates} = require('../src/application-state')
@@ -44,7 +44,7 @@ yargs
     },
     argv => {
       if (argv.all) {
-        updateHostsUsingAllProject();
+        updateHostsUsingAllProjects();
       } else {
         argv.pids.forEach(pid => updateHost(pid))
       }

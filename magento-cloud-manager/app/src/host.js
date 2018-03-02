@@ -65,8 +65,8 @@ exports.updateHostsUsingSampleProjects = async function() {
   const promises = []
   const result = db.prepare('SELECT MIN(project_id) project FROM project_hosts GROUP BY id').all()
   logger.debug(JSON.stringify(result))
-  result.forEach(project => {
-    promises.push(sshLimit(() => exports.updateHost(project)))
+  result.forEach(row => {
+    promises.push(sshLimit(() => exports.updateHost(row.project)))
   })
   return await Promise.all(promises)
 }
@@ -77,16 +77,18 @@ exports.updateProjectHostRelationships = function() {
   let hostsProjects = [] // list of projects associated with each host
 
   // identify cotenants - projects grouped by same boot time, # cpus, & ip address
-  const cotenantGroups = db
+  let cotenantGroups = db
     .prepare(
-      `SELECT GROUP_CONCAT(DISTINCT p.id) cotenant_groups 
-      FROM hosts_states h LEFT JOIN projects p ON h.project_id = p.id 
-      GROUP BY h.boot_time, h.cpus, h.ip
-      ORDER BY h.timestamp desc`
+      `SELECT GROUP_CONCAT(p.id) cotenant_groups, boot_time, cpus, ip
+      FROM 
+        (SELECT project_id, boot_time, cpus, ip, MAX(timestamp) 
+          FROM hosts_states WHERE environment_id = 'master' GROUP BY project_id) AS h
+      LEFT JOIN projects p ON h.project_id = p.id
+      GROUP BY h.boot_time, h.cpus, h.ip`
     )
     .all()
   logger.debug(JSON.stringify(cotenantGroups))
-  cotenantGroups.map(row => row['cotenant_groups'].split(','))
+  cotenantGroups = cotenantGroups.map(row => row['cotenant_groups'].split(','))
   // since hosts reboot, are assigned new IPs, upsized, etc., the groupings based on those values are incomplete
   // however, projects should not migrate from hosts often (ever?)
   // so any project cotenancy can be merged with another if they share a host
