@@ -31,8 +31,8 @@ exports.updateEnvironment = function(project, environment = 'master') {
       if (/Specified environment not found/.test(error.message)) {
         const [prefix, project, environment] = error.cmd.match(/.* -p\s+"([^ ]+)"\s+-e\s"([^"]+)"/)
         const result = db
-        .prepare('UPDATE environments SET missing = 1 WHERE id = ? and project_id = ?')
-        .run(environment, project)
+          .prepare('UPDATE environments SET missing = 1 WHERE id = ? and project_id = ?')
+          .run(environment, project)
       }
     })
 }
