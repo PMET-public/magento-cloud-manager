@@ -1,19 +1,29 @@
 #!/usr/bin/env node
 
 const yargs = require('yargs')
-const colors = require('colors')
+const chalk = require('chalk');
 const {logger} = require('../src/common')
 const {updateHost, updateHostsUsingAllProjects, updateHostsUsingSampleProjects, updateProjectHostRelationships} = require('../src/host')
 const {updateProject, updateProjects} = require('../src/project')
-const {deleteInactiveEnvironments} = require('../src/environment')
+const {updateEnvironment, updateAllCurrentProjectsEnvironmentsFromAPI, deleteInactiveEnvironments} = require('../src/environment')
 const {updateApplicationState, updateAllApplicationsStates} = require('../src/application-state')
 const {searchActivitiesForFailures} = require('../src/activity')
 
+const errorTxt = txt => chalk.bold.white.bgRed(txt)
+const headerTxt = txt => chalk.yellow(txt)
+const cmdTxt = txt => chalk.green(txt)
+
 yargs
-  .usage('$0 <cmd> [args]')
+  .usage(cmdTxt('$0 <cmd> [args]'))
   .wrap(yargs.terminalWidth())
+  .updateStrings({
+    'Commands:': headerTxt('Commands:'),
+    'Options:': headerTxt('Options:'),
+    'Positionals:': headerTxt('Positionals:'),
+    'Not enough non-option arguments: got %s, need at least %s': errorTxt('Not enough non-option arguments: got %s, need at least %s')
+  })
   .alias('h', 'help')
-  .demandCommand(1, `${colors.bgRed(colors.white('  Please provide at least 1 command.  '))}`)
+  .demandCommand(1, errorTxt('Please provide at least 1 command'))
   .check(function (arg) {
     if (arg.verbose) {
       logger.remove(logger.simpleConsole).add(logger.verboseConsole)
@@ -89,6 +99,37 @@ yargs
 
 yargs
   .command(
+    ['env:update <pid> [env]', 'eu'],
+    'Update DB with info about specific env',
+    yargs => {
+      yargs.positional('pid', {
+        type: 'string',
+        describe: 'The project ID'
+      })
+      yargs.positional('env', {
+        type: 'string',
+        describe: 'The environment ID [ default = "master" ]'
+      })
+    },
+    argv => {
+      if (argv.all) {
+        updateAllCurrentProjectsEnvironmentsFromAPI()
+      } else {
+        updateEnvironment(argv.pid, argv.env ? argv.env : 'master')
+      }
+    }
+  )
+
+yargs
+  .command(
+    ['env:delete-inactive', 'ed'],
+    'Delete ALL inactive environments across ALL projects',
+    () => {},
+    argv => deleteInactiveEnvironments()
+  )
+
+yargs
+  .command(
     ['app:update <pid> [env]', 'au'],
     'Update DB with info about deployed app',
     yargs => {
@@ -108,14 +149,6 @@ yargs
         updateApplicationState(argv.pid, argv.env ? argv.env : 'master')
       }
     }
-  )
-
-yargs
-  .command(
-    ['env:delete-inactive', 'ed'],
-    'Delete ALL inactive environments across ALL projects',
-    () => {},
-    argv => deleteInactiveEnvironments()
   )
 
 yargs

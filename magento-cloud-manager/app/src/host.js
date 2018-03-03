@@ -49,7 +49,7 @@ exports.updateHost = function(project, environment = 'master') {
       return result
     })
     .catch(error => {
-      logger.error(error)
+      logger.error(JSON.stringify(error))
     })
 }
 

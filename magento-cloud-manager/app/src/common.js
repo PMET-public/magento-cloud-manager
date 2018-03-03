@@ -13,7 +13,7 @@ logger.simpleConsole = new winston.transports.Console({
   format: winston.format.combine(
     winston.format.printf(info => {
       const {level, message, stderr} = info
-      return `${stderr ? stderr : message}`
+      return `${message ? message + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''}`
     })
   )
 })
@@ -26,10 +26,10 @@ logger.verboseConsole = new winston.transports.Console({
     winston.format.timestamp(),
     winston.format.align(),
     winston.format.printf(info => {
-      const {timestamp, level, message, ...args} = info
+      const {timestamp, level, message, stderr, ...args} = info
 
       const ts = timestamp.slice(0, 19).replace('T', ' ')
-      return `${ts} [${level}]: ${message} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`
+      return `${ts} [${level}]: ${message ? message + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`
     })
   )
 })
