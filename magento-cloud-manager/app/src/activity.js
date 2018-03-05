@@ -32,8 +32,8 @@ function getActivitiesFromApi(project, type) {
     })
     .catch(error => {
       logger.error(error)
-      if (!/No activities found/.test(error.stderr)) {
-        throw error
+      if (/No activities found/.test(error.stderr)) {
+        return []
       }
       return []
     })

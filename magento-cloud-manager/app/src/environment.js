@@ -33,6 +33,7 @@ exports.updateEnvironment = function(project, environment = 'master') {
         const result = db
           .prepare('UPDATE environments SET missing = 1 WHERE id = ? and project_id = ?')
           .run(environment, project)
+        logger.debug(JSON.stringify(result))
       }
     })
 }
