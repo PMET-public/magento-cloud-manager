@@ -1,4 +1,5 @@
-CREATE TABLE "projects" (
+BEGIN TRANSACTION;
+CREATE TABLE IF NOT EXISTS `projects` (
 	`id`	TEXT NOT NULL,
 	`title`	TEXT NOT NULL,
 	`region`	TEXT NOT NULL,
@@ -14,7 +15,23 @@ CREATE TABLE "projects" (
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(`id`)
 );
-CREATE TABLE "hosts_states" (
+CREATE TABLE IF NOT EXISTS `project_hosts` (
+	`id`	INTEGER NOT NULL,
+	`project_id`	TEXT NOT NULL UNIQUE
+);
+CREATE TABLE IF NOT EXISTS `performance_tests` (
+	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+	`project_id`	TEXT NOT NULL,
+	`environment_id`	TEXT NOT NULL,
+	`cmd`	TEXT NOT NULL,
+	`output`	TEXT NOT NULL,
+	`real_time_in_sec`	REAL NOT NULL,
+	`user_time_in_sec`	REAL NOT NULL,
+	`sys_time_in_sec`	REAL NOT NULL,
+	`successful_test`	BOOLEAN NOT NULL,
+	`timestamp`	DATETIME NOT NULL
+);
+CREATE TABLE IF NOT EXISTS `hosts_states` (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
 	`environment_id`	TEXT NOT NULL,
@@ -30,19 +47,19 @@ CREATE TABLE "hosts_states" (
 	`last_process_id`	INTEGER NOT NULL,
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE "performance_tests" (
-	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+CREATE TABLE IF NOT EXISTS `environments` (
+	`id`	TEXT NOT NULL,
 	`project_id`	TEXT NOT NULL,
-	`environment_id`	TEXT NOT NULL,
-	`cmd`	TEXT NOT NULL,
-	`output`	TEXT NOT NULL,
-	`real_time_in_sec`	REAL NOT NULL,
-	`user_time_in_sec`	REAL NOT NULL,
-	`sys_time_in_sec`	REAL NOT NULL,
-	`successful_test`	BOOLEAN NOT NULL,
-	`timestamp`	DATETIME NOT NULL
+	`title`	TEXT NOT NULL,
+	`machine_name`	TEXT,
+	`active`	BOOLEAN NOT NULL CHECK(active IN ( 0 , 1 )),
+	`failure`	BOOLEAN CHECK(failure in ( 0 , 1 )),
+	`missing`	BOOLEAN CHECK(missing in ( 0 , 1 )),
+	`created_at`	INTEGER NOT NULL,
+	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY(`id`,`project_id`,`created_at`)
 );
-CREATE TABLE "applications_states" (
+CREATE TABLE IF NOT EXISTS `applications_states` (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
 	`environment_id`	TEXT NOT NULL,
@@ -51,13 +68,4 @@ CREATE TABLE "applications_states" (
 	`composer_lock_mtime`	INTEGER NOT NULL,
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE "environments" (
-	`id`	TEXT NOT NULL,
-	`project_id`	TEXT NOT NULL,
-	`title`	TEXT NOT NULL,
-	`active`	BOOLEAN NOT NULL CHECK(active IN ( 0 , 1 )),
-	`failure`	BOOLEAN NOT NULL DEFAULT 0 CHECK(failure in ( 0 , 1 )),
-	`created_at`	INTEGER NOT NULL,
-	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY(`id`,`project_id`,`created_at`)
-);
+COMMIT;
