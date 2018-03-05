@@ -40,6 +40,8 @@ yargs
   .check(function(arg) {
     if (arg.verbose) {
       logger.remove(logger.simpleConsole).add(logger.verboseConsole)
+    } else if (arg.quiet) {
+      logger.remove(logger.simpleConsole).add(logger.quietConsole)
     }
     // const requiredArgsWhenNotAll = {
     //   eu
@@ -69,6 +71,13 @@ yargs.command(
     yargs.positional('pids', {
       type: 'string',
       describe: 'List of project IDs'
+    })
+    yargs.option('a', {
+      alias: 'all',
+      description: 'Update all hosts from all projects',
+      type: 'boolean',
+      coerce: coercer,
+      conflicts: ['pids']
     })
   },
   argv => {
@@ -112,11 +121,10 @@ yargs.command(
   }
 )
 
-yargs.command({
-  command: 'env:update [pid] [env]',
-  aliases: ['eu'],
-  desc: 'Update DB with info about specific env',
-  builder: yargs => {
+yargs.command(
+  ['env:update [pid] [env]', 'eu'],
+  'Update DB with info about specific env',
+  yargs => {
     yargs.positional('pid', {
       type: 'string',
       describe: 'The project ID'
@@ -134,16 +142,14 @@ yargs.command({
       conflicts: ['pid']
     })
   },
-  handler: argv => {
+  argv => {
     if (argv.all) {
-      // updateAllCurrentProjectsEnvironmentsFromAPI()
-      console.log('hi all')
+      updateAllCurrentProjectsEnvironmentsFromAPI()
     } else {
-      // updateEnvironment(argv.pid, argv.env)
-      console.log('hi one')
+      updateEnvironment(argv.pid, argv.env)
     }
   }
-})
+)
 
 yargs.command(
   ['env:delete-inactive', 'ed'],

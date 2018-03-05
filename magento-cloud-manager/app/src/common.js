@@ -7,6 +7,7 @@ const logger = winston.createLogger({
     new winston.transports.File({filename: `${__dirname}/../debug.log`, level: 'debug'})
   ]
 })
+
 // create a simple console logger and add it
 logger.simpleConsole = new winston.transports.Console({
   level: 'info',
@@ -18,7 +19,8 @@ logger.simpleConsole = new winston.transports.Console({
   )
 })
 logger.add(logger.simpleConsole)
-// create a verbose console logger for use with the --verbose option
+
+// create a verbose console logger for the --verbose option
 logger.verboseConsole = new winston.transports.Console({
   level: 'debug',
   format: winston.format.combine(
@@ -33,6 +35,18 @@ logger.verboseConsole = new winston.transports.Console({
     })
   )
 })
+
+// create a quiet console logger for the --quiet option
+logger.quietConsole = new winston.transports.Console({
+  level: 'error',
+  format: winston.format.combine(
+    winston.format.printf(info => {
+      const {level, message, stderr} = info
+      return `${message ? message + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''}`
+    })
+  )
+})
+
 exports.logger = logger
 
 // setup DB

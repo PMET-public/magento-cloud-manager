@@ -61,7 +61,7 @@ exports.updateProject = function(project) {
 }
 
 exports.updateProjects = async function() {
-  //mark all projects inactive; the api call will then update only active ones
+  // mark all projects inactive; then only active ones will be updated
   const result = db.prepare('UPDATE projects SET active = 0;').run()
   logger.debug(JSON.stringify(result))
   const promises = []
