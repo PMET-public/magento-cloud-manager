@@ -1,6 +1,7 @@
-const express = require('express')
-const Database = require('better-sqlite3')
-const winston = require('winston')
+import express from 'express'
+import Database from 'better-sqlite3'
+import winston from 'winston'
+
 winston.add(winston.transports.File, {filename: `${__dirname}/../log.json`})
 const db = new Database(`${__dirname}/../sql/cloud.db`)
 const {prepare} = db
@@ -28,13 +29,13 @@ app.get('/api/projects', (req, res) => {
     return
   }
 
-  let rows = db.prepare('SELECT id, title FROM projects WHERE id like ?').all('%' + param + '%')
+  const rows = db.prepare('SELECT id, title FROM projects WHERE id like ?').all('%' + param + '%')
 
   res.json(rows)
 })
 
 app.get('/api/hosts_states/current', (req, res) => {
-  let rows = db
+  const rows = db
     .prepare(
       `SELECT GROUP_CONCAT(p.title || ' (' || p.id || ')' ) projects, region, cpus,
         cast(avg(h.load_avg_15) as int) load, cast ((avg(h.load_avg_15) *100 / h.cpus) as int) utilization
@@ -48,8 +49,17 @@ app.get('/api/hosts_states/current', (req, res) => {
   res.json(rows)
 })
 
+app.get('/api/hosts_states/all', (req, res) => {
+  const rows = db
+    .prepare(
+      `SELECT project_id, load_avg_15, cpus, timestamp from hosts_states order by project_id limit 100`
+    )
+    .all()
+  res.json(rows)
+})
+
 app.get('/api/environments', (req, res) => {
-  let rows = db
+  const rows = db
     .prepare(
       `SELECT
           e.*, p.region, p.title project_title,
@@ -69,7 +79,7 @@ app.get('/api/environments', (req, res) => {
 })
 
 app.get('/api/applications-states', (req, res) => {
-  let rows = db
+  const rows = db
     .prepare(
       `SELECT
             a.*, p.region, p.title project_title

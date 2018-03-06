@@ -47,6 +47,15 @@ logger.quietConsole = new winston.transports.Console({
   )
 })
 
+
+// attempt to stringify objects and detect some objects that will return {} when stringified (e.g. some errors)
+// https://github.com/winstonjs/winston/issues/1217
+logger.mylog = (level, msg, ...rest) => {
+  msg = typeof msg === 'String' ? msg : (typeof msg.message !== 'undefined' ? msg.message : JSON.stringify(msg))
+  logger.log(level, msg, ...rest)
+}
+
+
 exports.logger = logger
 
 // setup DB
@@ -54,7 +63,7 @@ const Database = require('better-sqlite3')
 const db = new Database(`${__dirname}/../../sql/cloud.db`)
 const {prepare} = db
 db.prepare = function() {
-  logger.debug(arguments[0])
+  logger.mylog('debug', arguments[0])
   return prepare.apply(this, arguments)
 }
 exports.db = db
@@ -63,7 +72,7 @@ const util = require('util')
 const child_process = require('child_process')
 const exec = util.promisify(child_process.exec)
 exports.exec = function() {
-  logger.debug(arguments[0])
+  logger.mylog('debug', arguments[0])
   return exec.apply(this, arguments)
 }
 
@@ -74,6 +83,6 @@ exports.MC_CLI = '~/.magento-cloud/bin/magento-cloud'
 
 const fetch = require('node-fetch')
 exports.fetch = function() {
-  logger.debug(arguments[0])
+  logger.mylog('debug', arguments[0])
   return fetch.apply(this, arguments)
 }

@@ -4,8 +4,8 @@ import 'react-table/react-table.css'
 import UniqueOptions from '../util/UniqueOptions'
 
 export default class extends Component {
-  constructor() {
-    super()
+  constructor(props) {
+    super(props)
     this.state = {}
   }
 
@@ -20,9 +20,7 @@ export default class extends Component {
         onFetchData={(state, instance) => {
           this.setState({loading: true})
           fetch('/api/hosts_states/current')
-            .then(res => {
-              return res.json()
-            })
+            .then(res => res.json())
             .then(res => {
               this.setState({
                 data: res,

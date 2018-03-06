@@ -6,11 +6,11 @@ exports.getProjectsFromApi = function() {
       if (stderr) {
         throw stderr
       }
-      logger.debug(stdout)
+      logger.mylog('debug', stdout)
       return stdout.trim().split('\n')
     })
     .catch(error => {
-      logger.error(error)
+      logger.mylog('error', error)
     })
 }
 
@@ -20,7 +20,7 @@ exports.updateProject = function(project) {
       if (stderr) {
         throw stderr
       }
-      logger.debug(stdout)
+      logger.mylog('debug', stdout)
       const projectInfo = stdout
       const title = projectInfo.replace(/[\s\S]*title\t"?([^"\n]*)"?[\s\S]*/, '$1')
       const gitUrl = projectInfo.replace(/[\s\S]*url: '([^']*)'[\s\S]*/, '$1')
@@ -52,18 +52,18 @@ exports.updateProject = function(project) {
           1,
           clientSshKey
         )
-      logger.debug(JSON.stringify(result))
+      logger.mylog('debug', result)
       return result
     })
     .catch(error => {
-      logger.error(error)
+      logger.mylog('error', error)
     })
 }
 
 exports.updateProjects = async function() {
   // mark all projects inactive; then only active ones will be updated
   const result = db.prepare('UPDATE projects SET active = 0;').run()
-  logger.debug(JSON.stringify(result))
+  logger.mylog('debug', result)
   const promises = []
   ;(await exports.getProjectsFromApi()).forEach(project => {
     promises.push(apiLimit(() => exports.updateProject(project)))

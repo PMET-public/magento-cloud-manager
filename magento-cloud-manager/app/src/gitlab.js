@@ -18,7 +18,7 @@ async function getNumberOfResultPages(apiPath) {
     method: 'GET'
   })
     .then(response => response.headers.get('X-Total-Pages'))
-    .catch(error => logger.error(error))
+    .catch(error => logger.mylog('error', error))
   return promise
 }
 
@@ -66,7 +66,7 @@ async function enableDeployKey(projectId, keyId) {
     for (let keyId of allCloudKeyIds) {
       if (projectDeployKeyIds.indexOf(keyId) === -1) {
         let result = await enableDeployKey(projectId, keyId)
-        logger.info(result)
+        logger.mylog('info', result)
       }
     }
   }

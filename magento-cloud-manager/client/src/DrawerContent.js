@@ -51,7 +51,7 @@ class DrawerContent extends Component {
           <Link to={'/hosts-chart'}>
             <MenuItem className={classes.menuItem}>
               <ListItemIcon className={classes.icon}>
-                <Icon color="secondary">cloud_done</Icon>
+                <Icon color="secondary">show_chart</Icon>
               </ListItemIcon>
               <ListItemText classes={{primary: classes.primary}} inset primary="Chart" />
             </MenuItem>

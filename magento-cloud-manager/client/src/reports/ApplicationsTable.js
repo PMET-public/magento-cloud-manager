@@ -5,8 +5,8 @@ import UniqueOptions from '../util/UniqueOptions'
 import Icon from 'material-ui/Icon'
 
 export default class extends Component {
-  constructor() {
-    super()
+  constructor(props) {
+    super(props)
     this.state = {}
   }
 
@@ -21,9 +21,7 @@ export default class extends Component {
         onFetchData={(state, instance) => {
           this.setState({loading: true})
           fetch('/api/applications-states')
-            .then(res => {
-              return res.json()
-            })
+            .then(res => res.json())
             .then(res => {
               this.setState({
                 data: res,

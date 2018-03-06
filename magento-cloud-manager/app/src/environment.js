@@ -7,7 +7,7 @@ exports.updateEnvironment = async function(project, environment = 'master') {
       if (stderr) {
         throw stderr
       }
-      logger.debug(stdout)
+      logger.mylog('debug', stdout)
       const title = stdout.replace(/[\s\S]*title\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const machineName = stdout.replace(/[\s\S]*machine_name\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const active = /\nstatus\s+active/.test(stdout) ? 1 : 0
@@ -23,11 +23,11 @@ exports.updateEnvironment = async function(project, environment = 'master') {
           )`
         )
         .run(environment, project, title, machineName, active, createdAt, environment, project)
-      logger.debug(JSON.stringify(result))
+      logger.mylog('debug', result)
       return result
     })
     .catch(error => {
-      logger.error(error)
+      logger.mylog('error', error)
       if (/Specified environment not found/.test(error.message)) {
         const [prefix, project, environment] = error.cmd.match(/.* -p\s+"([^ ]+)"\s+-e\s"([^"]+)"/)
         exports.setEnvironmentMissing(project, environment)
@@ -39,7 +39,7 @@ exports.setEnvironmentInactive = function(project, environment) {
   const result = db
     .prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
-  logger.debug(JSON.stringify(result))
+  logger.mylog('debug', result)
   return result
 }
 
@@ -47,7 +47,7 @@ exports.setEnvironmentFailed = function(project, environment) {
   const result = db
     .prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
-  logger.debug(JSON.stringify(result))
+  logger.mylog('debug', result)
   return result
 }
 
@@ -55,7 +55,7 @@ exports.setEnvironmentMissing = function(project, environment) {
   const result = db
     .prepare('UPDATE environments SET missing = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
-  logger.debug(JSON.stringify(result))
+  logger.mylog('debug', result)
   return result
 }
 
@@ -65,11 +65,11 @@ exports.getEnvironmentsFromAPI = function(project) {
       if (stderr) {
         throw stderr
       }
-      logger.debug(stdout)
+      logger.mylog('debug', stdout)
       return stdout.trim().split('\n')
     })
     .catch(error => {
-      logger.error(error)
+      logger.mylog('error', error)
     })
 }
 
@@ -78,7 +78,7 @@ exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function() {
   const result = db
     .prepare('UPDATE environments SET active = 0, missing = 1')
     .run()
-  logger.debug(JSON.stringify(result))
+  logger.mylog('debug', result)
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
@@ -107,10 +107,10 @@ exports.deleteInactiveEnvironments = async function() {
             if (stderr) {
               throw stderr
             }
-            logger.debug(stdout)
+            logger.mylog('debug', stdout)
           })
           .catch(error => {
-            logger.error(error)
+            logger.mylog('error', error)
           })
       })
     )

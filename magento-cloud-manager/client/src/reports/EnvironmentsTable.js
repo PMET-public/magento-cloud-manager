@@ -6,8 +6,8 @@ import Icon from 'material-ui/Icon'
 import Clipboard from 'react-clipboard.js'
 
 export default class extends Component {
-  constructor() {
-    super()
+  constructor(props) {
+    super(props)
     this.state = {}
   }
 
@@ -22,9 +22,7 @@ export default class extends Component {
         onFetchData={(state, instance) => {
           this.setState({loading: true})
           fetch('/api/environments')
-            .then(res => {
-              return res.json()
-            })
+            .then(res => res.json())
             .then(res => {
               this.setState({
                 data: res,
@@ -83,7 +81,8 @@ export default class extends Component {
                 <option value="">Show All</option>
                 <UniqueOptions data={this.state.data} accessor={'status'} />
               </select>
-            )
+            ),
+            maxWidth: 200
           },
           {
             Header: 'Created',

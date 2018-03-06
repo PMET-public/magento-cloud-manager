@@ -12,7 +12,7 @@ exports.updateHost = function(project, environment = 'master') {
       if (stderr) {
         throw stderr
       }
-      logger.debug(stdout)
+      logger.mylog('debug', stdout)
       const [bootTime, hexIpAddr, totalMemory, cpus, loadAvg] = stdout.trim().split('\n')
       const ipAddr = hexIpAddr
         .match(/../g)
@@ -45,11 +45,11 @@ exports.updateHost = function(project, environment = 'master') {
           totalProcesses,
           lastPID
         )
-      logger.debug(JSON.stringify(result))
+      logger.mylog('debug', result)
       return result
     })
     .catch(error => {
-      logger.error(JSON.stringify(error))
+      logger.mylog('error', error)
     })
 }
 
@@ -64,7 +64,7 @@ exports.updateHostsUsingAllProjects = async function() {
 exports.updateHostsUsingSampleProjects = async function() {
   const promises = []
   const result = db.prepare('SELECT MIN(project_id) project FROM project_hosts GROUP BY id').all()
-  logger.debug(JSON.stringify(result))
+  logger.mylog('debug', result)
   result.forEach(row => {
     promises.push(sshLimit(() => exports.updateHost(row.project)))
   })
@@ -87,7 +87,7 @@ exports.updateProjectHostRelationships = function() {
       GROUP BY h.boot_time, h.cpus, h.ip`
     )
     .all()
-  logger.debug(JSON.stringify(cotenantGroups))
+  logger.mylog('debug', cotenantGroups)
   cotenantGroups = cotenantGroups.map(row => row['cotenant_groups'].split(','))
   // since hosts reboot, are assigned new IPs, upsized, etc., the groupings based on those values are incomplete
   // however, projects should not migrate from hosts often (ever?)
@@ -141,6 +141,6 @@ exports.updateProjectHostRelationships = function() {
   const result = db.exec(
     'DELETE FROM project_hosts; INSERT INTO project_hosts (id, project_id) VALUES ' + insertValues.join(',') + ';'
   )
-  logger.debug(JSON.stringify(result))
+  logger.mylog('debug', result)
   return result
 }
