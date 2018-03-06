@@ -35,4 +35,12 @@ a {
   }
 }
 
+.icons-in-td {
+  float: right;
+  display: inline-block;
+}
+
+.icons-in-td .material-icons {
+  font-size: 1em;
+}
 

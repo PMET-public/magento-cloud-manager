@@ -24,7 +24,7 @@ class DrawerContent extends Component {
               <ListItemText classes={{primary: classes.primary}} inset primary="Home" />
             </MenuItem>
           </Link>
-          <Link to={'/environments'}>
+          <Link to={'/environments-table'}>
             <MenuItem className={classes.menuItem}>
               <ListItemIcon className={classes.icon}>
                 <Icon color="secondary">exit_to_app</Icon>
@@ -32,7 +32,7 @@ class DrawerContent extends Component {
               <ListItemText classes={{primary: classes.primary}} inset primary="Environments" />
             </MenuItem>
           </Link>
-          <Link to={'/applications'}>
+          <Link to={'/applications-table'}>
             <MenuItem className={classes.menuItem}>
               <ListItemIcon className={classes.icon}>
                 <Icon color="secondary">list</Icon>
@@ -40,12 +40,20 @@ class DrawerContent extends Component {
               <ListItemText classes={{primary: classes.primary}} inset primary="Applications" />
             </MenuItem>
           </Link>
-          <Link to={'/hosts'}>
+          <Link to={'/hosts-table'}>
             <MenuItem className={classes.menuItem}>
               <ListItemIcon className={classes.icon}>
                 <Icon color="secondary">cloud_done</Icon>
               </ListItemIcon>
               <ListItemText classes={{primary: classes.primary}} inset primary="Hosts" />
+            </MenuItem>
+          </Link>
+          <Link to={'/hosts-chart'}>
+            <MenuItem className={classes.menuItem}>
+              <ListItemIcon className={classes.icon}>
+                <Icon color="secondary">cloud_done</Icon>
+              </ListItemIcon>
+              <ListItemText classes={{primary: classes.primary}} inset primary="Chart" />
             </MenuItem>
           </Link>
         </MenuList>

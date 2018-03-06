@@ -36,13 +36,13 @@ app.get('/api/projects', (req, res) => {
 app.get('/api/hosts_states/current', (req, res) => {
   let rows = db
     .prepare(
-      `SELECT
-        boot_time, cpus, ip, group_concat(distinct (p.title || ' (' || p.id || ')' )) projects, region, cpus, 
-        cast(avg(s.load_avg_15) as int) load, cast ((avg(s.load_avg_15) *100 / s.cpus) as int) utilization
+      `SELECT GROUP_CONCAT(p.title || ' (' || p.id || ')' ) projects, region, cpus,
+        cast(avg(h.load_avg_15) as int) load, cast ((avg(h.load_avg_15) *100 / h.cpus) as int) utilization
       FROM 
-        hosts_states s LEFT JOIN projects p ON s.project_id = p.id
-      GROUP BY boot_time, cpus, ip
-      ORDER BY boot_time;`
+        (SELECT project_id, boot_time, cpus, ip, load_avg_15, MAX(timestamp) 
+          FROM hosts_states WHERE environment_id = 'master' GROUP BY project_id) AS h
+      LEFT JOIN projects p ON h.project_id = p.id
+      GROUP BY h.boot_time, h.cpus, h.ip`
     )
     .all()
   res.json(rows)
@@ -53,7 +53,13 @@ app.get('/api/environments', (req, res) => {
     .prepare(
       `SELECT
           e.*, p.region, p.title project_title,
-          CASE WHEN missing=1 THEN 'missing' WHEN failure=1 THEN 'failure' WHEN e.active=0 THEN 'inactive' ELSE 'active' END AS status
+          CASE 
+            WHEN e.active=1 AND failure=1 THEN 'active, failure'
+            WHEN missing=1 THEN 'missing' 
+            WHEN failure=1 THEN 'failure' 
+            WHEN e.active=0 THEN 'inactive' 
+            ELSE 'active' END 
+          AS status
       FROM 
           environments e LEFT JOIN projects p ON e.project_id = p.id
       ORDER BY e.created_at DESC`
