@@ -13,7 +13,7 @@ const {
   updateAllCurrentProjectsEnvironmentsFromAPI,
   deleteInactiveEnvironments
 } = require('../src/environment')
-const {updateApplicationState, updateAllApplicationsStates, updateApplicationDbCheck} = require('../src/application-state')
+const {updateApplicationState, updateAllApplicationsStates, updateApplicationDbCheck} = require('../src/application')
 const {searchActivitiesForFailures} = require('../src/activity')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
