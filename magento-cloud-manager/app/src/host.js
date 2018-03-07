@@ -1,18 +1,15 @@
-const {exec, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
 const {getProjectsFromApi} = require('./project')
 
-exports.updateHost = function(project, environment = 'master') {
+exports.updateHost = (project, environment = 'master') => {
   return exec(`${MC_CLI} ssh -p ${project} -e "${environment}" "
     cat /proc/stat | awk '/btime/ {print \\$2}'
     cat /proc/net/route | awk '/eth0	00000000	/ {print \\$3}'
     cat /proc/meminfo | awk '/MemTotal/ {print \\$2 }'
     nproc
     cat /proc/loadavg"`)
-    .then(({stdout, stderr}) => {
-      if (stderr) {
-        throw stderr
-      }
-      logger.mylog('debug', stdout)
+    .then(execOutputHandler)
+    .then( stdout => {
       const [bootTime, hexIpAddr, totalMemory, cpus, loadAvg] = stdout.trim().split('\n')
       const ipAddr = hexIpAddr
         .match(/../g)
@@ -53,7 +50,7 @@ exports.updateHost = function(project, environment = 'master') {
     })
 }
 
-exports.updateHostsUsingAllProjects = async function() {
+exports.updateHostsUsingAllProjects = async () => {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(sshLimit(() => exports.updateHost(project)))
@@ -61,7 +58,7 @@ exports.updateHostsUsingAllProjects = async function() {
   return await Promise.all(promises)
 }
 
-exports.updateHostsUsingSampleProjects = async function() {
+exports.updateHostsUsingSampleProjects = async () => {
   const promises = []
   const result = db.prepare('SELECT MIN(project_id) project FROM project_hosts GROUP BY id').all()
   logger.mylog('debug', result)
@@ -71,7 +68,7 @@ exports.updateHostsUsingSampleProjects = async function() {
   return await Promise.all(promises)
 }
 
-exports.updateProjectHostRelationships = function() {
+exports.updateProjectHostRelationships = () => {
   const promises = []
   const projectHosts = {} // a dictionary to lookup each project's host
   let hostsProjects = [] // list of projects associated with each host
@@ -100,7 +97,7 @@ exports.updateProjectHostRelationships = function() {
         typeof projectHosts[cotenant] === 'undefined' ? nextNewHostIndex : projectHosts[cotenant]
       )
     })
-    hostsThatAreActuallyTheSame = [...new Set(hostsThatAreActuallyTheSame)].sort(function(a, b) {
+    hostsThatAreActuallyTheSame = [...new Set(hostsThatAreActuallyTheSame)].sort((a, b) => {
       return b - a
     }) // uniqify & in descending order to reduce operations
     const minHost = Math.min(...hostsThatAreActuallyTheSame)

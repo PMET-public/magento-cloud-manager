@@ -1,17 +1,26 @@
-const {exec, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
-const {setEnvironmentInactive} = require('./environment.js')
+const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
+const {setEnvironmentInactive, getAllLiveEnvironmentsFromDB} = require('./environment.js')
 
-exports.updateApplicationState = function(project, environment = 'master') {
+const errorHandler = error => {
+  logger.mylog('error', error)
+  if (typeof error.stderr !== 'undefined') {
+    if (/Specified environment not found/.test(error.stderr)) {
+      setEnvironmentMissing(project, environment)
+    } else if (/not currently active/.test(error.stderr)) {
+      setEnvironmentInactive(project, environment)
+    }
+  }
+}
+
+exports.updateApplicationState = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} ssh -p ${project} -e "${environment}" "
     egrep -m 1 'magento/product-enterprise-edition\\":|\\"2\\.[0-9]\\.[0-9]\\.x-dev|dev-2\\.[0-9]\\.[0-9]' composer.lock || echo 'not found'
     md5sum composer.lock
     stat -t composer.lock | awk '{print \\$12}'
     ps -p 1 -o %cpu --cumulative --no-header"`
   return exec(cmd)
-    .then(({stdout, stderr}) => {
-      if (stderr) {
-        throw stderr
-      }
+    .then(execOutputHandler)
+    .then( stdout => {
       logger.mylog('info', stdout)
       let [EEComposerVersion, composerLockMd5, composerLockMtime, cumulativeCpuPercent] = stdout.trim().split('\n')
       EEComposerVersion = EEComposerVersion.replace(/.*: "/, '').replace(/".*/, '')
@@ -27,31 +36,42 @@ exports.updateApplicationState = function(project, environment = 'master') {
       logger.mylog('debug', result)
       return result
     })
-    .catch(error => {
-      logger.mylog('error', error)
-      if (typeof error.stderr !== 'undefined') {
-        if (/Specified environment not found/.test(error.stderr)) {
-          setEnvironmentMissing(project, environment)
-        } else if (/not currently active/.test(error.stderr)) {
-          setEnvironmentInactive(project, environment)
-        }
-      }
-    })
+    .catch(errorHandler)
 }
 
-exports.updateAllApplicationsStates = async function() {
+exports.updateAllApplicationsStates = async () => {
   const promises = []
-  const result = db
-    .prepare(
-      `SELECT id, project_id FROM environments WHERE active = 1 AND (failure = 0 OR failure IS null)`
-    )
-    .all()
-  logger.mylog('debug', result)
-
-  result.forEach(({id: environment, project_id: project}) => {
+  getAllLiveEnvironmentsFromDB().forEach(({id: environment, project_id: project}) => {
     promises.push(sshLimit(() => exports.updateApplicationState(project, environment)))
   })
   // possible issue if one promise fails?
   // https://stackoverflow.com/questions/30362733/handling-errors-in-promise-all
   return await Promise.all(promises)
+}
+
+exports.updateApplicationDbCheck = (project, environment = 'master') => {
+  const cmd = `${MC_CLI} ssh -p ${project} -e "${environment}" "
+  mysql main -sN -h database.internal -e \\\"
+    SELECT COUNT(*) FROM catalog_product_entity;
+    SELECT COUNT(*) FROM catalog_category_product;
+    SELECT COUNT(*) FROM admin_user;
+    SELECT COUNT(*) FROM store;
+    SELECT UNIX_TIMESTAMP(last_login_at) FROM customer_log ORDER BY last_login_at DESC limit 1;
+    SELECT UNIX_TIMESTAMP(logdate) FROM admin_user ORDER BY logdate DESC limit 1;
+  \\\""`
+  return exec(cmd)
+    .then(execOutputHandler)
+    .then( stdout => {
+      const [catalogProductEntityCount, catalogCategoryProductCount, adminUserCount, storeCount, lastLoginCustomer, lastLoginAdmin] = stdout.trim().split('\n')
+      const result = db
+        .prepare(
+          `INSERT INTO applications_db_checks
+            (project_id, environment_id, catalog_product_entity_count, catalog_category_product_count, admin_user_count, store_count, last_login_customer, last_login_admin)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(project, environment, catalogProductEntityCount, catalogCategoryProductCount, adminUserCount, storeCount, lastLoginCustomer, lastLoginAdmin)
+      logger.mylog('debug', result)
+      return result
+    })
+    .catch(errorHandler)
 }

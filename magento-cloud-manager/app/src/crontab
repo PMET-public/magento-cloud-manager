@@ -1,8 +1,8 @@
-# use perl sleep and rand functions to introduce variation in timing
+# use perl sleep and rand functions to vary start times
 # 900 s = 15 min, 7200 s = 2hrs, 14000 s ~ 4 hrs
 
 # every day at off peak, sample all projects' hosts for perf metrics
-0 0 * * * perl -le 'sleep rand 7200' && mcm host:update --all
+0 0 * * * perl -le 'sleep rand 900' && mcm host:update --all
 
 # every 4 hr, sample a subset of projects (1 per host)
 4,8,12,16,20 0 * * * perl -le 'sleep rand 14000' && mcm host:sample
@@ -11,9 +11,8 @@
 23 50 * * * perl -le 'sleep rand 14000' && mcm host:project-match
 
 # more daily off peak tests spread over time
-2 0 * * * perl -le 'sleep rand 900' && mcm host:update --all
-2 20 * * * perl -le 'sleep rand 900' && mcm project:update --all
-2 40 * * * perl -le 'sleep rand 900' && mcm env:update --all
-3 0 * * * perl -le 'sleep rand 900' && mcm app:update --all
-3 20 * * * perl -le 'sleep rand 900' && mcm app:db-check --all
-3 40 * * * perl -le 'sleep rand 900' && mcm app:find-failures --all
+0 20 * * * perl -le 'sleep rand 900' && mcm project:update --all
+0 40 * * * perl -le 'sleep rand 900' && mcm env:update --all
+1 0 * * * perl -le 'sleep rand 900' && mcm app:update --changed
+1 20 * * * perl -le 'sleep rand 900' && mcm app:db-check --changed
+1 40 * * * perl -le 'sleep rand 900' && mcm app:find-failures --changed

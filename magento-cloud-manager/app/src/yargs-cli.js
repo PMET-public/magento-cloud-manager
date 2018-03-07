@@ -13,7 +13,7 @@ const {
   updateAllCurrentProjectsEnvironmentsFromAPI,
   deleteInactiveEnvironments
 } = require('../src/environment')
-const {updateApplicationState, updateAllApplicationsStates} = require('../src/application-state')
+const {updateApplicationState, updateAllApplicationsStates, updateApplicationDbCheck} = require('../src/application-state')
 const {searchActivitiesForFailures} = require('../src/activity')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
@@ -37,7 +37,7 @@ yargs
     )
   })
   .alias('h', 'help')
-  .check(function(arg) {
+  .check(arg => {
     if (arg.verbose) {
       logger.remove(logger.simpleConsole).add(logger.verboseConsole)
     } else if (arg.quiet) {
@@ -132,7 +132,7 @@ yargs.command(
     yargs.positional('env', {
       type: 'string',
       describe: 'The environment ID',
-      defaults: 'master'
+      default: 'master'
     })
     yargs.option('a', {
       alias: 'all',
@@ -168,7 +168,8 @@ yargs.command(
     })
     yargs.positional('env', {
       type: 'string',
-      describe: 'The environment ID'
+      describe: 'The environment ID',
+      default: 'master'
     })
     yargs.option('a', {
       alias: 'all',
@@ -182,7 +183,37 @@ yargs.command(
     if (argv.all) {
       updateAllApplicationsStates()
     } else {
-      updateApplicationState(argv.pid, argv.env ? argv.env : 'master')
+      updateApplicationState(argv.pid, argv.env)
+    }
+  }
+)
+
+yargs.command(
+  ['app:db-check [pid] [env]', 'ad'],
+  'Update DB with info about deployed app database',
+  yargs => {
+    yargs.positional('pid', {
+      type: 'string',
+      describe: 'The project ID'
+    })
+    yargs.positional('env', {
+      type: 'string',
+      describe: 'The environment ID',
+      default: 'master'
+    })
+    yargs.option('a', {
+      alias: 'all',
+      description: 'Update all apps from all projects',
+      type: 'boolean',
+      coerce: coercer,
+      conflicts: ['pid']
+    })
+  },
+  argv => {
+    if (argv.all) {
+      // updateAllApplicationsStates()
+    } else {
+      updateApplicationDbCheck(argv.pid, argv.env)
     }
   }
 )
