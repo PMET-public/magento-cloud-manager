@@ -13,7 +13,7 @@ const {
   updateAllCurrentProjectsEnvironmentsFromAPI,
   deleteInactiveEnvironments
 } = require('../src/environment')
-const {updateApplicationState, updateAllApplicationsStates, updateApplicationDbCheck} = require('../src/application')
+const {updateApplicationState, updateAllApplicationsStates, updateApplicationDbCheck, updateApplicationTest} = require('../src/application')
 const {searchActivitiesForFailures} = require('../src/activity')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
@@ -214,6 +214,36 @@ yargs.command(
       // updateAllApplicationsStates()
     } else {
       updateApplicationDbCheck(argv.pid, argv.env)
+    }
+  }
+)
+
+yargs.command(
+  ['app:app-test [pid] [env]', 'at'],
+  'Update DB with info about deployed app database',
+  yargs => {
+    yargs.positional('pid', {
+      type: 'string',
+      describe: 'The project ID'
+    })
+    yargs.positional('env', {
+      type: 'string',
+      describe: 'The environment ID',
+      default: 'master'
+    })
+    yargs.option('a', {
+      alias: 'all',
+      description: 'Update all apps from all projects',
+      type: 'boolean',
+      coerce: coercer,
+      conflicts: ['pid']
+    })
+  },
+  argv => {
+    if (argv.all) {
+      // updateAllApplicationsStates()
+    } else {
+      updateApplicationTest(argv.pid, argv.env)
     }
   }
 )
