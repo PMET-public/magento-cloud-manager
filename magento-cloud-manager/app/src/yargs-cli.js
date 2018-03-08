@@ -13,7 +13,7 @@ const {
   updateAllCurrentProjectsEnvironmentsFromAPI,
   deleteInactiveEnvironments
 } = require('../src/environment')
-const {updateApplicationState, updateAllApplicationsStates, updateApplicationDbCheck, updateApplicationTest} = require('../src/application')
+const {checkAppDb, checkAllLiveAppDbs, smokeTestApp, smokeTestAllLiveApps} = require('../src/application')
 const {searchActivitiesForFailures} = require('../src/activity')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
@@ -159,38 +159,8 @@ yargs.command(
 )
 
 yargs.command(
-  ['app:update [pid] [env]', 'au'],
-  'Update DB with info about deployed app',
-  yargs => {
-    yargs.positional('pid', {
-      type: 'string',
-      describe: 'The project ID'
-    })
-    yargs.positional('env', {
-      type: 'string',
-      describe: 'The environment ID',
-      default: 'master'
-    })
-    yargs.option('a', {
-      alias: 'all',
-      description: 'Update all apps from all projects',
-      type: 'boolean',
-      coerce: coercer,
-      conflicts: ['pid']
-    })
-  },
-  argv => {
-    if (argv.all) {
-      updateAllApplicationsStates()
-    } else {
-      updateApplicationState(argv.pid, argv.env)
-    }
-  }
-)
-
-yargs.command(
   ['app:db-check [pid] [env]', 'ad'],
-  'Update DB with info about deployed app database',
+  'Check the app db for various values',
   yargs => {
     yargs.positional('pid', {
       type: 'string',
@@ -203,7 +173,7 @@ yargs.command(
     })
     yargs.option('a', {
       alias: 'all',
-      description: 'Update all apps from all projects',
+      description: 'Check all live app dbs for various values',
       type: 'boolean',
       coerce: coercer,
       conflicts: ['pid']
@@ -211,15 +181,15 @@ yargs.command(
   },
   argv => {
     if (argv.all) {
-      // updateAllApplicationsStates()
+      checkAllLiveAppDbs()
     } else {
-      updateApplicationDbCheck(argv.pid, argv.env)
+      checkAppDb(argv.pid, argv.env)
     }
   }
 )
 
 yargs.command(
-  ['app:app-test [pid] [env]', 'at'],
+  ['app:smoke-test [pid] [env]', 'as'],
   'Update DB with info about deployed app database',
   yargs => {
     yargs.positional('pid', {
@@ -241,9 +211,9 @@ yargs.command(
   },
   argv => {
     if (argv.all) {
-      // updateAllApplicationsStates()
+      smokeTestAllLiveApps()
     } else {
-      updateApplicationTest(argv.pid, argv.env)
+      smokeTestApp(argv.pid, argv.env)
     }
   }
 )
