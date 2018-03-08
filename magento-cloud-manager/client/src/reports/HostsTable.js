@@ -48,8 +48,7 @@ export default class extends Component {
               <select
                 onChange={event => onChange(event.target.value)}
                 style={{width: '100%'}}
-                value={filter ? filter.value : 'all'}
-              >
+                value={filter ? filter.value : 'all'}>
                 <option value="">Show All</option>
                 <UniqueOptions data={this.state.data} accessor={'region'} />
               </select>
@@ -84,8 +83,7 @@ export default class extends Component {
                   height: '100%',
                   backgroundColor: '#dadada',
                   borderRadius: '2px'
-                }}
-              >
+                }}>
                 <span style={{float: 'right', marginRight: '3px'}}>{cell.value}</span>
                 <div
                   className={

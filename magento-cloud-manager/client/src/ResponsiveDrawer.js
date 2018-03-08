@@ -33,8 +33,7 @@ class ResponsiveDrawer extends Component {
               color="inherit"
               aria-label="open drawer"
               onClick={this.handleDrawerToggle}
-              className={classes.navIconHide}
-            >
+              className={classes.navIconHide}>
               <Icon>menu</Icon>
             </IconButton>
             <Typography variant="title" color="inherit" noWrap>
@@ -53,8 +52,7 @@ class ResponsiveDrawer extends Component {
             }}
             ModalProps={{
               keepMounted: true // Better open performance on mobile.
-            }}
-          >
+            }}>
             <DrawerContent />
           </Drawer>
         </Hidden>
@@ -64,8 +62,7 @@ class ResponsiveDrawer extends Component {
             open
             classes={{
               paper: classes.drawerPaper
-            }}
-          >
+            }}>
             <DrawerContent />
           </Drawer>
         </Hidden>

@@ -53,8 +53,7 @@ export default class extends Component {
               <select
                 onChange={event => onChange(event.target.value)}
                 style={{width: '100%'}}
-                value={filter ? filter.value : 'all'}
-              >
+                value={filter ? filter.value : 'all'}>
                 <option value="">Show All</option>
                 <UniqueOptions data={this.state.data} accessor={'ee_composer_version'} />
               </select>

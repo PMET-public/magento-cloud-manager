@@ -31,7 +31,9 @@ logger.verboseConsole = new winston.transports.Console({
       const {timestamp, level, message, stderr, ...args} = info
 
       const ts = timestamp.slice(0, 19).replace('T', ' ')
-      return `${ts} [${level}]: ${message ? message + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''} ${Object.keys(args).length ? JSON.stringify(args, null, 2) : ''}`
+      return `${ts} [${level}]: ${message ? message + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''} ${
+        Object.keys(args).length ? JSON.stringify(args, null, 2) : ''
+      }`
     })
   )
 })
@@ -50,10 +52,9 @@ logger.quietConsole = new winston.transports.Console({
 // attempt to stringify objects and detect some objects that will return {} when stringified (e.g. some errors)
 // https://github.com/winstonjs/winston/issues/1217
 logger.mylog = (level, msg, ...rest) => {
-  msg = typeof msg === 'String' ? msg : (typeof msg.message !== 'undefined' ? msg.message : JSON.stringify(msg))
+  msg = typeof msg === 'String' ? msg : typeof msg.message !== 'undefined' ? msg.message : JSON.stringify(msg)
   logger.log(level, msg, ...rest)
 }
-
 
 exports.logger = logger
 
@@ -64,7 +65,7 @@ const {prepare} = db
 
 // can not use arrow func b/c "=>" does not have its own arguments
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions
-db.prepare = function () {
+db.prepare = function() {
   logger.mylog('debug', arguments[0])
   return prepare.apply(this, arguments)
 }
@@ -92,7 +93,7 @@ exports.sshLimit = pLimit(4)
 exports.MC_CLI = '~/.magento-cloud/bin/magento-cloud'
 
 const fetch = require('node-fetch')
-exports.fetch = function () {
+exports.fetch = function() {
   logger.mylog('debug', arguments[0])
   return fetch.apply(this, arguments)
 }

@@ -1,12 +1,12 @@
 const assert = require('chai').assert
 const {yargs} = require('../src/yargs-cli')
 
-// testing yargs 
+// testing yargs
 // https://github.com/yargs/yargs/issues/603
 // https://github.com/yargs/yargs/issues/442
-describe('test asdf', ()  => {
+describe('test asdf', () => {
   describe('test 2', () => {
-    it('should return hello', () =>{
+    it('should return hello', () => {
       assert.equal(yargs('eu -h').parse(), 'hi')
     })
   })

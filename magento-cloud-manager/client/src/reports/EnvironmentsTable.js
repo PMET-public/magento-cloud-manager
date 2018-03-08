@@ -40,29 +40,48 @@ export default class extends Component {
             accessor: 'project_title',
             Cell: cell => (
               <div>
-                <a className="" target="_blank" href={`https://${cell.original.region}.magento.cloud/projects/${cell.original.project_id}/environments/${cell.original.id}`}>
-                {cell.value} ({cell.original.project_id})
+                <a
+                  className=""
+                  target="_blank"
+                  href={`https://${cell.original.region}.magento.cloud/projects/${
+                    cell.original.project_id
+                  }/environments/${cell.original.id}`}>
+                  {cell.value} ({cell.original.project_id})
                 </a>
               </div>
             ),
             filterMethod: (filter, row, column) => {
-              return (String(row[filter.id]).indexOf(filter.value) !== -1 || String(row._original.project_id).indexOf(filter.value) !== -1)
+              return (
+                String(row[filter.id]).indexOf(filter.value) !== -1 ||
+                String(row._original.project_id).indexOf(filter.value) !== -1
+              )
             }
           },
           {
             Header: 'Env Title (id)',
             accessor: 'title',
             Cell: cell => (
-              <div>                
+              <div>
                 {cell.value} {cell.value === cell.original.id ? '' : `(${cell.original.id})`}
-                <span className={"icons-in-td"}>
-                  <a target="_blank" href={`https://${cell.original.machine_name}-${cell.original.project_id}.${cell.original.region}.magentosite.cloud/`}>
+                <span className={'icons-in-td'}>
+                  <a
+                    target="_blank"
+                    href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
+                      cell.original.region
+                    }.magentosite.cloud/`}>
                     <Icon color="secondary">shopping_cart</Icon>
                   </a>
-                  <a  target="_blank" href={`https://${cell.original.machine_name}-${cell.original.project_id}.${cell.original.region}.magentosite.cloud/admin/`}>
-                      <Icon color="secondary">dashboard</Icon>
-                    </a>
-                  <Clipboard data-clipboard-text={`~/.magento-cloud/bin/magento-cloud ssh -p ${cell.original.project_id} -e ${cell.original.id}`}>
+                  <a
+                    target="_blank"
+                    href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
+                      cell.original.region
+                    }.magentosite.cloud/admin/`}>
+                    <Icon color="secondary">dashboard</Icon>
+                  </a>
+                  <Clipboard
+                    data-clipboard-text={`~/.magento-cloud/bin/magento-cloud ssh -p ${cell.original.project_id} -e ${
+                      cell.original.id
+                    }`}>
                     <Icon color="secondary">code</Icon>
                   </Clipboard>
                 </span>
@@ -76,8 +95,7 @@ export default class extends Component {
               <select
                 onChange={event => onChange(event.target.value)}
                 style={{width: '100%'}}
-                value={filter ? filter.value : 'all'}
-              >
+                value={filter ? filter.value : 'all'}>
                 <option value="">Show All</option>
                 <UniqueOptions data={this.state.data} accessor={'status'} />
               </select>
@@ -87,11 +105,7 @@ export default class extends Component {
           {
             Header: 'Created',
             accessor: 'created_at',
-            Cell: cell => (
-              <div>
-                {new Date(cell.value*1000).toISOString().slice(0, 10)}
-              </div>
-            ),
+            Cell: cell => <div>{new Date(cell.value * 1000).toISOString().slice(0, 10)}</div>,
             maxWidth: 100
           }
         ]}

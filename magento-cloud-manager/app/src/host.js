@@ -9,7 +9,7 @@ exports.updateHost = (project, environment = 'master') => {
     nproc
     cat /proc/loadavg"`)
     .then(execOutputHandler)
-    .then( stdout => {
+    .then(stdout => {
       const [bootTime, hexIpAddr, totalMemory, cpus, loadAvg] = stdout.trim().split('\n')
       const ipAddr = hexIpAddr
         .match(/../g)

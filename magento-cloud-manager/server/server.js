@@ -51,9 +51,7 @@ app.get('/api/hosts_states/current', (req, res) => {
 
 app.get('/api/hosts_states/all', (req, res) => {
   const rows = db
-    .prepare(
-      `SELECT project_id, load_avg_15, cpus, timestamp from hosts_states order by project_id limit 100`
-    )
+    .prepare(`SELECT project_id, load_avg_15, cpus, timestamp from hosts_states order by project_id limit 100`)
     .all()
   res.json(rows)
 })

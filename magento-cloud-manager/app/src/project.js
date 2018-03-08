@@ -3,7 +3,7 @@ const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = requir
 exports.getProjectsFromApi = () => {
   return exec(`${MC_CLI} projects --pipe`)
     .then(execOutputHandler)
-    .then( stdout => {
+    .then(stdout => {
       return stdout.trim().split('\n')
     })
     .catch(error => {
@@ -14,7 +14,7 @@ exports.getProjectsFromApi = () => {
 exports.updateProject = project => {
   return exec(`${MC_CLI} project:info -p ${project} --format=tsv`)
     .then(execOutputHandler)
-    .then( stdout => {
+    .then(stdout => {
       const projectInfo = stdout
       const title = projectInfo.replace(/[\s\S]*title\t"?([^"\n]*)"?[\s\S]*/, '$1')
       const gitUrl = projectInfo.replace(/[\s\S]*url: '([^']*)'[\s\S]*/, '$1')
