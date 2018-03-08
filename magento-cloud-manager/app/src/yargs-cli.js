@@ -13,7 +13,7 @@ const {
   updateAllCurrentProjectsEnvironmentsFromAPI,
   deleteInactiveEnvironments
 } = require('../src/environment')
-const {checkAppDb, checkAllLiveAppDbs, smokeTestApp, smokeTestAllLiveApps} = require('../src/application')
+const {smokeTestApp, smokeTestAllLiveApps} = require('../src/application')
 const {searchActivitiesForFailures} = require('../src/activity')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
@@ -156,36 +156,6 @@ yargs.command(
   'Delete ALL inactive environments across ALL projects',
   () => {},
   argv => deleteInactiveEnvironments()
-)
-
-yargs.command(
-  ['app:db-check [pid] [env]', 'ad'],
-  'Check the app db for various values',
-  yargs => {
-    yargs.positional('pid', {
-      type: 'string',
-      describe: 'The project ID'
-    })
-    yargs.positional('env', {
-      type: 'string',
-      describe: 'The environment ID',
-      default: 'master'
-    })
-    yargs.option('a', {
-      alias: 'all',
-      description: 'Check all live app dbs for various values',
-      type: 'boolean',
-      coerce: coercer,
-      conflicts: ['pid']
-    })
-  },
-  argv => {
-    if (argv.all) {
-      checkAllLiveAppDbs()
-    } else {
-      checkAppDb(argv.pid, argv.env)
-    }
-  }
 )
 
 yargs.command(
