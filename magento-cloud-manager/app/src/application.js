@@ -1,8 +1,11 @@
-const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger, parseFormattedCmdOutputIntoDB} = require('./common')
 const {setEnvironmentInactive, getAllLiveEnvironmentsFromDB} = require('./environment.js')
 
 exports.smokeTestApp = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} ssh -p ${project} -e "${environment}" '
+    # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
+    echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
+      sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")
     echo ee_composer_version $(perl -ne "
         s/.*magento\\/product-enterprise-edition.*:.*?\\"([^\\"]+)\\".*/\\1/ and print;
         s/.*(2\\.\\d+\\.\\d+\\.x-dev).*/\\1/ and print;
@@ -13,7 +16,7 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     echo cumulative_cpu_percent $(ps -p 1 -o %cpu --cumulative --no-header)
 
     mysql main -sN -h database.internal -e "
-      SELECT \\"invalid_index_count\\", COUNT(*) FROM indexer_state WHERE status = \\"invalid\\";
+      SELECT \\"not_valid_index_count\\", COUNT(*) FROM indexer_state WHERE status != \\"valid\\";
       SELECT \\"catalog_product_entity_count\\", COUNT(*) FROM catalog_product_entity;
       SELECT \\"catalog_category_product_count\\", COUNT(*) FROM catalog_category_product;
       SELECT \\"admin_user_count\\", COUNT(*) FROM admin_user;
@@ -48,18 +51,13 @@ exports.smokeTestApp = async (project, environment = 'master') => {
       perl -ne "s/.*var BASE_URL.*(https.*\\/).*/\\1/ and print;s/.*var FORM_KEY = .(.*).;.*/\\1/ and print")
     echo admin_check $(curl -sv -c /tmp/myc -b /tmp/myc -X POST -d "login[username]=admin&login[password]=admin4tls&form_key=$form_key" $form_url 2>&1 | 
       grep "Location.*admin/dashboard" | wc -l)
+    echo utilization_end $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
+      sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")
 '`
   return exec(cmd)
     .then(execOutputHandler)
-    .then(stdout => {
-      const cmdOutput = stdout.trim().split('\n').map(row => row.split(/[ \t]/))
-      const keys = cmdOutput.map(row => row[0])
-      const vals = cmdOutput.map(row => row[1])
-      const sql = `INSERT INTO applications_smoke_tests (project_id, environment_id, ${keys.join(', ')}) VALUES (${'?, '.repeat(keys.length)}?, ?)`
-      const result = db.prepare(sql).run(project, environment, ...vals)
-      logger.mylog('debug', result)
-      return result
-    })
+    .then(stdout => 
+      parseFormattedCmdOutputIntoDB(stdout, 'applications_smoke_tests', ['project_id', 'environment_id'], [project, environment]))
     .catch(error => {
       logger.mylog('error', error)
       if (typeof error.stderr !== 'undefined') {

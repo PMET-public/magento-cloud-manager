@@ -1,49 +1,24 @@
-const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger, parseFormattedCmdOutputIntoDB} = require('./common')
 const {getProjectsFromApi} = require('./project')
 
 exports.updateHost = (project, environment = 'master') => {
-  return exec(`${MC_CLI} ssh -p ${project} -e "${environment}" "
-    cat /proc/stat | awk '/btime/ {print \\$2}'
-    cat /proc/net/route | awk '/eth0	00000000	/ {print \\$3}'
-    cat /proc/meminfo | awk '/MemTotal/ {print \\$2 }'
-    nproc
-    cat /proc/loadavg"`)
+  return exec(`${MC_CLI} ssh -p ${project} -e "${environment}" '
+      echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
+      echo ip $(netstat -r | perl -ne "s/default *([\\d\\.]*).*/\\1/ and print")
+      echo total_memory $(cat /proc/meminfo | sed -n "s/ kB//;s/MemTotal: *//p")
+      echo cpus $(nproc)
+      read load_avg_1 load_avg_5 load_avg_15 running_processes total_processes last_process_id <<<$(cat /proc/loadavg |
+         tr "/" " ")
+      echo load_avg_1 $load_avg_1
+      echo load_avg_5 $load_avg_5
+      echo load_avg_15 $load_avg_15
+      echo running_processes $running_processes
+      echo total_processes $total_processes
+      echo last_process_id $last_process_id
+    '`)
     .then(execOutputHandler)
     .then(stdout => {
-      const [bootTime, hexIpAddr, totalMemory, cpus, loadAvg] = stdout.trim().split('\n')
-      const ipAddr = hexIpAddr
-        .match(/../g)
-        .reverse()
-        .map(hex => {
-          return parseInt(hex, 16)
-        })
-        .join('.')
-      const [loadAvg1, loadAvg5, loadAvg15, runningProcesses, totalProcesses, lastPID] = loadAvg
-        .replace('/', ' ')
-        .trim()
-        .split(' ')
-      const result = db
-        .prepare(
-          `INSERT INTO hosts_states (project_id, environment_id, boot_time, ip, total_memory, cpus, load_avg_1, 
-          load_avg_5, load_avg_15, running_processes, total_processes, last_process_id) VALUES
-          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
-        )
-        .run(
-          project,
-          environment,
-          bootTime,
-          ipAddr,
-          totalMemory,
-          cpus,
-          loadAvg1,
-          loadAvg5,
-          loadAvg15,
-          runningProcesses,
-          totalProcesses,
-          lastPID
-        )
-      logger.mylog('debug', result)
-      return result
+      parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', ['project_id', 'environment_id'], [project, environment])
     })
     .catch(error => {
       logger.mylog('error', error)

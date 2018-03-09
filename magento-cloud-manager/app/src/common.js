@@ -97,3 +97,15 @@ exports.fetch = function() {
   logger.mylog('debug', arguments[0])
   return fetch.apply(this, arguments)
 }
+
+// this helper function takes out formatted as "column_name value\n" 
+// and inserts it into the specified table
+exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], additionalVals = []) => {
+  const cmdOutput = stdout.trim().split('\n').map(row => row.split(/[ \t]/))
+  const keys = cmdOutput.map(row => row[0]).concat(additionalKeys)
+  const vals = cmdOutput.map(row => row[1]).concat(additionalVals)
+  const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${'?, '.repeat(keys.length).slice(0, -2)})`
+  const result = db.prepare(sql).run(...vals)
+  logger.mylog('debug', result)
+  return result
+}
