@@ -35,7 +35,7 @@ exports.updateHostsUsingAllProjects = async () => {
 
 exports.updateHostsUsingSampleProjects = async () => {
   const promises = []
-  const result = db.prepare('SELECT MIN(project_id) project FROM project_hosts GROUP BY id').all()
+  const result = db.prepare('SELECT MIN(project_id) project FROM matched_projects_hosts GROUP BY id').all()
   logger.mylog('debug', result)
   result.forEach(row => {
     promises.push(sshLimit(() => exports.updateHost(row.project)))
@@ -111,7 +111,7 @@ exports.updateProjectHostRelationships = () => {
   const insertValues = []
   Object.entries(projectHosts).forEach(([projectId, hostId]) => insertValues.push(`(${hostId},"${projectId}")`))
   const result = db
-    .exec(`DELETE FROM project_hosts; INSERT INTO project_hosts (id, project_id) VALUES ${insertValues.join(',')}`)
+    .exec(`DELETE FROM matched_projects_hosts; INSERT INTO matched_projects_hosts (id, project_id) VALUES ${insertValues.join(',')}`)
   logger.mylog('debug', result)
   return result
 }

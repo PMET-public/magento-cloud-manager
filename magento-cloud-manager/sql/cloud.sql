@@ -30,7 +30,7 @@ CREATE TABLE "hosts_states" (
 	`last_process_id`	INTEGER NOT NULL,
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE `project_hosts` (
+CREATE TABLE "matched_projects_hosts" (
 	`id`	INTEGER NOT NULL,
 	`project_id`	TEXT NOT NULL UNIQUE
 );
