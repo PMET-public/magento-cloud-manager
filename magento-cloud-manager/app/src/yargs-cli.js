@@ -13,7 +13,7 @@ const {
   updateAllCurrentProjectsEnvironmentsFromAPI,
   deleteInactiveEnvironments
 } = require('../src/environment')
-const {smokeTestApp, smokeTestAllLiveApps} = require('../src/application')
+const {smokeTestApp, smokeTestAllLiveApps} = require('../src/smoke-test')
 const {searchActivitiesForFailures} = require('../src/activity')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
@@ -167,7 +167,7 @@ yargs.command(
 )
 
 yargs.command(
-  ['app:smoke-test [pid] [env]', 'as'],
+  ['env:smoke-test [pid] [env]', 'es'],
   'Update DB with info about deployed app database',
   yargs => {
     yargs.positional('pid', {

@@ -1,13 +1,4 @@
-BEGIN TRANSACTION;
-DROP TABLE IF EXISTS `projects_users`;
-CREATE TABLE IF NOT EXISTS `projects_users` (
-	`project_id`	TEXT NOT NULL,
-	`email`	TEXT NOT NULL,
-	`role`	TEXT NOT NULL,
-	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-DROP TABLE IF EXISTS `projects`;
-CREATE TABLE IF NOT EXISTS `projects` (
+CREATE TABLE "projects" (
 	`id`	TEXT NOT NULL,
 	`title`	TEXT NOT NULL,
 	`region`	TEXT NOT NULL,
@@ -23,13 +14,7 @@ CREATE TABLE IF NOT EXISTS `projects` (
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(`id`)
 );
-DROP TABLE IF EXISTS `project_hosts`;
-CREATE TABLE IF NOT EXISTS `project_hosts` (
-	`id`	INTEGER NOT NULL,
-	`project_id`	TEXT NOT NULL UNIQUE
-);
-DROP TABLE IF EXISTS `hosts_states`;
-CREATE TABLE IF NOT EXISTS `hosts_states` (
+CREATE TABLE "hosts_states" (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
 	`environment_id`	TEXT NOT NULL,
@@ -45,8 +30,17 @@ CREATE TABLE IF NOT EXISTS `hosts_states` (
 	`last_process_id`	INTEGER NOT NULL,
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-DROP TABLE IF EXISTS `environments`;
-CREATE TABLE IF NOT EXISTS `environments` (
+CREATE TABLE `project_hosts` (
+	`id`	INTEGER NOT NULL,
+	`project_id`	TEXT NOT NULL UNIQUE
+);
+CREATE TABLE "users" (
+	`project_id`	TEXT NOT NULL,
+	`email`	TEXT NOT NULL,
+	`role`	TEXT NOT NULL,
+	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE "environments" (
 	`id`	TEXT NOT NULL,
 	`project_id`	TEXT NOT NULL,
 	`title`	TEXT NOT NULL,
@@ -58,15 +52,13 @@ CREATE TABLE IF NOT EXISTS `environments` (
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(`id`,`project_id`,`created_at`)
 );
-DROP TABLE IF EXISTS `cert_expirations`;
-CREATE TABLE IF NOT EXISTS `cert_expirations` (
+CREATE TABLE "cert_expirations" (
 	`server`	TEXT NOT NULL,
 	`expiration`	INTEGER NOT NULL,
 	`timestamp`	INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(`server`)
 );
-DROP TABLE IF EXISTS `applications_smoke_tests`;
-CREATE TABLE IF NOT EXISTS `applications_smoke_tests` (
+CREATE TABLE "smoke_tests" (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
 	`environment_id`	TEXT NOT NULL,
@@ -101,4 +93,3 @@ CREATE TABLE IF NOT EXISTS `applications_smoke_tests` (
 	`utilization_end`	TEXT,
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-COMMIT;

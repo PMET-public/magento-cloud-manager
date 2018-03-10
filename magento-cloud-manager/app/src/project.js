@@ -62,8 +62,8 @@ async function recordUsers(project) {
     const rows = stdout.trim().split('\n')
       .map(row => row.split('\t'))
       .forEach(row => insertValues.push(`("${project}", "${row[0]}", "${row[2]}")`))
-    const sql = `DELETE FROM projects_users WHERE project_id = "${project}";
-      INSERT INTO projects_users (project_id, email, role) VALUES ${insertValues.join(',')}`
+    const sql = `DELETE FROM users WHERE project_id = "${project}";
+      INSERT INTO users (project_id, email, role) VALUES ${insertValues.join(',')}`
     const result = db.exec(sql)
     logger.mylog('debug', result)
     return result

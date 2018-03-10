@@ -82,8 +82,7 @@ app.get('/api/applications-states', (req, res) => {
       `SELECT
             a.*, p.region, p.title project_title
         FROM 
-            applications_smoke_tests a LEFT JOIN projects p ON a.project_id = p.id
-        ORDER BY composer_lock_mtime ASC`
+            applications_smoke_tests a LEFT JOIN projects p ON a.project_id = p.id`
     )
     .all()
   res.json(rows)
