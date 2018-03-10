@@ -1,11 +1,10 @@
-const {exec, execOutputHandler, db, apiLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, MC_CLI, logger, checkCertificate} = require('./common')
 const {getProjectsFromApi} = require('./project')
-const https = require('https')
 
 exports.updateEnvironment = async function(project, environment = 'master') {
   return exec(`${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`)
     .then(execOutputHandler)
-    .then(async stdout => {
+    .then(async ({stdout, stderr}) => {
       const title = stdout.replace(/[\s\S]*title\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const machineName = stdout.replace(/[\s\S]*machine_name\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const active = /\nstatus\s+active/.test(stdout) ? 1 : 0
@@ -14,30 +13,16 @@ exports.updateEnvironment = async function(project, environment = 'master') {
       // however if the MC_CLI cmd succeeded the env is not missing (0)
       let result = db
         .prepare(
-          `INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, created_at, missing, failure, cert_expiration) 
+          `INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, created_at, missing, failure) 
           VALUES (?, ?, ?, ?, ?, ?, 0,
-            (SELECT failure FROM environments WHERE id = ? and project_id = ?),
-            (SELECT cert_expiration FROM environments WHERE id = ? and project_id = ?)
+            (SELECT failure FROM environments WHERE id = ? and project_id = ?)
           )`
         )
-        .run(environment, project, title, machineName, active, createdAt, environment, project, environment, project)
+        .run(environment, project, title, machineName, active, createdAt, environment, project)
       logger.mylog('debug', result)
       result = db.prepare('SELECT region FROM projects WHERE id = ?').get(project)
       const serverName = `${machineName}-${project}.${result.region}.magentosite.cloud`
-      return await new Promise((resolve, reject) => {
-        const request = https.request(
-          {host: serverName, port: 443, method: 'GET', rejectUnauthorized: false},
-          response => {
-            const certificateInfo = response.connection.getPeerCertificate()
-            let result = db
-              .prepare('UPDATE environments SET cert_expiration = ? WHERE id = ? AND project_id = ?')
-              .run(new Date(certificateInfo.valid_to) / 1000, environment, project)
-            logger.mylog('debug', result)
-            resolve(result)
-          }
-        )
-        request.end()
-      })
+      return await checkCertificate(serverName)
     })
     .catch(error => {
       logger.mylog('error', error)
@@ -75,7 +60,7 @@ exports.setEnvironmentMissing = function(project, environment) {
 exports.getEnvironmentsFromAPI = function(project) {
   return exec(`${MC_CLI} environments -p ${project} --pipe`)
     .then(execOutputHandler)
-    .then(stdout => {
+    .then(({stdout, stderr}) => {
       return stdout.trim().split('\n')
     })
     .catch(error => {
@@ -85,7 +70,7 @@ exports.getEnvironmentsFromAPI = function(project) {
 
 exports.getAllLiveEnvironmentsFromDB = () => {
   const result = db
-    .prepare('SELECT id, project_id FROM environments WHERE active = 1 AND (failure = 0 OR failure IS null)')
+    .prepare('SELECT id, project_id FROM environments WHERE active = 1 AND (failure = 0 OR failure IS null) ORDER BY created_at ASC')
     .all()
   logger.mylog('debug', result)
   return result

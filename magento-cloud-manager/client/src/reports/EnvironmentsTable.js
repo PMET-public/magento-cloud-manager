@@ -4,6 +4,7 @@ import 'react-table/react-table.css'
 import UniqueOptions from '../util/UniqueOptions'
 import Icon from 'material-ui/Icon'
 import Clipboard from 'react-clipboard.js'
+import projEnvCell from '../util/projEnvCell'
 
 export default class extends Component {
   constructor(props) {
@@ -35,28 +36,7 @@ export default class extends Component {
         defaultFilterMethod={this.matchRow}
         className={'-striped -highlight'}
         columns={[
-          {
-            Header: 'Project Title (id)',
-            accessor: 'project_title',
-            Cell: cell => (
-              <div>
-                <a
-                  className=""
-                  target="_blank"
-                  href={`https://${cell.original.region}.magento.cloud/projects/${
-                    cell.original.project_id
-                  }/environments/${cell.original.id}`}>
-                  {cell.value} ({cell.original.project_id})
-                </a>
-              </div>
-            ),
-            filterMethod: (filter, row, column) => {
-              return (
-                String(row[filter.id]).indexOf(filter.value) !== -1 ||
-                String(row._original.project_id).indexOf(filter.value) !== -1
-              )
-            }
-          },
+          projEnvCell,
           {
             Header: 'Env Title (id)',
             accessor: 'title',

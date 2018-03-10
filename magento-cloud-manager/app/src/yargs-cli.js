@@ -104,12 +104,20 @@ yargs.command(
 )
 
 yargs.command(
-  ['project:update [pids...]', 'pu'],
+  ['project:update [pids]', 'pu'],
   'Update DB with info about provided projects',
   yargs => {
     yargs.positional('pids', {
       type: 'string',
-      describe: 'List of project IDs'
+      describe: 'List of project IDs',
+      coerce: coercer
+    })
+    yargs.option('a', {
+      alias: 'all',
+      description: 'Update all projects',
+      type: 'boolean',
+      coerce: coercer,
+      conflicts: ['pids']
     })
   },
   argv => {

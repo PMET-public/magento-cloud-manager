@@ -81,10 +81,12 @@ exports.exec = function() {
 }
 exports.execOutputHandler = ({stdout, stderr}) => {
   if (stderr) {
-    throw stderr
+    // if we're in this handler an error hasn't been thrown yet, so just log the error output
+    // a subsequent handler may parse stderr and decide to throw an 
+    logger.mylog('error', stderr)
   }
   logger.mylog('info', stdout)
-  return stdout
+  return {stdout, stderr}
 }
 
 const pLimit = require('p-limit')
@@ -101,11 +103,28 @@ exports.fetch = function() {
 // this helper function takes out formatted as "column_name value\n" 
 // and inserts it into the specified table
 exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], additionalVals = []) => {
-  const cmdOutput = stdout.trim().split('\n').map(row => row.split(/[ \t]/))
+  const cmdOutput = stdout.trim().split('\n').map(row => row.split(/[ \t](.+)/)) // split on 1st whitespace char
   const keys = cmdOutput.map(row => row[0]).concat(additionalKeys)
   const vals = cmdOutput.map(row => row[1]).concat(additionalVals)
   const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${'?, '.repeat(keys.length).slice(0, -2)})`
   const result = db.prepare(sql).run(...vals)
   logger.mylog('debug', result)
   return result
+}
+
+const https = require('https')
+exports.checkCertificate = async (serverName) => {
+  serverName = serverName.replace(/https?:\/\//,'').replace(/\/.*/,'')
+  new Promise((resolve, reject) => {
+    const request = https.request({host: serverName, port: 443, method: 'GET', rejectUnauthorized: false},
+      response => {
+      const certificateInfo = response.connection.getPeerCertificate()
+      let result = db
+        .prepare('INSERT OR REPLACE INTO cert_expirations (server, expiration) VALUES (?, ?)')
+        .run(serverName, new Date(certificateInfo.valid_to) / 1000)
+      logger.mylog('debug', result)
+      resolve(result)
+    })
+    request.end()
+  })
 }

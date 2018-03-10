@@ -24,7 +24,7 @@ function parseActivityList(activities) {
 function getActivitiesFromApi(project, type) {
   return exec(`${MC_CLI} activity:list -p ${project} -e master -a --type=environment.${type} --limit=9999 --format=tsv`)
     .then(execOutputHandler)
-    .then(stdout => {
+    .then(({stdout, stderr}) => {
       return stdout
         .trim()
         .split('\n')

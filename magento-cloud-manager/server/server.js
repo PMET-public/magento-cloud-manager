@@ -1,6 +1,6 @@
-import express from 'express'
-import Database from 'better-sqlite3'
-import winston from 'winston'
+const express = require('express')
+const Database = require('better-sqlite3')
+const winston = require('winston')
 
 winston.add(winston.transports.File, {filename: `${__dirname}/../log.json`})
 const db = new Database(`${__dirname}/../sql/cloud.db`)

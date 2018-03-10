@@ -17,7 +17,7 @@ exports.updateHost = (project, environment = 'master') => {
       echo last_process_id $last_process_id
     '`)
     .then(execOutputHandler)
-    .then(stdout => {
+    .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', ['project_id', 'environment_id'], [project, environment])
     })
     .catch(error => {
@@ -110,9 +110,8 @@ exports.updateProjectHostRelationships = () => {
   })
   const insertValues = []
   Object.entries(projectHosts).forEach(([projectId, hostId]) => insertValues.push(`(${hostId},"${projectId}")`))
-  const result = db.exec(
-    'DELETE FROM project_hosts; INSERT INTO project_hosts (id, project_id) VALUES ' + insertValues.join(',') + ';'
-  )
+  const result = db
+    .exec(`DELETE FROM project_hosts; INSERT INTO project_hosts (id, project_id) VALUES ${insertValues.join(',')}`)
   logger.mylog('debug', result)
   return result
 }

@@ -6,6 +6,7 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
     echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
       sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")
+    echo app_yaml_md5 $(md5sum .magento.app.yaml | sed "s/ .*//")
     echo ee_composer_version $(perl -ne "
         s/.*magento\\/product-enterprise-edition.*:.*?\\"([^\\"]+)\\".*/\\1/ and print;
         s/.*(2\\.\\d+\\.\\d+\\.x-dev).*/\\1/ and print;
@@ -14,6 +15,11 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     echo composer_lock_md5 $(md5sum composer.lock | sed "s/ .*//")
     echo composer_lock_mtime $(stat -t composer.lock | awk "{print \\$12}")
     echo cumulative_cpu_percent $(ps -p 1 -o %cpu --cumulative --no-header)
+
+    echo error_logs $(perl -ne "s/.*(CRITICAL|ERROR):? /\\1 / 
+      and print" ~/var/log/{debug,exception,support_report,system}.log /var/log/{app,deploy,error}.log | 
+      sed "/Dotmailer connector API endpoint cannot be empty/d;/Could not ping search engine:/d" | 
+      sort | uniq | awk "{print \\"((\\" NR, \\"))\\", \\$0}")
 
     mysql main -sN -h database.internal -e "
       SELECT \\"not_valid_index_count\\", COUNT(*) FROM indexer_state WHERE status != \\"valid\\";
@@ -31,7 +37,10 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     # use curl -sD - -o /dev/null  for headers (-D -: dump headers to stdout) using HTTP GET
     http_status=$(curl -sI localhost | sed -n "s/HTTP\\/1.1 \\([0-9]*\\).*/\\1/p")
     echo http_status $http_status
-    test $http_status -eq 302 || { echo $http_status && exit 0; }
+
+    # --- any value below can NULL in the DB b/c we exit on invalid responses from the web server ---
+
+    test $http_status -eq 302 || exit 0
     store_url=$(curl -sI localhost | sed -n "s/Location: \\(.*\\)?.*/\\1/p")
     cat_url=$(curl -s $store_url | perl -ne "s/.*?class.*?nav-1.*?href=.([^ ]+.html).*/\\1/ and print")
     echo cat_url $cat_url
@@ -56,10 +65,10 @@ exports.smokeTestApp = async (project, environment = 'master') => {
 '`
   return exec(cmd)
     .then(execOutputHandler)
-    .then(stdout => 
+    .then(({stdout, stderr}) => 
       parseFormattedCmdOutputIntoDB(stdout, 'applications_smoke_tests', ['project_id', 'environment_id'], [project, environment]))
     .catch(error => {
-      logger.mylog('error', error)
+      logger.mylog('error', error, project, environment)
       if (typeof error.stderr !== 'undefined') {
         if (/Specified environment not found/.test(error.stderr)) {
           setEnvironmentMissing(project, environment)
