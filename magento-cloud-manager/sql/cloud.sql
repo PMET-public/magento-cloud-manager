@@ -1,4 +1,11 @@
 BEGIN TRANSACTION;
+DROP TABLE IF EXISTS `projects_users`;
+CREATE TABLE IF NOT EXISTS `projects_users` (
+	`project_id`	TEXT NOT NULL,
+	`email`	TEXT NOT NULL,
+	`role`	TEXT NOT NULL,
+	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 DROP TABLE IF EXISTS `projects`;
 CREATE TABLE IF NOT EXISTS `projects` (
 	`id`	TEXT NOT NULL,
@@ -20,19 +27,6 @@ DROP TABLE IF EXISTS `project_hosts`;
 CREATE TABLE IF NOT EXISTS `project_hosts` (
 	`id`	INTEGER NOT NULL,
 	`project_id`	TEXT NOT NULL UNIQUE
-);
-DROP TABLE IF EXISTS `performance_tests`;
-CREATE TABLE IF NOT EXISTS `performance_tests` (
-	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	`project_id`	TEXT NOT NULL,
-	`environment_id`	TEXT NOT NULL,
-	`cmd`	TEXT NOT NULL,
-	`output`	TEXT NOT NULL,
-	`real_time_in_sec`	REAL NOT NULL,
-	`user_time_in_sec`	REAL NOT NULL,
-	`sys_time_in_sec`	REAL NOT NULL,
-	`successful_test`	BOOLEAN NOT NULL,
-	`timestamp`	DATETIME NOT NULL
 );
 DROP TABLE IF EXISTS `hosts_states`;
 CREATE TABLE IF NOT EXISTS `hosts_states` (
@@ -61,19 +55,36 @@ CREATE TABLE IF NOT EXISTS `environments` (
 	`failure`	BOOLEAN CHECK(failure in ( 0 , 1 )),
 	`missing`	BOOLEAN CHECK(missing in ( 0 , 1 )),
 	`created_at`	INTEGER NOT NULL,
-	`cert_expiration`	INTEGER,
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	PRIMARY KEY(`id`,`project_id`,`created_at`)
+);
+DROP TABLE IF EXISTS `cert_expirations`;
+CREATE TABLE IF NOT EXISTS `cert_expirations` (
+	`server`	TEXT NOT NULL,
+	`expiration`	INTEGER NOT NULL,
+	`timestamp`	INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	PRIMARY KEY(`server`)
 );
 DROP TABLE IF EXISTS `applications_smoke_tests`;
 CREATE TABLE IF NOT EXISTS `applications_smoke_tests` (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
 	`environment_id`	TEXT NOT NULL,
-	`ee_composer_version`	TEXT NOT NULL,
-	`composer_lock_md5`	TEXT NOT NULL,
+	`app_yaml_md5`	TEXT NOT NULL,
+	`ee_composer_version`	TEXT,
+	`composer_lock_md5`	TEXT,
 	`composer_lock_mtime`	INTEGER NOT NULL,
 	`cumulative_cpu_percent`	REAL NOT NULL,
+	`not_valid_index_count`	INTEGER,
+	`catalog_product_entity_count`	INTEGER,
+	`catalog_category_product_count`	INTEGER,
+	`admin_user_count`	INTEGER,
+	`store_count`	INTEGER,
+	`order_count`	INTEGER,
+	`cms_block_count`	INTEGER,
+	`template_count`	INTEGER,
+	`last_login_customer`	INTEGER,
+	`last_login_admin`	INTEGER,
 	`http_status`	INTEGER NOT NULL,
 	`store_url_uncached`	INTEGER,
 	`store_url_cached`	INTEGER,
@@ -85,22 +96,9 @@ CREATE TABLE IF NOT EXISTS `applications_smoke_tests` (
 	`german_check`	INTEGER,
 	`venia_check`	INTEGER,
 	`admin_check`	INTEGER,
-	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-DROP TABLE IF EXISTS `applications_db_checks`;
-CREATE TABLE IF NOT EXISTS `applications_db_checks` (
-	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-	`project_id`	TEXT NOT NULL,
-	`environment_id`	TEXT NOT NULL,
-	`catalog_product_entity_count`	INTEGER NOT NULL,
-	`catalog_category_product_count`	INTEGER NOT NULL,
-	`admin_user_count`	INTEGER NOT NULL,
-	`store_count`	INTEGER NOT NULL,
-	`order_count`	INTEGER NOT NULL,
-	`cms_block_count`	INTEGER NOT NULL,
-	`template_count`	INTEGER NOT NULL,
-	`last_login_customer`	INTEGER,
-	`last_login_admin`	INTEGER,
+	`error_logs`	TEXT,
+	`utilization_start`	TEXT NOT NULL,
+	`utilization_end`	TEXT,
 	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 COMMIT;
