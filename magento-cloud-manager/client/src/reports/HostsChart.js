@@ -63,7 +63,7 @@ export default class extends Component {
   }
 
   componentDidMount() {
-    fetch('/api/hosts_states/all')
+    fetch('/hosts-states-historic')
       .then(res => res.json())
       .then(
         res => {

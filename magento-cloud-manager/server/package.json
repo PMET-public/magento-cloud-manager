@@ -4,8 +4,14 @@
   "description": "",
   "private": true,
   "dependencies": {
+    "archiver": "^2.1.1",
     "better-sqlite3": "^4.1.0",
+    "chalk": "^2.3.2",
     "express": "^4.16.2",
     "winston": "^2.4.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "debug": "nodemon --inspect server.js"
   }
 }

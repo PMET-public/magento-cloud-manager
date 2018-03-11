@@ -13,7 +13,7 @@ exports.updateEnvironment = async function(project, environment = 'master') {
       // however if the MC_CLI cmd succeeded the env is not missing (0)
       let result = db
         .prepare(
-          `INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, created_at, missing, failure) 
+          `INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, last_created_at, missing, failure) 
           VALUES (?, ?, ?, ?, ?, ?, 0,
             (SELECT failure FROM environments WHERE id = ? and project_id = ?)
           )`
@@ -43,7 +43,7 @@ exports.setEnvironmentInactive = function(project, environment) {
 
 exports.setEnvironmentFailed = function(project, environment) {
   const result = db
-    .prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
+    .prepare(`UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?`)
     .run(project, environment)
   logger.mylog('debug', result)
   return result
@@ -70,7 +70,7 @@ exports.getEnvironmentsFromAPI = function(project) {
 
 exports.getAllLiveEnvironmentsFromDB = () => {
   const result = db
-    .prepare('SELECT id, project_id FROM environments WHERE active = 1 AND (failure = 0 OR failure IS null) ORDER BY created_at ASC')
+    .prepare('SELECT id, project_id FROM environments WHERE active = 1 AND (failure = 0 OR failure IS null)')
     .all()
   logger.mylog('debug', result)
   return result

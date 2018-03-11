@@ -22,7 +22,7 @@ export default class extends Component {
         data={this.state.data}
         onFetchData={(state, instance) => {
           this.setState({loading: true})
-          fetch('/api/environments')
+          fetch('/environments')
             .then(res => res.json())
             .then(res => {
               this.setState({
@@ -84,7 +84,7 @@ export default class extends Component {
           },
           {
             Header: 'Created',
-            accessor: 'created_at',
+            accessor: 'last_created_at',
             Cell: cell => <div>{new Date(cell.value * 1000).toISOString().slice(0, 10)}</div>,
             maxWidth: 100
           }

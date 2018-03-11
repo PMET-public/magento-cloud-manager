@@ -19,7 +19,7 @@ export default class extends Component {
         data={this.state.data}
         onFetchData={(state, instance) => {
           this.setState({loading: true})
-          fetch('/api/hosts_states/current')
+          fetch('/hosts-states-current')
             .then(res => res.json())
             .then(res => {
               this.setState({

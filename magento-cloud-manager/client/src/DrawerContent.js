@@ -21,23 +21,7 @@ class DrawerContent extends Component {
               <ListItemIcon className={classes.icon}>
                 <Icon color="secondary">home</Icon>
               </ListItemIcon>
-              <ListItemText classes={{primary: classes.primary}} inset primary="Home" />
-            </MenuItem>
-          </Link>
-          <Link to={'/environments-table'}>
-            <MenuItem className={classes.menuItem}>
-              <ListItemIcon className={classes.icon}>
-                <Icon color="secondary">exit_to_app</Icon>
-              </ListItemIcon>
-              <ListItemText classes={{primary: classes.primary}} inset primary="Environments" />
-            </MenuItem>
-          </Link>
-          <Link to={'/applications-table'}>
-            <MenuItem className={classes.menuItem}>
-              <ListItemIcon className={classes.icon}>
-                <Icon color="secondary">list</Icon>
-              </ListItemIcon>
-              <ListItemText classes={{primary: classes.primary}} inset primary="Applications" />
+              <ListItemText classes={{primary: classes.primary}} inset primary="Dashboard" />
             </MenuItem>
           </Link>
           <Link to={'/hosts-table'}>
@@ -54,6 +38,22 @@ class DrawerContent extends Component {
                 <Icon color="secondary">show_chart</Icon>
               </ListItemIcon>
               <ListItemText classes={{primary: classes.primary}} inset primary="Chart" />
+            </MenuItem>
+          </Link>
+          <Link to={'/environments-table'}>
+            <MenuItem className={classes.menuItem}>
+              <ListItemIcon className={classes.icon}>
+                <Icon color="secondary">exit_to_app</Icon>
+              </ListItemIcon>
+              <ListItemText classes={{primary: classes.primary}} inset primary="Environments" />
+            </MenuItem>
+          </Link>
+          <Link to={'/smoke-test-table'}>
+            <MenuItem className={classes.menuItem}>
+              <ListItemIcon className={classes.icon}>
+                <Icon color="secondary">list</Icon>
+              </ListItemIcon>
+              <ListItemText classes={{primary: classes.primary}} inset primary="Smoke Tests" />
             </MenuItem>
           </Link>
         </MenuList>

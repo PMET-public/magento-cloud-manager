@@ -6,6 +6,7 @@
   "dependencies": {
     "chart.js": "^2.7.2",
     "material-ui": "^1.0.0-beta.34",
+    "moment": "^2.21.0",
     "react": "^16.2.0",
     "react-chartjs-2": "^2.7.0",
     "react-clipboard.js": "^1.1.3",

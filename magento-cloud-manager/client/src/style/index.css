@@ -35,14 +35,70 @@ a {
   }
 }
 
-a
+.right {
+  text-align: right;
+}
 
 .icons-in-td {
   float: right;
   display: inline-block;
 }
 
-.icons-in-td .material-icons {
+/* ReactTable related */
+
+.ReactTable .material-icons {
   font-size: 1em;
 }
 
+main {
+  overflow-x: scroll;
+}
+
+.ReactTable .rt-thead .rt-th {
+  padding: 6px 3px;
+}
+
+.ReactTable .rt-td {
+  padding: 5px 4px;
+}
+
+.rotated-headers .rt-thead.-headerGroups {
+  margin-bottom: 125px;
+}
+
+.ReactTable .rt-thead.-headerGroups .rt-th {
+  border-right: 1px solid rgba(0,0,0,0.15);
+}
+
+/* .rotated-headers {
+  margin-top: 150px;
+} */
+
+.rotated-headers .rt-table {
+  overflow: visible;
+}
+
+.rotated-headers .rt-thead.-header {
+ box-shadow: none;
+ -webkit-box-shadow: none;
+}
+
+.rotated-headers {
+  border: none;
+}
+
+.rotated-headers .rt-resizable-header-content {
+  text-align: left;
+  transform: translate3d(10px, 1px, 0) rotate(-45deg);
+  width: 30px;
+  transform-origin: left bottom;
+  box-sizing: border-box;
+}
+.rotated-headers .rt-thead .rt-resizable-header-content {
+  overflow: visible;
+}
+
+.-pagination {
+  position: fixed;
+  width: 100%;
+}
