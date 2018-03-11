@@ -56,21 +56,23 @@ exports.updateProject = async project => {
 
 async function recordUsers(project) {
   return exec(`${MC_CLI} user:list -p ${project} --format=tsv | sed '1d'`)
-  .then(execOutputHandler)
-  .then(({stdout, stderr}) => {
-    const insertValues = []
-    const rows = stdout.trim().split('\n')
-      .map(row => row.split('\t'))
-      .forEach(row => insertValues.push(`("${project}", "${row[0]}", "${row[2]}")`))
-    const sql = `DELETE FROM users WHERE project_id = "${project}";
+    .then(execOutputHandler)
+    .then(({stdout, stderr}) => {
+      const insertValues = []
+      const rows = stdout
+        .trim()
+        .split('\n')
+        .map(row => row.split('\t'))
+        .forEach(row => insertValues.push(`("${project}", "${row[0]}", "${row[2]}")`))
+      const sql = `DELETE FROM users WHERE project_id = "${project}";
       INSERT INTO users (project_id, email, role) VALUES ${insertValues.join(',')}`
-    const result = db.exec(sql)
-    logger.mylog('debug', result)
-    return result
-  })
-  .catch(error => {
-    logger.mylog('error', error)
-  })
+      const result = db.exec(sql)
+      logger.mylog('debug', result)
+      return result
+    })
+    .catch(error => {
+      logger.mylog('error', error)
+    })
 }
 
 exports.updateProjects = async () => {
@@ -79,10 +81,12 @@ exports.updateProjects = async () => {
   logger.mylog('debug', result)
   const promises = []
   ;(await exports.getProjectsFromApi()).forEach(project => {
-    promises.push(apiLimit(async () => {
-      await exports.updateProject(project)
-      await recordUsers(project)
-    }))
+    promises.push(
+      apiLimit(async () => {
+        await exports.updateProject(project)
+        await recordUsers(project)
+      })
+    )
   })
   return await Promise.all(promises)
 }

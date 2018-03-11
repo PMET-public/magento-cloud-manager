@@ -1,4 +1,13 @@
-const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger, parseFormattedCmdOutputIntoDB} = require('./common')
+const {
+  exec,
+  execOutputHandler,
+  db,
+  apiLimit,
+  sshLimit,
+  MC_CLI,
+  logger,
+  parseFormattedCmdOutputIntoDB
+} = require('./common')
 const {getProjectsFromApi} = require('./project')
 
 exports.updateHost = (project, environment = 'master') => {
@@ -110,8 +119,11 @@ exports.updateProjectHostRelationships = () => {
   })
   const insertValues = []
   Object.entries(projectHosts).forEach(([projectId, hostId]) => insertValues.push(`(${hostId},"${projectId}")`))
-  const result = db
-    .exec(`DELETE FROM matched_projects_hosts; INSERT INTO matched_projects_hosts (id, project_id) VALUES ${insertValues.join(',')}`)
+  const result = db.exec(
+    `DELETE FROM matched_projects_hosts; INSERT INTO matched_projects_hosts (id, project_id) VALUES ${insertValues.join(
+      ','
+    )}`
+  )
   logger.mylog('debug', result)
   return result
 }

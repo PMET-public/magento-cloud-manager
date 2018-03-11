@@ -43,7 +43,7 @@ exports.setEnvironmentInactive = function(project, environment) {
 
 exports.setEnvironmentFailed = function(project, environment) {
   const result = db
-    .prepare(`UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?`)
+    .prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
   logger.mylog('debug', result)
   return result
