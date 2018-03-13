@@ -2,7 +2,7 @@ import React, {Component} from 'react'
 import {Scatter, Line} from 'react-chartjs-2'
 
 const data = {
-  labels: ['Scatter'],
+  labels: ['Historic Host 15 min load avg'],
   datasets: [
     {
       label: 'Project A',
@@ -72,7 +72,10 @@ export default class extends Component {
             if (typeof data[row.project_id] === 'undefined') {
               data[row.project_id] = []
             }
-            data[row.project_id].push({x: new Date(row.timestamp).toISOString(), y: row.load_avg_15})
+            data[row.project_id].push({x: new Date(row.timestamp)/1000, y: row.load_avg_15})
+          })
+          data.map(([key, val]) => {
+            console.log(key, val)
           })
           this.setState({
             isLoaded: true,

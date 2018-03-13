@@ -17,9 +17,9 @@ export default {
         {cell.original.project_title} {cell.original.environment_title} ({cell.original.project_id})
       </a>
       <br />
-      <a //onClick={fetch(`\/commands?p=${cell.original.project_id}&e=${cell.original.environment_id}`) && return false}
+      <a
         target="_blank" 
-        href={`/commands?p=${cell.original.project_id}&e=${cell.original.environment_id}`}>
+        href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${cell.original.environment_id}`}>
         <Icon color="secondary">cloud_download</Icon>
       </a>
       <a

@@ -1,7 +1,6 @@
-const {db} = require('../util/common')
+const {db, logger} = require('../util/common')
 const archiver = require('archiver')
 const chalk = require('chalk')
-const zip = archiver('zip')
 
 module.exports = (req, res) => {
 
@@ -12,10 +11,12 @@ module.exports = (req, res) => {
   if (!proj || !env) {
     return
   }
-
+  
+  const zip = archiver('zip')
   const result = db
   .prepare(
-    `SELECT p.title project_title, e.title environment_title, project_url 
+    `SELECT p.title project_title, e.title environment_title, 
+    project_url, region, machine_name
     FROM environments e LEFT JOIN projects p ON e.project_id = p.id
     WHERE e.project_id = ? and e.id = ?`
   )
@@ -45,17 +46,41 @@ module.exports = (req, res) => {
       },
       {
         name: 'ssh',
-        description: `${chalk.greenBright('Starting an ssh session ...')}`,
+        description: `${chalk.bgBlack.greenBright.bold('Starting an ssh session ...')}`,
         command: SSH,
       },
       {
         name: 'cron',
-        description: `${chalk.greenBright('Run cron jobs immediately')}`,
+        description: `${chalk.bgBlack.greenBright.bold('Run cron jobs immediately')}`,
         command: 'php bin/magento cron:run',
       },
       {
         name: 'reindex',
+        description: '',
         command: 'php bin/magento index:reindex',
+      }
+    ]
+  }
+
+  const storeUrl = `https://${result['machine_name']}-${proj}.${result['region']}.magentosite.cloud`
+
+  const getUrls = () => {
+    return [
+      {
+        name: 'cloud-ui',
+        url: `${result['project_url']}`
+      },
+      {
+        name: 'storefront',
+        url: `${storeUrl}`
+      },
+      {
+        name: 'admin',
+        url: `${storeUrl}/admin/`
+      },
+      {
+        name: 'support-request',
+        url: 'https://support.magento.com/hc/en-us/requests'
       }
     ]
   }
@@ -72,5 +97,11 @@ module.exports = (req, res) => {
     ${command}`
     zip.append(str, {name: `${name}.command`, mode: 0744})
   })
+
+  getUrls().forEach(({name, url}) => {
+    const str = `[InternetShortcut]\nURL=${url}\nIconIndex=0`
+    zip.append(str, {name: `_${name}.url`, mode: 0444})
+  })
+
   zip.finalize()
 }

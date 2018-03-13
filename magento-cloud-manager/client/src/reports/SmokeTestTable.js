@@ -5,6 +5,8 @@ import UniqueOptions from '../util/UniqueOptions'
 import Icon from 'material-ui/Icon'
 import projEnvCell from '../util/projEnvCell'
 import moment from 'moment'
+import Button from 'material-ui/Button'
+import Dialog from '../util/Dialog'
 
 moment.updateLocale('en', {
   relativeTime: {
@@ -353,10 +355,9 @@ export default class extends Component {
                 Header: 'Errors',
                 accessor: 'error_logs',
                 Cell: cell => (
-                  <div>
-                    <Icon color="secondary">format_align_left</Icon>
-                    {cell.value}
-                  </div>
+                    <Dialog>
+                      {(cell.value)}
+                    </Dialog>
                 ),
                 maxWidth: 200,
                 filterMethod: (filter, row, column) => {

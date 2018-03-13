@@ -26,9 +26,10 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     echo cumulative_cpu_percent $(ps -p 1 -o %cpu --cumulative --no-header)
 
     # sort based on the 3 field to rev output to keep most recent occurrence of error only
+    # do a final sort and remove benign errors
     echo error_logs $(perl -ne "/.*(CRITICAL|ERROR):? / 
         and print" ~/var/log/{debug,exception,support_report,system}.log /var/log/{app,deploy,error}.log 2>/dev/null | 
-        tac | sort -k 3 -ru | 
+        tac | sort -k 3 -ru | sort
         sed "/Dotmailer connector API endpoint cannot be empty/d;/Could not ping search engine:/d" | 
         awk "{print \\"((\\" NR, \\"))\\", \\$0}")
 

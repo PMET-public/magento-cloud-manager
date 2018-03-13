@@ -19,7 +19,7 @@ exports.updateProject = async project => {
       const title = projectInfo.replace(/[\s\S]*title\t"?([^"\n]*)"?[\s\S]*/, '$1')
       const gitUrl = projectInfo.replace(/[\s\S]*url: '([^']*)'[\s\S]*/, '$1')
       const region = gitUrl.replace(/.*@git\.([^.]+).*/, '$1')
-      const projectUrl = `https://${region}.magento.cloud/#/projects/${project}`
+      const projectUrl = `https://${region}.magento.cloud/projects/${project}`
       const createdAt = Date.parse(projectInfo.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/, '$1')) / 1000
       const clientSshKey = projectInfo.replace(/[\s\S]*client_ssh_key: '([^']*)[\s\S]*/, '$1')
       const planSize = projectInfo.replace(/[\s\S]*plan: ([^\s]*)[\s\S]*/, '$1')

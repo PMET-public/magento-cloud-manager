@@ -8,7 +8,7 @@
     "better-sqlite3": "^4.1.0",
     "chalk": "^2.3.2",
     "express": "^4.16.2",
-    "winston": "^2.4.0"
+    "winston": "^3.0.0-rc1"
   },
   "scripts": {
     "start": "node server.js",
