@@ -44,6 +44,12 @@ export default {
       </Clipboard>
     </div>
   ),
+  Filter: ({filter, onChange}) => (
+    <input placeholder="Regular expression" type="text" onChange={event => onChange(event.target.value)}
+      style={{width: '100%'}}
+      value={filter && filter.value ? filter.value : ''}
+    />
+  ),
   filterMethod: (filter, row, column) => {
     const o = row._original
     return new RegExp(filter.value,'i')

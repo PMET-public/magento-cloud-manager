@@ -1,58 +1,75 @@
+const {db} = require('../util/common')
 const archiver = require('archiver')
 const chalk = require('chalk')
+const zip = archiver('zip')
 
 module.exports = (req, res) => {
-  const commands = [
-    {
-      name: '1-install-magento-cloud-cli',
-      description: 'This will install the magento-cloud tool. You only need to run this once.',
-      command: 'curl -sS https://accounts.magento.cloud/cli/installer | php',
-      type: 'local'
-    },
-    {
-      name: '2-setup-ssh-key',
-      description: '',
-      command: '',
-      type: 'local'
-    },
-    {
-      name: 'ssh',
-      description: 'Starting an ssh session',
-      command: '',
-      type: 'ssh'
-    },
-    {
-      name: 'cron',
-      description: 'Run cron jobs immediately',
-      command: 'php bin/magento cron:run',
-      type: 'ssh'
-    },
-    {
-      name: 'reindex',
-      command: 'php bin/magento index:reindex',
-      type: 'ssh'
-    }
-  ]
 
-  const zip = archiver('zip')
-  const MC_CLI = '~/.magento-cloud/bin/magento-cloud'
-  const proj = 'hniuz2woty5y6'
-  const env = 'master'
-  const sshTemplate = `${MC_CLI} ssh -p ${proj} -e ${env}`
+  // http://localhost:3001/commands?p=r7lyqt4tsnw6g&e=master
+  
+  const proj = req.query.p
+  const env = req.query.e
+  if (!proj || !env) {
+    return
+  }
 
-  res.attachment(`${proj}-${env}.zip`)
+  const result = db
+  .prepare(
+    `SELECT p.title project_title, e.title environment_title, project_url 
+    FROM environments e LEFT JOIN projects p ON e.project_id = p.id
+    WHERE e.project_id = ? and e.id = ?`
+  )
+  .get(proj, env)
+
+  const getCommands = () => {
+    const MC_CLI = '~/.magento-cloud/bin/magento-cloud'
+    const ENV_OPT = `-p ${proj} -e ${env}`
+    const SSH = `${MC_CLI} ssh ${ENV_OPT}`
+    const M_CLI = 'php bin/magento'
+
+    return [
+      {
+        name: '1-install-magento-cloud-cli',
+        description: 'This will install the magento-cloud tool. You only need to run this once.',
+        command: 'curl -sS https://accounts.magento.cloud/cli/installer | php',
+      },
+      {
+        name: '2-setup-ssh-key',
+        description: '',
+        command: '',
+      },
+      {
+        name: 'DELETE',
+        description: `${chalk.redBright('THIS WILL PERMANENTLY DELETE THIS ENV.')}`,
+        command: `${MC_CLI} environment:delete ${ENV_OPT} --no-wait`,
+      },
+      {
+        name: 'ssh',
+        description: `${chalk.greenBright('Starting an ssh session ...')}`,
+        command: SSH,
+      },
+      {
+        name: 'cron',
+        description: `${chalk.greenBright('Run cron jobs immediately')}`,
+        command: 'php bin/magento cron:run',
+      },
+      {
+        name: 'reindex',
+        command: 'php bin/magento index:reindex',
+      }
+    ]
+  }
+
+  res.attachment(`${result['project_title']}-${result['environment_title']}.zip`)
   zip.on('error', function(err) {
     res.status(500).send({error: err.message})
   })
-
-  // Send the file to the page output.
   zip.pipe(res)
 
-  // Create zip with some files. Two dynamic, one static. Put #2 in a sub folder.
-  commands.forEach(({name, description, command, type}) => {
+  getCommands().forEach(({name, description, command}) => {
     const str = `#!/usr/bin/env bash
-    echo -e ${chalk.greenBright(description)}
-    ${type === 'ssh' ? sshTemplate : ''} ${command}`
+    echo -e ${description}
+    ${command}`
     zip.append(str, {name: `${name}.command`, mode: 0744})
   })
   zip.finalize()

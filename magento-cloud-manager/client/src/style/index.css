@@ -37,17 +37,22 @@ a {
 
 .right {
   text-align: right;
+  justify-content: flex-end;
 }
 
-.icons-in-td {
+/* .icons-in-td {
   float: right;
   display: inline-block;
-}
+} */
 
 /* ReactTable related */
 
 .ReactTable .material-icons {
   font-size: 1em;
+}
+
+.ReactTable .-filters .material-icons {
+  font-size: 1.2em;
 }
 
 main {
@@ -68,6 +73,15 @@ main {
 
 .ReactTable .rt-thead.-headerGroups .rt-th {
   border-right: 1px solid rgba(0,0,0,0.15);
+}
+
+.ReactTable .rt-tbody .rt-td, .ReactTable .-filters .rt-th  {
+  display: flex;
+  align-items: center;
+}
+
+.ReactTable .-filters .rt-th {
+  justify-content: center
 }
 
 /* .rotated-headers {
@@ -94,6 +108,14 @@ main {
   transform-origin: left bottom;
   box-sizing: border-box;
 }
+/* in chrome, the last header is cut off. not sure why 
+ * so remove transform
+ */
+.rotated-headers :last-of-type.rt-resizable-header .rt-resizable-header-content {
+  transform: none;
+}
+
+
 .rotated-headers .rt-thead .rt-resizable-header-content {
   overflow: visible;
 }

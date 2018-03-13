@@ -73,9 +73,30 @@ export default class extends Component {
     }
   }
 
+  httpTestFilter = ({filter, onChange}) => (
+    <select
+      onChange={event => onChange(event.target.value)}
+      style={{width: '100%'}}
+      value={filter ? filter.value : 'all'}>
+      <option value="all">Show All</option>
+      <optgroup>
+        <option key={'success'} value="1">
+          success
+        </option>
+        <option key={'failed'} value="0">
+          404
+        </option>
+        <option key={'untested'} value="">
+          untested
+        </option>
+      </optgroup>
+    </select>
+  )
+
   empty = () => {}
   checkIcon = () => <Icon>check</Icon>
   errorIcon = () => <Icon>error_outline</Icon>
+  timerIcon = () => <Icon>timer</Icon>
 
   render() {
     return (
@@ -151,12 +172,12 @@ export default class extends Component {
             Header: 'Performance',
             columns: [
               {
-                Header: 'Cumulative % CPU',
+                Header: 'Cumulative CPU',
                 accessor: 'cumulative_cpu_percent',
                 Cell: cell => cell.value.toFixed(0),
                 maxWidth: this.calcWidth(3),
                 className: 'right',
-                filterable: false
+                Filter: ("%")
               },
               {
                 Header: 'Storefront (uncached)',
@@ -164,7 +185,7 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: this.calcWidth(4.5),
                 className: 'right',
-                filterable: false
+                Filter: this.timerIcon
               },
               {
                 Header: 'Storefront (cached)',
@@ -172,7 +193,7 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: this.calcWidth(4.5),
                 className: 'right',
-                filterable: false
+                Filter: this.timerIcon
               },
               {
                 Header: 'Cat Page (uncached)',
@@ -180,7 +201,7 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: this.calcWidth(4.5),
                 className: 'right',
-                filterable: false
+                Filter: this.timerIcon
               },
               {
                 Header: 'Cat Page (partial cache)',
@@ -188,7 +209,7 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: this.calcWidth(4.5),
                 className: 'right',
-                filterable: false
+                Filter: this.timerIcon
               },
               {
                 Header: 'Cat Page (cached)',
@@ -196,7 +217,7 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: this.calcWidth(4.5),
                 className: 'right',
-                filterable: false
+                Filter: this.timerIcon
               },
               {
                 Header: 'Cat Page Products',
@@ -275,7 +296,16 @@ export default class extends Component {
                 accessor: 'store_count',
                 Cell: cell => <div>{cell.value}</div>,
                 maxWidth: this.calcWidth(2),
-                className: 'right'
+                className: 'right',
+                Filter: ({filter, onChange}) => (
+                  <select
+                    onChange={event => onChange(event.target.value)}
+                    style={{width: '100%'}}
+                    value={filter ? filter.value : 'all'}>
+                    <option value="">Show All</option>
+                    <UniqueOptions data={this.state.data} accessor={'store_count'} />
+                  </select>
+                )
               },
               {
                 Header: 'Orders',
@@ -302,28 +332,35 @@ export default class extends Component {
                 Header: 'German',
                 accessor: 'german_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
-                maxWidth: this.calcWidth(1)
+                maxWidth: this.calcWidth(1),
+                Filter: this.httpTestFilter
               },
               {
                 Header: 'Venia',
                 accessor: 'venia_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
-                maxWidth: this.calcWidth(1)
+                maxWidth: this.calcWidth(1),
+                Filter: this.httpTestFilter
               },
               {
                 Header: 'Admin',
                 accessor: 'admin_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.errorIcon),
-                maxWidth: this.calcWidth(1)
+                maxWidth: this.calcWidth(1),
+                Filter: this.httpTestFilter
               },
               {
                 Header: 'Errors',
                 accessor: 'error_logs',
-                Cell: cell => <div><Icon color="secondary">format_align_left</Icon>{cell.value}</div>,
+                Cell: cell => (
+                  <div>
+                    <Icon color="secondary">format_align_left</Icon>
+                    {cell.value}
+                  </div>
+                ),
                 maxWidth: 200,
                 filterMethod: (filter, row, column) => {
-                  return new RegExp(filter.value,'i')
-                    .test(cell.value)
+                  return new RegExp(filter.value, 'i').test(row[filter.id])
                 }
               }
             ]
@@ -351,19 +388,19 @@ export default class extends Component {
             Header: 'Test Info',
             columns: [
               {
-                Header: 'utilization_start',
+                Header: '% Load @ test start',
                 accessor: 'utilization_start',
                 Cell: cell => <div>{cell.value}</div>,
                 maxWidth: 200
               },
               {
-                Header: 'utilization_end',
+                Header: '% Load @ test end',
                 accessor: 'utilization_end',
                 Cell: cell => <div>{cell.value}</div>,
                 maxWidth: 200
               },
               {
-                Header: 'timestamp',
+                Header: 'When',
                 accessor: 'timestamp',
                 Cell: cell => moment(cell.value).fromNow(),
                 maxWidth: this.calcWidth(10)

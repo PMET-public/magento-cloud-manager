@@ -25,10 +25,12 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     echo composer_lock_mtime $(stat -t composer.lock | awk "{print \\$12}")
     echo cumulative_cpu_percent $(ps -p 1 -o %cpu --cumulative --no-header)
 
-    echo error_logs $(perl -ne "s/.*(CRITICAL|ERROR):? /\\1 / 
-      and print" ~/var/log/{debug,exception,support_report,system}.log /var/log/{app,deploy,error}.log | 
-      sed "/Dotmailer connector API endpoint cannot be empty/d;/Could not ping search engine:/d" | 
-      sort | uniq | awk "{print \\"((\\" NR, \\"))\\", \\$0}")
+    # sort based on the 3 field to rev output to keep most recent occurrence of error only
+    echo error_logs $(perl -ne "/.*(CRITICAL|ERROR):? / 
+        and print" ~/var/log/{debug,exception,support_report,system}.log /var/log/{app,deploy,error}.log 2>/dev/null | 
+        tac | sort -k 3 -ru | 
+        sed "/Dotmailer connector API endpoint cannot be empty/d;/Could not ping search engine:/d" | 
+        awk "{print \\"((\\" NR, \\"))\\", \\$0}")
 
     mysql main -sN -h database.internal -e "
       SELECT \\"not_valid_index_count\\", COUNT(*) FROM indexer_state WHERE status != \\"valid\\";
