@@ -15,8 +15,6 @@ class Main extends Component {
     return (
       <main className={classes.content}>
         <div className={classes.toolbar} />
-        {/* vspace for content*/}
-        <Typography noWrap>{'FPO'}</Typography>
         <Route path={'/hosts-table'} component={HostsTable} />
         <Route path={'/hosts-chart'} component={HostsChart} />
         <Route path={'/environments-table'} component={EnvironmentsTable} />

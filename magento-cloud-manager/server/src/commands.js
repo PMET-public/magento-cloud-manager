@@ -58,6 +58,11 @@ module.exports = (req, res) => {
         name: 'reindex',
         description: '',
         command: 'php bin/magento index:reindex',
+      },
+      {
+        name: 'cache',
+        description: '',
+        command: 'php bin/magento cache:flush',
       }
     ]
   }

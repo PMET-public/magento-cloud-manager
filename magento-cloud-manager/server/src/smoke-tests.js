@@ -14,7 +14,7 @@ module.exports = (req, res) => {
       sm.cat_url, sm.cat_url_product_count, sm.cat_url_uncached, sm.cat_url_partial_cache, sm.cat_url_cached, sm.german_check, 
       sm.venia_check, sm.admin_check, sm.error_logs, sm.utilization_start, sm.utilization_end, sm.timestamp,
       pr.region, pr.title project_title,
-      en.id environment_id, en.title environment_title,
+      en.id environment_id, en.title environment_title, en.machine_name,
       ce.server, ce.expiration
     FROM 
       smoke_tests sm   

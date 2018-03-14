@@ -1,63 +1,45 @@
 import React, {Component} from 'react'
-import {Scatter, Line} from 'react-chartjs-2'
-
-const data = {
-  labels: ['Historic Host 15 min load avg'],
-  datasets: [
-    {
-      label: 'Project A',
-      fill: false,
-      backgroundColor: 'rgba(75,192,192,0.4)',
-      pointBorderColor: 'rgba(75,192,192,1)',
-      pointBackgroundColor: '#fff',
-      pointBorderWidth: 1,
-      pointHoverRadius: 5,
-      pointHoverBackgroundColor: 'rgba(75,192,192,1)',
-      pointHoverBorderColor: 'rgba(220,220,220,1)',
-      pointHoverBorderWidth: 2,
-      pointRadius: 1,
-      pointHitRadius: 10,
-      data: [
-        {x: 65, y: 75},
-        {x: 59, y: 49},
-        {x: 80, y: 90},
-        {x: 81, y: 29},
-        {x: 56, y: 36},
-        {x: 55, y: 25},
-        {x: 40, y: 18}
-      ]
-    },
-    {
-      label: 'Project B',
-      fill: false,
-      backgroundColor: 'rgba(75,192,192,0.9)',
-      pointBorderColor: 'rgba(75,192,192,1)',
-      pointBackgroundColor: '#aaf',
-      pointBorderWidth: 1,
-      pointHoverRadius: 5,
-      pointHoverBackgroundColor: 'rgba(75,192,192,1)',
-      pointHoverBorderColor: 'rgba(220,220,220,1)',
-      pointHoverBorderWidth: 2,
-      pointRadius: 1,
-      pointHitRadius: 10,
-      data: [
-        {x: 69, y: 71},
-        {x: 55, y: 41},
-        {x: 80, y: 90},
-        {x: 81, y: 21},
-        {x: 59, y: 31},
-        {x: 51, y: 21},
-        {x: 40, y: 18}
-      ]
-    }
-  ]
-}
+import {Scatter, Line, defaults} from 'react-chartjs-2'
+defaults.global.animation = false
 
 export default class extends Component {
   constructor(props) {
     super(props)
     this.state = {
       data: [],
+      options: {
+        showLines: true,
+        legend: {
+          display: true,
+          position: 'bottom'
+        },
+        scales: {
+          xAxes: [
+            {
+              display: true,
+              labelString: 'Date',
+              labels: {
+                show: true
+              },
+              time: {
+                unit: 'day'
+              },
+              ticks: {
+                max: 0
+              }
+            }
+          ],
+          yAxes: [
+            {
+              display: true,
+              labelString: 'Utilization',
+              ticks: {
+                max: 0
+              }
+            }
+          ]
+        }
+      },
       isLoaded: false
     }
   }
@@ -67,24 +49,68 @@ export default class extends Component {
       .then(res => res.json())
       .then(
         res => {
-          const data = []
+          const projData = {}
+          const data = {
+            labels: ['Historic Host 15 min load avg 2'],
+            datasets: []
+          }
+          const msInDay = 1000*24*60*60
+          const rv = () => Math.floor(Math.random() * 255)
+          const randomRange = (min, max) => {
+            return Math.random() * (max - min) + min;
+          }
+          const randomRangeInt = (min, max) => {
+            return Math.floor(Math.random() * (max - min) + min);
+          }
+          const regionColors1 = () => `rgba(244,${randomRangeInt(100,200)},${randomRangeInt(0,100)},${randomRange(0.5, 1)}`
+          const regionColors2 = () => `rgba(${randomRangeInt(0,100)},${randomRangeInt(100,200)},244,${randomRange(0.5, 1)}`
+          const regions = {}
+          const titles = {}
+          let minX = 0
+          let maxY = 0
+
+          // group rows by project
           res.forEach(row => {
-            if (typeof data[row.project_id] === 'undefined') {
-              data[row.project_id] = []
+            if (typeof projData[row.project_id] === 'undefined') {
+              projData[row.project_id] = []
             }
-            data[row.project_id].push({x: new Date(row.timestamp)/1000, y: row.load_avg_15})
+            // convert timestamp into "days ago"
+            let x = (new Date(row.timestamp) - new Date())/msInDay
+            let y = row.load_avg_15 / row.cpus
+            minX = x < minX ? x : minX
+            maxY = y > maxY ? y : maxY
+            projData[row.project_id].push({x: x, y: y})
+            regions[row.project_id] = row.region
+            titles[row.project_id] = row.title
           })
-          data.map(([key, val]) => {
-            console.log(key, val)
+          // set min of x axis
+          this.state.options.scales.xAxes[0].ticks.min = minX
+          this.state.options.scales.yAxes[0].ticks.max = Math.ceil(maxY)
+
+          Object.entries(projData).forEach(([key, val]) => {
+            const c = regions[key] == 'us-3' ? regionColors1() : regionColors2()
+            data.datasets.push({
+              label: `${titles[key]} (${regions[key]}, ${key})`,
+              fill: false,
+              borderColor: c,
+              backgroundColor: c,
+              pointBorderColor: 'rgba(0,100,100,1)',
+              //pointBackgroundColor: '#fff',
+              pointBorderWidth: 1,
+              pointHoverRadius: 5,
+              //pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+              //pointHoverBorderColor: 'rgba(220,220,220,1)',
+              pointHoverBorderWidth: 2,
+              pointRadius: 1,
+              pointHitRadius: 10,
+              data: val
+            })
           })
           this.setState({
             isLoaded: true,
             data: data
           })
         },
-        // Note: it's important to handle errors here
-        // instead of a catch() block so that we don't swallow
-        // exceptions from actual bugs in components.
         error => {
           this.setState({
             isLoaded: true,
@@ -97,42 +123,11 @@ export default class extends Component {
   render() {
     return this.state.isLoaded ? (
       <div>
-        <h2>Historic Load Avg</h2>
-        <Line data={data} />
+        <h2>Historic Utilization</h2>
+        <Scatter data={this.state.data} options={this.state.options} height={250} />
       </div>
     ) : (
       <div>Loading ...</div>
     )
   }
 }
-// export default class extends Component {
-
-//   myChart() {
-//     const ctx = document.getElementById('mychart')
-//     new Chart(ctx, {
-//       type: 'scatter',
-//       data: {
-//           datasets: [{
-//               label: 'Scatter Dataset',
-//               data: [{
-//                   x: -10,
-//                   y: 0
-//               }, {
-//                   x: 0,
-//                   y: 10
-//               }, {
-//                   x: 10,
-//                   y: 5
-//               }]
-//           }]
-//       },
-//       options: {
-//           scales: {
-//               xAxes: [{
-//                   type: 'linear',
-//                   position: 'bottom'
-//               }]
-//           }
-//       }
-//   })
-//   }
