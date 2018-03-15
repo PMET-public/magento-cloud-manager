@@ -7,6 +7,8 @@ import projEnvCell from '../util/projEnvCell'
 import moment from 'moment'
 import Button from 'material-ui/Button'
 import Dialog from '../util/Dialog'
+import Gauge from '../util/Gauge'
+import Tooltip from 'material-ui/Tooltip';
 
 moment.updateLocale('en', {
   relativeTime: {
@@ -224,10 +226,15 @@ export default class extends Component {
               {
                 Header: 'Cat Page Products',
                 accessor: 'cat_url_product_count',
-                Cell: cell => this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon),
+                Cell: cell => <Tooltip placement="right"
+                title={cell.value} enterDelay={20} leaveDelay={20}>
+                {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
+                </Tooltip>
+                ,
                 maxWidth: this.calcWidth(2),
                 className: 'right',
-                filterable: false
+                filterable: false,
+              
               },
               {
                 Header: 'Cat Page',
@@ -391,13 +398,13 @@ export default class extends Component {
               {
                 Header: '% Load @ test start',
                 accessor: 'utilization_start',
-                Cell: cell => <div>{cell.value}</div>,
+                Cell: cell => <Gauge data={cell.value} />,
                 maxWidth: 200
               },
               {
                 Header: '% Load @ test end',
                 accessor: 'utilization_end',
-                Cell: cell => <div>{cell.value}</div>,
+                Cell: cell => <Gauge data={cell.value} />,
                 maxWidth: 200
               },
               {

@@ -38,7 +38,7 @@ export default {
       </a>
       <Clipboard
         data-clipboard-text={`~/.magento-cloud/bin/magento-cloud ssh -p ${cell.original.project_id} -e ${
-          cell.original.id
+          cell.original.environment_id
         }`}>
         <Icon color="secondary">code</Icon>
       </Clipboard>

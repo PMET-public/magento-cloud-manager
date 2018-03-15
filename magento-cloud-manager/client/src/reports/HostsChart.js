@@ -8,6 +8,7 @@ export default class extends Component {
     this.state = {
       data: [],
       options: {
+        // backgroundColor:'rgb(10,10,10)',
         showLines: true,
         legend: {
           display: true,
@@ -105,6 +106,21 @@ export default class extends Component {
               pointHitRadius: 10,
               data: val
             })
+          })
+          // create a line at 1 to color the area underneath
+          data.datasets.push({
+            data: [{x: 0, y: 1}, {x: minX, y: 1}],
+            label: '100% Utilization',
+            backgroundColor: 'rgba(170, 226, 183, 0.5)',
+            borderColor: 'rgba(170, 226, 183, 1)',
+            borderWidth: 2,
+            pointBorderWidth: 0
+          })
+          data.datasets.push({
+            data: [{x: 0, y: Math.ceil(maxY)}, {x: minX, y: Math.ceil(maxY)}],
+            label: 'Over Utilized',
+            backgroundColor: 'rgba(255, 100, 100, 0.15)',
+            borderColor: 'rgba(255, 100, 100, 0.15)'
           })
           this.setState({
             isLoaded: true,

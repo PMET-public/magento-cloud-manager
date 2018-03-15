@@ -47,22 +47,41 @@ module.exports = (req, res) => {
       {
         name: 'ssh',
         description: `${chalk.bgBlack.greenBright.bold('Starting an ssh session ...')}`,
-        command: SSH,
+        command: `${SSH}`
       },
       {
         name: 'cron',
         description: `${chalk.bgBlack.greenBright.bold('Run cron jobs immediately')}`,
-        command: 'php bin/magento cron:run',
+        command: `${SSH} '${M_CLI} cron:run'`,
       },
       {
         name: 'reindex',
         description: '',
-        command: 'php bin/magento index:reindex',
+        command: `${SSH} '${M_CLI} index:reindex'`,
       },
       {
         name: 'cache',
         description: '',
-        command: 'php bin/magento cache:flush',
+        command: `${SSH} '${M_CLI} cache:flush'`,
+      },
+      {
+        name: 'tunnels',
+        description: '',
+        command: `${MC_CLI} tunnel:open ${ENV_OPT} -y`,
+      },
+      {
+        name: 'backup db',
+        description: 'Back up the database',
+        command: `${SSH} '${M_CLI} setup:backup --db'`,
+      },
+      {
+        name: 'restore db',
+        description: 'Restore the database',
+        command: `${SSH} 'ls -t var/backups' 
+          read -p 'Do you wish to restore the latest backup?' yn
+          case $yn in
+            [Yy]* ) ${SSH} '${M_CLI} setup:rollback -n -d \$(ls -t ~/var/backups | tail -1)'
+          esac`,
       }
     ]
   }
@@ -90,7 +109,7 @@ module.exports = (req, res) => {
     ]
   }
 
-  res.attachment(`${result['project_title']}-${result['environment_title']}.zip`)
+  res.attachment(`cloud-${result['project_title']}-${result['environment_title']}.zip`)
   zip.on('error', function(err) {
     res.status(500).send({error: err.message})
   })

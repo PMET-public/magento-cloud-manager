@@ -124,3 +124,16 @@ main {
   position: fixed;
   width: 100%;
 }
+
+
+.gauge-wrapper {
+  height: 5px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+
+.gauge {
+  background: linear-gradient(to right, green, yellow);
+  width: 75px;
+  height: 5px;
+}
