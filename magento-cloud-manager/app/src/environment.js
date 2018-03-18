@@ -57,6 +57,26 @@ exports.setEnvironmentMissing = function(project, environment) {
   return result
 }
 
+exports.redeployEnv = function(project, environment = 'master') {
+  return exec(`${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}"
+  cd "${project}-${environment}"
+  pwd
+  git commit -m "redeploy" --allow-empty
+  git push
+  cd ..
+  `)
+  .then(execOutputHandler)
+  .then(({stdout, stderr}) => {
+    return stdout.trim().split('\n')
+  })
+  .catch(error => {
+    logger.mylog('error', error)
+  })
+  
+  // rm -rf "${project}-${environment}"
+
+}
+
 exports.getEnvironmentsFromAPI = function(project) {
   return exec(`${MC_CLI} environments -p ${project} --pipe`)
     .then(execOutputHandler)

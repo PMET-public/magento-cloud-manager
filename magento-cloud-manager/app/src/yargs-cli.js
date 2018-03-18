@@ -11,10 +11,12 @@ const {updateProject, updateProjects} = require('../src/project')
 const {
   updateEnvironment,
   updateAllCurrentProjectsEnvironmentsFromAPI,
-  deleteInactiveEnvironments
+  deleteInactiveEnvironments,
+  redeployEnv
 } = require('../src/environment')
 const {smokeTestApp, smokeTestAllLiveApps} = require('../src/smoke-test')
 const {searchActivitiesForFailures} = require('../src/activity')
+const {enableAllGitlabKeysForAllConfiguredProjects} = require('../src/gitlab')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
 const headerTxt = txt => chalk.yellow(txt)
@@ -197,10 +199,47 @@ yargs.command(
 )
 
 yargs.command(
+  ['env:redeploy [pid] [env]', 'er'],
+  'Redeploy an expired environment as is',
+  yargs => {
+    yargs.positional('pid', {
+      type: 'string',
+      describe: 'The project ID'
+    })
+    yargs.positional('env', {
+      type: 'string',
+      describe: 'The environment ID',
+      default: 'master'
+    })
+    yargs.option('a', {
+      alias: 'all',
+      description: 'Update all apps from all projects',
+      type: 'boolean',
+      coerce: coercer,
+      conflicts: ['pid']
+    })
+  },
+  argv => {
+    if (argv.all) {
+      // smokeTestAllLiveApps()
+    } else {
+      redeployEnv(argv.pid, argv.env)
+    }
+  }
+)
+
+yargs.command(
   ['activity:find-failures', 'af'],
   'Update envs in DB that failed to deploy',
   () => {},
   argv => searchActivitiesForFailures()
+)
+
+yargs.command(
+  ['project:grant-gitlab', 'pg'],
+  'Grant access for all projects to all configured gitlabe projects in config.json',
+  () => {},
+  argv => enableAllGitlabKeysForAllConfiguredProjects()
 )
 
 exports.yargs = yargs

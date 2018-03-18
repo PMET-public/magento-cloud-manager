@@ -5,7 +5,6 @@ import UniqueOptions from '../util/UniqueOptions'
 import Icon from 'material-ui/Icon'
 import projEnvCell from '../util/projEnvCell'
 import moment from 'moment'
-import Button from 'material-ui/Button'
 import Dialog from '../util/Dialog'
 import Gauge from '../util/Gauge'
 import Tooltip from 'material-ui/Tooltip';
@@ -60,7 +59,7 @@ export default class extends Component {
   }
 
   formatSecs = secs => {
-    return /^[\d\.]+$/.test(secs) ? secs.toFixed(1) : ''
+    return /^[\d.]+$/.test(secs) ? secs.toFixed(1) : ''
   }
 
   calcWidth = maxExpectedChars => {

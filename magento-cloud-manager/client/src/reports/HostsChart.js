@@ -1,5 +1,5 @@
 import React, {Component} from 'react'
-import {Scatter, Line, defaults} from 'react-chartjs-2'
+import {Scatter, defaults} from 'react-chartjs-2'
 defaults.global.animation = false
 
 export default class extends Component {
@@ -7,40 +7,7 @@ export default class extends Component {
     super(props)
     this.state = {
       data: [],
-      options: {
-        // backgroundColor:'rgb(10,10,10)',
-        showLines: true,
-        legend: {
-          display: true,
-          position: 'bottom'
-        },
-        scales: {
-          xAxes: [
-            {
-              display: true,
-              labelString: 'Date',
-              labels: {
-                show: true
-              },
-              time: {
-                unit: 'day'
-              },
-              ticks: {
-                max: 0
-              }
-            }
-          ],
-          yAxes: [
-            {
-              display: true,
-              labelString: 'Utilization',
-              ticks: {
-                max: 0
-              }
-            }
-          ]
-        }
-      },
+      options: {},
       isLoaded: false
     }
   }
@@ -56,7 +23,6 @@ export default class extends Component {
             datasets: []
           }
           const msInDay = 1000*24*60*60
-          const rv = () => Math.floor(Math.random() * 255)
           const randomRange = (min, max) => {
             return Math.random() * (max - min) + min;
           }
@@ -84,12 +50,9 @@ export default class extends Component {
             regions[row.project_id] = row.region
             titles[row.project_id] = row.title
           })
-          // set min of x axis
-          this.state.options.scales.xAxes[0].ticks.min = minX
-          this.state.options.scales.yAxes[0].ticks.max = Math.ceil(maxY)
 
           Object.entries(projData).forEach(([key, val]) => {
-            const c = regions[key] == 'us-3' ? regionColors1() : regionColors2()
+            const c = regions[key] === 'us-3' ? regionColors1() : regionColors2()
             data.datasets.push({
               label: `${titles[key]} (${regions[key]}, ${key})`,
               fill: false,
@@ -124,7 +87,42 @@ export default class extends Component {
           })
           this.setState({
             isLoaded: true,
-            data: data
+            data: data,
+            options : {
+              // backgroundColor:'rgb(10,10,10)',
+              showLines: true,
+              legend: {
+                display: true,
+                position: 'bottom'
+              },
+              scales: {
+                xAxes: [
+                  {
+                    display: true,
+                    labelString: 'Date',
+                    labels: {
+                      show: true
+                    },
+                    time: {
+                      unit: 'day'
+                    },
+                    ticks: {
+                      min: minX,
+                      max: 0
+                    }
+                  }
+                ],
+                yAxes: [
+                  {
+                    display: true,
+                    labelString: 'Utilization',
+                    ticks: {
+                      max: Math.ceil(maxY)
+                    }
+                  }
+                ]
+              }
+            }
           })
         },
         error => {
