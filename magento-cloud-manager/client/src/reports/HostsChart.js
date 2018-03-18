@@ -22,15 +22,17 @@ export default class extends Component {
             labels: ['Historic Host 15 min load avg 2'],
             datasets: []
           }
-          const msInDay = 1000*24*60*60
+          const msInDay = 1000 * 24 * 60 * 60
           const randomRange = (min, max) => {
-            return Math.random() * (max - min) + min;
+            return Math.random() * (max - min) + min
           }
           const randomRangeInt = (min, max) => {
-            return Math.floor(Math.random() * (max - min) + min);
+            return Math.floor(Math.random() * (max - min) + min)
           }
-          const regionColors1 = () => `rgba(244,${randomRangeInt(100,200)},${randomRangeInt(0,100)},${randomRange(0.5, 1)}`
-          const regionColors2 = () => `rgba(${randomRangeInt(0,100)},${randomRangeInt(100,200)},244,${randomRange(0.5, 1)}`
+          const regionColors1 = () =>
+            `rgba(244,${randomRangeInt(100, 200)},${randomRangeInt(0, 100)},${randomRange(0.5, 1)}`
+          const regionColors2 = () =>
+            `rgba(${randomRangeInt(0, 100)},${randomRangeInt(100, 200)},244,${randomRange(0.5, 1)}`
           const regions = {}
           const titles = {}
           let minX = 0
@@ -42,7 +44,7 @@ export default class extends Component {
               projData[row.project_id] = []
             }
             // convert timestamp into "days ago"
-            let x = (new Date(row.timestamp) - new Date())/msInDay
+            let x = (new Date(row.timestamp) - new Date()) / msInDay
             let y = row.load_avg_15 / row.cpus
             minX = x < minX ? x : minX
             maxY = y > maxY ? y : maxY
@@ -88,7 +90,7 @@ export default class extends Component {
           this.setState({
             isLoaded: true,
             data: data,
-            options : {
+            options: {
               // backgroundColor:'rgb(10,10,10)',
               showLines: true,
               legend: {

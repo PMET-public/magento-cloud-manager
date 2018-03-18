@@ -7,7 +7,7 @@ import projEnvCell from '../util/projEnvCell'
 import moment from 'moment'
 import Dialog from '../util/Dialog'
 import Gauge from '../util/Gauge'
-import Tooltip from 'material-ui/Tooltip';
+import Tooltip from 'material-ui/Tooltip'
 
 moment.updateLocale('en', {
   relativeTime: {
@@ -180,7 +180,7 @@ export default class extends Component {
                 Cell: cell => cell.value.toFixed(0),
                 maxWidth: this.calcWidth(3),
                 className: 'right',
-                Filter: ("%")
+                Filter: '%'
               },
               {
                 Header: 'Storefront (uncached)',
@@ -225,15 +225,14 @@ export default class extends Component {
               {
                 Header: 'Cat Page Products',
                 accessor: 'cat_url_product_count',
-                Cell: cell => <Tooltip placement="right"
-                title={cell.value} enterDelay={20} leaveDelay={20}>
-                {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
-                </Tooltip>
-                ,
+                Cell: cell => (
+                  <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
+                    {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
+                  </Tooltip>
+                ),
                 maxWidth: this.calcWidth(2),
                 className: 'right',
-                filterable: false,
-              
+                filterable: false
               },
               {
                 Header: 'Cat Page',
@@ -360,11 +359,7 @@ export default class extends Component {
               {
                 Header: 'Errors',
                 accessor: 'error_logs',
-                Cell: cell => (
-                    <Dialog>
-                      {(cell.value)}
-                    </Dialog>
-                ),
+                Cell: cell => <Dialog>{cell.value}</Dialog>,
                 maxWidth: 200,
                 filterMethod: (filter, row, column) => {
                   return new RegExp(filter.value, 'i').test(row[filter.id])

@@ -18,7 +18,7 @@ export default {
       </a>
       <br />
       <a
-        target="_blank" 
+        target="_blank"
         href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${cell.original.environment_id}`}>
         <Icon color="secondary">cloud_download</Icon>
       </a>
@@ -45,14 +45,18 @@ export default {
     </div>
   ),
   Filter: ({filter, onChange}) => (
-    <input placeholder="Regular expression" type="text" onChange={event => onChange(event.target.value)}
+    <input
+      placeholder="Regular expression"
+      type="text"
+      onChange={event => onChange(event.target.value)}
       style={{width: '100%'}}
       value={filter && filter.value ? filter.value : ''}
     />
   ),
   filterMethod: (filter, row, column) => {
     const o = row._original
-    return new RegExp(filter.value,'i')
-      .test(`${o.project_title} ${o.environment_title} ${o.project_id} ${o.environment_id}`)
+    return new RegExp(filter.value, 'i').test(
+      `${o.project_title} ${o.environment_title} ${o.project_id} ${o.environment_id}`
+    )
   }
 }

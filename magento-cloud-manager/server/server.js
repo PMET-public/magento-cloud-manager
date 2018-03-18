@@ -25,11 +25,11 @@ app.get('/api/projects', (req, res) => {
 const fs = require('fs')
 fs.readdir('./src', (err, files) => {
   files.forEach(file => {
-    if(/\.js$/.test(file)) {
-      const name = file.replace(/\.js$/,'')
+    if (/\.js$/.test(file)) {
+      const name = file.replace(/\.js$/, '')
       app.get(`/${name}`, require(`./src/${name}`))
     }
-  });
+  })
 })
 
 app.listen(app.get('port'), () => {

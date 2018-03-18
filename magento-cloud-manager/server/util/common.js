@@ -1,7 +1,6 @@
 const Database = require('better-sqlite3')
 const winston = require('winston')
 
-
 const logger = winston.createLogger({
   transports: [
     new winston.transports.File({filename: `${__dirname}/../error.log`, level: 'error'}),
@@ -22,7 +21,6 @@ logger.simpleConsole = new winston.transports.Console({
 logger.add(logger.simpleConsole)
 
 exports.logger = logger
-
 
 exports.db = new Database(`${__dirname}/../../sql/cloud.db`)
 const {prepare} = exports.db

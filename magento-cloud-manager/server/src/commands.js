@@ -3,24 +3,23 @@ const archiver = require('archiver')
 const chalk = require('chalk')
 
 module.exports = (req, res) => {
-
   // http://localhost:3001/commands?p=r7lyqt4tsnw6g&e=master
-  
+
   const proj = req.query.p
   const env = req.query.e
   if (!proj || !env) {
     return
   }
-  
+
   const zip = archiver('zip')
   const result = db
-  .prepare(
-    `SELECT p.title project_title, e.title environment_title, 
+    .prepare(
+      `SELECT p.title project_title, e.title environment_title, 
     project_url, region, machine_name
     FROM environments e LEFT JOIN projects p ON e.project_id = p.id
     WHERE e.project_id = ? and e.id = ?`
-  )
-  .get(proj, env)
+    )
+    .get(proj, env)
 
   const getCommands = () => {
     const MC_CLI = '~/.magento-cloud/bin/magento-cloud'
@@ -32,17 +31,17 @@ module.exports = (req, res) => {
       {
         name: '1-install-magento-cloud-cli',
         description: 'This will install the magento-cloud tool. You only need to run this once.',
-        command: 'curl -sS https://accounts.magento.cloud/cli/installer | php',
+        command: 'curl -sS https://accounts.magento.cloud/cli/installer | php'
       },
       {
         name: '2-setup-ssh-key',
         description: '',
-        command: '',
+        command: ''
       },
       {
         name: 'DELETE',
         description: `${chalk.redBright('THIS WILL PERMANENTLY DELETE THIS ENV.')}`,
-        command: `${MC_CLI} environment:delete ${ENV_OPT} --no-wait`,
+        command: `${MC_CLI} environment:delete ${ENV_OPT} --no-wait`
       },
       {
         name: 'ssh',
@@ -52,27 +51,27 @@ module.exports = (req, res) => {
       {
         name: 'cron',
         description: `${chalk.bgBlack.greenBright.bold('Run cron jobs immediately')}`,
-        command: `${SSH} '${M_CLI} cron:run'`,
+        command: `${SSH} '${M_CLI} cron:run'`
       },
       {
         name: 'reindex',
         description: '',
-        command: `${SSH} '${M_CLI} index:reindex'`,
+        command: `${SSH} '${M_CLI} index:reindex'`
       },
       {
         name: 'cache',
         description: '',
-        command: `${SSH} '${M_CLI} cache:flush'`,
+        command: `${SSH} '${M_CLI} cache:flush'`
       },
       {
         name: 'tunnels',
         description: '',
-        command: `${MC_CLI} tunnel:open ${ENV_OPT} -y`,
+        command: `${MC_CLI} tunnel:open ${ENV_OPT} -y`
       },
       {
         name: 'backup db',
         description: 'Back up the database',
-        command: `${SSH} '${M_CLI} setup:backup --db'`,
+        command: `${SSH} '${M_CLI} setup:backup --db'`
       },
       {
         name: 'restore db',
@@ -81,7 +80,7 @@ module.exports = (req, res) => {
           read -p 'Do you wish to restore the latest backup?' yn
           case $yn in
             [Yy]* ) ${SSH} '${M_CLI} setup:rollback -n -d \$(ls -t ~/var/backups | tail -1)'
-          esac`,
+          esac`
       }
     ]
   }

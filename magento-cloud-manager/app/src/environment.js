@@ -65,16 +65,15 @@ exports.redeployEnv = function(project, environment = 'master') {
   git push
   cd ..
   `)
-  .then(execOutputHandler)
-  .then(({stdout, stderr}) => {
-    return stdout.trim().split('\n')
-  })
-  .catch(error => {
-    logger.mylog('error', error)
-  })
-  
-  // rm -rf "${project}-${environment}"
+    .then(execOutputHandler)
+    .then(({stdout, stderr}) => {
+      return stdout.trim().split('\n')
+    })
+    .catch(error => {
+      logger.mylog('error', error)
+    })
 
+  // rm -rf "${project}-${environment}"
 }
 
 exports.getEnvironmentsFromAPI = function(project) {

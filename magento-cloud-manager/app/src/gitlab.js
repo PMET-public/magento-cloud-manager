@@ -59,9 +59,11 @@ async function enableDeployKey(gitlabProjectId, keyId) {
   return await apiPost(`projects/${gitlabProjectId}/deploy_keys/${keyId}/enable`)
 }
 
-exports.enableAllGitlabKeysForAllConfiguredProjects = async function () {
+exports.enableAllGitlabKeysForAllConfiguredProjects = async function() {
   const promises = []
-  const allCloudKeyIdsInGitlab = (await getAllDeployKeysFromGitlab()).filter(key => /@platform|@magento/.test(key.key)).map(key => key.id)
+  const allCloudKeyIdsInGitlab = (await getAllDeployKeysFromGitlab())
+    .filter(key => /@platform|@magento/.test(key.key))
+    .map(key => key.id)
   for (let gitlabProjectId of gitlabProjectIds) {
     let gitlabProjectDeployKeyIds = (await getGitlabProjectDeployKeys(gitlabProjectId)).map(key => key.id)
     for (let keyId of allCloudKeyIdsInGitlab) {
@@ -74,12 +76,12 @@ exports.enableAllGitlabKeysForAllConfiguredProjects = async function () {
   return await Promise.all(promises)
 }
 
-exports.addCloudProjectKeyToGitlabKeys = async function (cloudProject) {
+exports.addCloudProjectKeyToGitlabKeys = async function(cloudProject) {
   try {
-    cont result = db.prepare('SELECT client_ssh_key FROM projects WHERE id = ?').get(cloudProject)
+    const result = db.prepare('SELECT client_ssh_key FROM projects WHERE id = ?').get(cloudProject)
     logger.mylog('debug', result)
     for (let gitlabProjectId of gitlabProjectIds) {
-      await apiPost(`projects/${gitlabProjectId}/deploy_keys`,{
+      await apiPost(`projects/${gitlabProjectId}/deploy_keys`, {
         title: 'MECE',
         key: result.client_ssy_key
       })
@@ -87,5 +89,4 @@ exports.addCloudProjectKeyToGitlabKeys = async function (cloudProject) {
   } catch (error) {
     logger.mylog('error', error)
   }
-
-} 
+}
