@@ -78,13 +78,15 @@ exports.enableAllGitlabKeysForAllConfiguredProjects = async function() {
 
 exports.addCloudProjectKeyToGitlabKeys = async function(cloudProject) {
   try {
-    const result = db.prepare('SELECT client_ssh_key FROM projects WHERE id = ?').get(cloudProject)
+    let result = db.prepare('SELECT client_ssh_key FROM projects WHERE id = ?').get(cloudProject)
+    const clientSshKey = result.client_ssh_key
     logger.mylog('debug', result)
     for (let gitlabProjectId of gitlabProjectIds) {
-      await apiPost(`projects/${gitlabProjectId}/deploy_keys`, {
+      result = await apiPost(`projects/${gitlabProjectId}/deploy_keys`, {
         title: 'MECE',
-        key: result.client_ssy_key
+        key: clientSshKey
       })
+      logger.mylog('info', result)
     }
   } catch (error) {
     logger.mylog('error', error)

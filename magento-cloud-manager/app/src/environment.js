@@ -21,8 +21,8 @@ exports.updateEnvironment = async function(project, environment = 'master') {
         .run(environment, project, title, machineName, active, createdAt, environment, project)
       logger.mylog('debug', result)
       result = db.prepare('SELECT region FROM projects WHERE id = ?').get(project)
-      const serverName = `${machineName}-${project}.${result.region}.magentosite.cloud`
-      return await checkCertificate(serverName)
+      const hostName = `${machineName}-${project}.${result.region}.magentosite.cloud`
+      return await checkCertificate(hostName)
     })
     .catch(error => {
       logger.mylog('error', error)
@@ -58,22 +58,30 @@ exports.setEnvironmentMissing = function(project, environment) {
 }
 
 exports.redeployEnv = function(project, environment = 'master') {
-  return exec(`${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}"
-  cd "${project}-${environment}"
-  pwd
-  git commit -m "redeploy" --allow-empty
-  git push
-  cd ..
+  return exec(`
+    ${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}"
+    cd "/tmp/${project}-${environment}"
+    pwd
+    git commit -m "redeploy" --allow-empty
+    git push
+    cd ..
+    rm -rf "/tmp/${project}-${environment}"
   `)
-    .then(execOutputHandler)
-    .then(({stdout, stderr}) => {
-      return stdout.trim().split('\n')
-    })
-    .catch(error => {
-      logger.mylog('error', error)
-    })
+  .then(execOutputHandler)
+  .catch(error => {
+    logger.mylog('error', error)
+  })
+}
 
-  // rm -rf "${project}-${environment}"
+exports.redeployExpiringEnvs = async () => {
+  const expirationInAWk = new Date()/1000 + 24*60*60*7
+  exports.getAllLiveEnvironmentsFromDB().forEach(async ({project_id, environment_id, host_name, expiration}) => {
+    if (expiration < expirationInAWk) {
+      // b/c redeploys are expensive compared to checking the expiration, check first
+      const result = await checkCertificate(host_name)
+      console.log(result)
+    }
+  })
 }
 
 exports.getEnvironmentsFromAPI = function(project) {
@@ -89,7 +97,14 @@ exports.getEnvironmentsFromAPI = function(project) {
 
 exports.getAllLiveEnvironmentsFromDB = () => {
   const result = db
-    .prepare('SELECT id, project_id FROM environments WHERE active = 1 AND (failure = 0 OR failure IS null)')
+    .prepare(`
+      SELECT e.id environment_id, e.project_id,  c.host_name, c.expiration
+      FROM environments e 
+      LEFT JOIN projects p ON e.project_id = p.id 
+      LEFT JOIN cert_expirations c ON 
+        c.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
+      WHERE e.active = 1 AND (e.failure = 0 OR e.failure IS null)
+    `)
     .all()
   logger.mylog('debug', result)
   return result
@@ -131,4 +146,22 @@ exports.deleteInactiveEnvironments = async function() {
     )
   })
   return await Promise.all(promises)
+}
+
+exports.execInEnv = function(project, environment, filePath) {
+  // create a unique remote tmp file to run
+  // do not delete it to identify what's been run in an env
+  const file = '/tmp/' + Math.floor((new Date()/1000)) + '-' + filePath.replace(/.*\//,'')
+  const ssh = `${MC_CLI} ssh -p "${project}" -e "${environment}"`
+  const remoteCmd = /\.sql$/.test(file) ? 
+    `mysql main -h database.internal < "${file}"` : 
+    `chmod +x "${file}"; "${file}"`
+  return exec(`
+    scp "${filePath}" $(${ssh} --pipe):"${file}"
+    ${ssh} '${remoteCmd}'
+  `)
+  .then(execOutputHandler)
+  .catch(error => {
+    logger.mylog('error', error)
+  })
 }

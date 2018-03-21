@@ -71,9 +71,7 @@ db.prepare = function() {
 }
 exports.db = db
 
-const util = require('util')
-const child_process = require('child_process')
-const exec = util.promisify(child_process.exec)
+const exec = require('util').promisify(require('child_process').exec)
 // can not use arrow func b/c "=>" does not have its own arguments
 exports.exec = function() {
   logger.mylog('debug', arguments[0])
@@ -116,16 +114,17 @@ exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], add
 }
 
 const https = require('https')
-exports.checkCertificate = async serverName => {
-  serverName = serverName.replace(/https?:\/\//, '').replace(/\/.*/, '')
+exports.checkCertificate = async hostName => {
+  hostName = hostName.replace(/https?:\/\//, '').replace(/\/.*/, '')
   new Promise((resolve, reject) => {
-    const request = https.request({host: serverName, port: 443, method: 'GET', rejectUnauthorized: false}, response => {
+    const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, response => {
       const certificateInfo = response.connection.getPeerCertificate()
+      const expiration = Math.floor(new Date(certificateInfo.valid_to) / 1000)
       let result = db
-        .prepare('INSERT OR REPLACE INTO cert_expirations (server, expiration) VALUES (?, ?)')
-        .run(serverName, new Date(certificateInfo.valid_to) / 1000)
+        .prepare('INSERT OR REPLACE INTO cert_expirations (host, expiration) VALUES (?, ?)')
+        .run(hostName, expiration)
       logger.mylog('debug', result)
-      resolve(result)
+      resolve({...result, expiration: expiration, host: hostName})
     })
     request.end()
   })

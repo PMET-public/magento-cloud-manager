@@ -125,6 +125,21 @@ main {
   width: 100%;
 }
 
+.ReactTable.-highlight .rt-tbody .rt-tr:not(.-padRow):hover {
+  background-color: rgba(255,158,64,0.7);
+}
+
+.ReactTable.-striped .rt-tr.-odd.-selected {
+  background-color: rgba(255,158,64,0.2);
+}
+.ReactTable.-striped .rt-tr.-even.-selected {
+  background-color: rgba(255,158,64,0.1);
+}
+
+a {
+  color: #424242;
+}
+
 
 .gauge-wrapper {
   height: 5px;
@@ -137,3 +152,15 @@ main {
   width: 75px;
   height: 5px;
 }
+
+
+/* icon checkmarks from https://codepen.io/jamesbarnett/pen/yILjk */
+@import url(//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css);
+label { font-size: 1em; }
+input[type=checkbox] { display:none; }
+input[type=checkbox] + label:before {
+  font-family: FontAwesome;
+  display: inline-block;
+}
+input[type=checkbox] + label:before { content: "\f096"; } /* unchecked icon */
+input[type=checkbox]:checked + label:before { content: "\f046"; } /* checked icon */

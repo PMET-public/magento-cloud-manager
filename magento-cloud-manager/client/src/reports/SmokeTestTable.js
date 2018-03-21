@@ -8,10 +8,14 @@ import moment from 'moment'
 import Dialog from '../util/Dialog'
 import Gauge from '../util/Gauge'
 import Tooltip from 'material-ui/Tooltip'
+import { stat } from 'fs'
+import checkboxHOC from 'react-table/lib/hoc/selectTable'
+
+const CheckboxTable = checkboxHOC(ReactTable)
 
 moment.updateLocale('en', {
   relativeTime: {
-    future: 'in %s',
+    future: '%s',
     past: '%s',
     s: 'a few sec',
     ss: '%d sec',
@@ -19,8 +23,8 @@ moment.updateLocale('en', {
     mm: '%d min',
     h: '1 hr',
     hh: '%d hr',
-    d: '1 day',
-    dd: '%d day',
+    d: '1 dy',
+    dd: '%d dy',
     M: '1 mo',
     MM: '%d mo',
     y: '1 yr',
@@ -31,7 +35,12 @@ moment.updateLocale('en', {
 export default class extends Component {
   constructor(props) {
     super(props)
-    this.state = {width: 0, height: 0}
+    this.state = {
+      width: 0,
+      height: 0,
+      selection: [],
+      selectAll: false
+    }
     this.updateWindowDimensions = this.updateWindowDimensions.bind(this)
   }
 
@@ -48,8 +57,14 @@ export default class extends Component {
     this.setState({width: window.innerWidth, height: window.innerHeight})
   }
 
+  
+
   matchRow = (filter, row) => {
     return String(row[filter.id]).indexOf(filter.value) !== -1
+  }
+
+  exactMatchRow = (filter, row) => {
+    return String(row[filter.id]) === filter.value
   }
 
   formatDate = secSinceEpoch => {
@@ -101,9 +116,71 @@ export default class extends Component {
   errorIcon = () => <Icon>error_outline</Icon>
   timerIcon = () => <Icon>timer</Icon>
 
+  toggleSelection = (key, shift, row) => {
+    let selection = [
+      ...this.state.selection
+    ];
+    const keyIndex = selection.indexOf(key);
+    if (keyIndex >= 0) {
+      selection = [
+        ...selection.slice(0, keyIndex),
+        ...selection.slice(keyIndex + 1)
+      ]
+    } else {
+      selection.push(key);
+    }
+    this.setState({ selection });
+  }
+
+  toggleAll = () => {
+    const selectAll = this.state.selectAll ? false : true;
+    const selection = [];
+    if (selectAll) {
+      const wrappedInstance = this.checkboxTable.getWrappedInstance();
+      const currentRecords = wrappedInstance.getResolvedState().sortedData;
+      currentRecords.forEach((item) => {
+        selection.push(item._original._id);
+      })
+    }
+    this.setState({ selectAll, selection })
+  }
+
+  isSelected = (key) => {
+    return this.state.selection.includes(key);
+  }
+
+  selectInputComponent = (props) => {
+    return (
+      <div>
+        <input 
+        id={props.id ? props.id : 'all'}
+        type={props.selectType || 'checkbox'} 
+        checked={props.checked} 
+        onClick={(e)=>{
+          const { shiftKey } = e;
+          e.stopPropagation();
+          props.onClick(props.id, shiftKey, props.row);
+        }} 
+        onChange={()=>{}}  
+      />
+      <label for={props.id ? props.id : 'all'}></label>
+      </div>
+    )
+  }
+
   render() {
     return (
-      <ReactTable
+      <CheckboxTable
+
+        selectType='checkbox'
+        ref={(r)=>this.checkboxTable=r}
+        selectAll={this.selectAll}
+        isSelected={this.isSelected}
+        toggleAll={this.toggleAll}
+        toggleSelection={this.toggleSelection}
+        SelectInputComponent={this.selectInputComponent}
+        SelectAllInputComponent={this.selectInputComponent}
+
         data={this.state.data}
         onFetchData={(state, instance) => {
           this.setState({loading: true})
@@ -111,7 +188,10 @@ export default class extends Component {
             .then(res => res.json())
             .then(res => {
               this.setState({
-                data: res,
+                data: res.map(row => {
+                  row._id = row.id
+                  return row
+                }),
                 loading: false
               })
             })
@@ -124,10 +204,33 @@ export default class extends Component {
         style={{
           height: this.state.height - 200 + 'px'
         }}
+        getTrProps={(state, rowInfo, column, instance) => {
+          return {
+            className: this.isSelected(rowInfo.row.id) ? '-selected' : undefined
+          }
+        }}
+
         columns={[
           {
-            Header: 'Name',
-            columns: [projEnvCell]
+            Header: 'Project Env Info',
+            columns: [projEnvCell,
+            {
+              Header: 'Region',
+              accessor: 'region',
+              className: 'right',
+              width: this.calcWidth(5),
+              Filter: ({filter, onChange}) => (
+                <select
+                  onChange={event => onChange(event.target.value)}
+                  style={{width: '100%'}}
+                  value={filter ? filter.value : 'all'}>
+                  <option value="">Show All</option>
+                  <UniqueOptions data={this.state.data} accessor={'region'} />
+                </select>
+              ),
+              filterMethod: this.exactMatchRow
+            }
+            ]
           },
           {
             Header: 'Version',
@@ -374,14 +477,21 @@ export default class extends Component {
                 Header: 'Last Customer Login',
                 accessor: 'last_login_customer',
                 Cell: cell => this.formatDate(cell.value),
-                maxWidth: this.calcWidth(10),
+                maxWidth: this.calcWidth(5),
                 className: 'right'
               },
               {
                 Header: 'Last Admin Login',
                 accessor: 'last_login_admin',
                 Cell: cell => this.formatDate(cell.value),
-                maxWidth: this.calcWidth(10),
+                maxWidth: this.calcWidth(5),
+                className: 'right'
+              },
+              {
+                Header: 'Cert Expiration',
+                accessor: 'expiration',
+                Cell: cell => moment(new Date(cell.value*1000)).fromNow(),
+                maxWidth: this.calcWidth(5),
                 className: 'right'
               }
             ]
@@ -404,8 +514,9 @@ export default class extends Component {
               {
                 Header: 'When',
                 accessor: 'timestamp',
-                Cell: cell => moment(cell.value).fromNow(),
-                maxWidth: this.calcWidth(10)
+                Cell: cell => moment(new Date(cell.value*1000)).fromNow(),
+                maxWidth: this.calcWidth(5),
+                className: 'right'
               }
             ]
           }

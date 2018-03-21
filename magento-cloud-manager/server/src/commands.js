@@ -15,9 +15,9 @@ module.exports = (req, res) => {
   const result = db
     .prepare(
       `SELECT p.title project_title, e.title environment_title, 
-    project_url, region, machine_name
-    FROM environments e LEFT JOIN projects p ON e.project_id = p.id
-    WHERE e.project_id = ? and e.id = ?`
+      project_url, region, machine_name
+      FROM environments e LEFT JOIN projects p ON e.project_id = p.id
+      WHERE e.project_id = ? and e.id = ?`
     )
     .get(proj, env)
 

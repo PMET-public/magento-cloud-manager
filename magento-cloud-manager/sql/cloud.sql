@@ -11,7 +11,7 @@ CREATE TABLE "projects" (
 	`user_licenses`	INTEGER NOT NULL,
 	`active`	BOOLEAN NOT NULL CHECK(active IN ( 0 , 1 )),
 	`client_ssh_key`	TEXT NOT NULL,
-	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
 	PRIMARY KEY(`id`)
 );
 CREATE TABLE "hosts_states" (
@@ -28,7 +28,7 @@ CREATE TABLE "hosts_states" (
 	`running_processes`	INTEGER NOT NULL,
 	`total_processes`	INTEGER NOT NULL,
 	`last_process_id`	INTEGER NOT NULL,
-	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
 CREATE TABLE "matched_projects_hosts" (
 	`id`	INTEGER NOT NULL,
@@ -38,25 +38,19 @@ CREATE TABLE "users" (
 	`project_id`	TEXT NOT NULL,
 	`email`	TEXT NOT NULL,
 	`role`	TEXT NOT NULL,
-	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
 CREATE TABLE "environments" (
 	`id`	TEXT NOT NULL,
-	`project_id`	TEXT NOT NULL,
 	`title`	TEXT NOT NULL,
+	`project_id`	TEXT NOT NULL,
 	`machine_name`	TEXT,
 	`active`	BOOLEAN NOT NULL CHECK(active IN ( 0 , 1 )),
 	`failure`	BOOLEAN CHECK(failure in ( 0 , 1 )),
 	`missing`	BOOLEAN CHECK(missing in ( 0 , 1 )),
-	`created_at`	INTEGER NOT NULL,
-	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY(`id`,`project_id`,`created_at`)
-);
-CREATE TABLE "cert_expirations" (
-	`server`	TEXT NOT NULL,
-	`expiration`	INTEGER NOT NULL,
-	`timestamp`	INTEGER NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	PRIMARY KEY(`server`)
+	`last_created_at`	INTEGER NOT NULL,
+	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
+	PRIMARY KEY(`id`,`project_id`)
 );
 CREATE TABLE "smoke_tests" (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
@@ -91,5 +85,11 @@ CREATE TABLE "smoke_tests" (
 	`error_logs`	TEXT,
 	`utilization_start`	TEXT NOT NULL,
 	`utilization_end`	TEXT,
-	`timestamp`	DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
+);
+CREATE TABLE "cert_expirations" (
+	`host_name`	TEXT NOT NULL,
+	`expiration`	INTEGER NOT NULL,
+	`timestamp`	INTEGER NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
+	PRIMARY KEY(`host_name`)
 );

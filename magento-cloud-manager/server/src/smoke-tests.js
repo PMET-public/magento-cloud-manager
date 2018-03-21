@@ -15,13 +15,12 @@ module.exports = (req, res) => {
       sm.venia_check, sm.admin_check, sm.error_logs, sm.utilization_start, sm.utilization_end, sm.timestamp,
       pr.region, pr.title project_title,
       en.id environment_id, en.title environment_title, en.machine_name,
-      ce.server, ce.expiration
+      ce.host_name, ce.expiration
     FROM 
-      smoke_tests sm   
+      (SELECT * from smoke_tests GROUP BY project_id, environment_id ORDER BY id DESC) AS sm
     LEFT JOIN projects pr ON sm.project_id = pr.id
     LEFT JOIN environments en ON sm.environment_id = en.id AND sm.project_id = en.project_id 
-    LEFT JOIN cert_expirations ce ON ce.server = en.machine_name || '-' || sm.project_id || '.' || pr.region || '.magentosite.cloud'
-    ORDER BY sm.id DESC`
+    LEFT JOIN cert_expirations ce ON ce.host_name = en.machine_name || '-' || sm.project_id || '.' || pr.region || '.magentosite.cloud'`
     )
     .all()
   res.json(rows)

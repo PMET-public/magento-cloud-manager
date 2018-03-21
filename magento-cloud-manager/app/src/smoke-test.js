@@ -94,8 +94,8 @@ exports.smokeTestApp = async (project, environment = 'master') => {
 
 exports.smokeTestAllLiveApps = async () => {
   const promises = []
-  getAllLiveEnvironmentsFromDB().forEach(({id: environment, project_id: project}) => {
-    promises.push(sshLimit(() => exports.smokeTestApp(project, environment)))
+  getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id}) => {
+    promises.push(sshLimit(() => exports.smokeTestApp(project_id, environment_id)))
   })
   // possible issue if one promise fails?
   // https://stackoverflow.com/questions/30362733/handling-errors-in-promise-all
