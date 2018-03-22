@@ -1,8 +1,5 @@
 const assert = require('chai').assert
-const exec = require('util').promisify(require('child_process').exec)
-const execCmd = cmd => {
-  return exec(`../bin/mcm ${cmd}`, {cwd: __dirname}).catch(error => error)
-}
+const {execCmd} = require('./common')
 
 const verboseOpt = {opt: 'verbose', alias: 'v'}
 const quietOpt = {opt: 'quiet', alias: 'q'}
@@ -79,7 +76,7 @@ describe('testing the CLI ...', () => {
       })
       it(`${cmd} without "-a" requires additional arguments`, async () => {
         const result = await execCmd(`${cmd}`)
-        assert.match(result.stderr, /additional arg/)
+        assert.match(result.stderr, /additional arg|Not enough non-option arguments/)
       })
     })
     cmdsWithoutAllOpt.forEach(cmd => {
