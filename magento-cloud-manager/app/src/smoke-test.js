@@ -29,7 +29,7 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     # do a final sort and remove benign errors
     echo error_logs $(perl -ne "/.*(CRITICAL|ERROR):? / 
         and print" ~/var/log/{debug,exception,support_report,system}.log /var/log/{app,deploy,error}.log 2>/dev/null | 
-        tac | sort -k 3 -ru | sort
+        tac | sort -k 3 -ru | sort |
         sed "/Dotmailer connector API endpoint cannot be empty/d;/Could not ping search engine:/d" | 
         awk "{print \\"((\\" NR, \\"))\\", \\$0}")
 
@@ -67,7 +67,7 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     echo german_check $(curl "$store_url?___store=luma_de&___from_store=default" -s | grep "baseUrl.*de_DE" | wc -l)
     echo venia_check $(curl "$store_url?___store=venia_us&___from_store=default" -s | grep "baseUrl.*venia" | wc -l)
     php bin/magento admin:user:unlock admin > /dev/null
-    rm /tmp/myc || : 2> /dev/null
+    rm /tmp/myc 2> /dev/null || : 
     read -r form_url form_key <<<$(curl -sL -c /tmp/myc -b /tmp/myc "$store_url/admin/" | 
       perl -ne "s/.*var BASE_URL.*(https.*\\/).*/\\1/ and print;s/.*var FORM_KEY = .(.*).;.*/\\1/ and print")
     echo admin_check $(curl -sv -c /tmp/myc -b /tmp/myc -X POST -d "login[username]=admin&login[password]=admin4tls&form_key=$form_key" $form_url 2>&1 | 
@@ -77,8 +77,10 @@ exports.smokeTestApp = async (project, environment = 'master') => {
 '`
   return exec(cmd)
     .then(execOutputHandler)
-    .then(({stdout, stderr}) =>
+    .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'smoke_tests', ['project_id', 'environment_id'], [project, environment])
+      logger.mylog('info', `Smoke test completed.`)
+    }
     )
     .catch(error => {
       logger.mylog('error', error, project, environment)

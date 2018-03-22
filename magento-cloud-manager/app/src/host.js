@@ -30,9 +30,7 @@ exports.updateHost = (project, environment = 'master') => {
       parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', ['project_id', 'environment_id'], [project, environment])
       logger.mylog('info', `Host updated.`)
     })
-    .catch(error => {
-      logger.mylog('error', error)
-    })
+    .catch(error => logger.mylog('error', error))
 }
 
 exports.updateHostsUsingAllProjects = async () => {

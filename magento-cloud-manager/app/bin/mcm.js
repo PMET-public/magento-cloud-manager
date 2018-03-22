@@ -105,7 +105,7 @@ yargs
   .strict()
   .updateStrings({
     'Commands:': headerTxt('Commands:'),
-    'Options:': headerTxt('Global Options: (Commands may have additional options. See <cmd> -h.)'),
+    'Options:': headerTxt('Global Options:     ** Commands may have additional options. See <cmd> -h. **'),
     'Positionals:': headerTxt('Positionals:'),
     'Not enough non-option arguments: got %s, need at least %s': errorTxt(
       'Not enough non-option arguments: got %s, need at least %s'

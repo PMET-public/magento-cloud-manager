@@ -67,9 +67,25 @@ exports.redeployEnv = function(project, environment = 'master') {
     rm -rf "/tmp/${project}-${environment}"
   `)
     .then(execOutputHandler)
-    .catch(error => {
-      logger.mylog('error', error)
+    .then(({stdout, stderr}) => {
+      if (/Failed to identify project/.test(stderr)) {
+        throw 'Project not found.'
+      }
+      logger.mylog('info', `Env redeployed.`)
     })
+    .catch(error => logger.mylog('error', error))
+}
+
+exports.redeployExpiringEnvs = async () => {
+  const expirationInAWk = new Date() / 1000 + 24 * 60 * 60 * 7
+  // get live envs from db b/c if they are about to expire they are not new and we can use older data
+  exports.getAllLiveEnvironmentsFromDB().forEach(async ({project_id, environment_id, expiration}) => {
+    if (expiration < expirationInAWk) {
+      // b/c redeploys are expensive compared to checking the expiration, check first
+      const result = await exports.checkCertificate(project_id, environment_id)
+      console.log(result)
+    }
+  })
 }
 
 exports.checkCertificate = async (project, environment = 'master') => {
@@ -106,33 +122,20 @@ exports.checkCertificate = async (project, environment = 'master') => {
   }
 }
 
-exports.redeployExpiringEnvs = async () => {
-  const expirationInAWk = new Date() / 1000 + 24 * 60 * 60 * 7
-  exports.getAllLiveEnvironmentsFromDB().forEach(async ({project_id, environment_id, host_name, expiration}) => {
-    if (expiration < expirationInAWk) {
-      // b/c redeploys are expensive compared to checking the expiration, check first
-      const result = await exports.checkCertificate(project_id, environment_id)
-      console.log(result)
-    }
-  })
-}
-
 exports.getEnvironmentsFromAPI = function(project) {
   return exec(`${MC_CLI} environments -p ${project} --pipe`)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       return stdout.trim().split('\n')
     })
-    .catch(error => {
-      logger.mylog('error', error)
-    })
+    .catch(error => logger.mylog('error', error))
 }
 
 exports.getAllLiveEnvironmentsFromDB = () => {
   const result = db
     .prepare(
       `
-      SELECT e.id environment_id, e.project_id,  c.host_name, c.expiration
+      SELECT e.id environment_id, e.project_id, c.expiration
       FROM environments e 
       LEFT JOIN projects p ON e.project_id = p.id 
       LEFT JOIN cert_expirations c ON 
@@ -174,9 +177,7 @@ exports.deleteInactiveEnvironments = async function() {
       apiLimit(() => {
         exec(`${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`)
           .then(execOutputHandler)
-          .catch(error => {
-            logger.mylog('error', error)
-          })
+          .catch(error => logger.mylog('error', error))
       })
     )
   })
@@ -196,7 +197,6 @@ exports.execInEnv = function(project, environment, filePath) {
     ${ssh} '${remoteCmd}'
   `)
     .then(execOutputHandler)
-    .catch(error => {
-      logger.mylog('error', error)
-    })
+    .then(() => logger.mylog('info', `File executed in remote env.`))
+    .catch(error => logger.mylog('error', error))
 }

@@ -6,9 +6,7 @@ exports.getProjectsFromApi = () => {
     .then(({stdout, stderr}) => {
       return stdout.trim().split('\n')
     })
-    .catch(error => {
-      logger.mylog('error', error)
-    })
+    .catch(error => logger.mylog('error', error))
 }
 
 exports.updateProject = async project => {
@@ -50,9 +48,7 @@ exports.updateProject = async project => {
       logger.mylog('info', `Project updated.`)
       return result
     })
-    .catch(error => {
-      logger.mylog('error', error)
-    })
+    .catch(error => logger.mylog('error', error))
 }
 
 async function recordUsers(project) {
@@ -71,9 +67,7 @@ async function recordUsers(project) {
       logger.mylog('debug', result)
       return result
     })
-    .catch(error => {
-      logger.mylog('error', error)
-    })
+    .catch(error => logger.mylog('error', error))
 }
 
 exports.updateProjects = async () => {

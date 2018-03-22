@@ -82,7 +82,7 @@ exports.exec = function() {
 exports.execOutputHandler = ({stdout, stderr}) => {
   if (stderr) {
     // if we're in this handler an error hasn't been thrown yet, so just log the error output
-    // a subsequent handler may parse stderr and decide to throw an
+    // a subsequent handler may parse stderr and decide to throw one
     logger.mylog('error', stderr)
   }
   logger.mylog('debug', stdout)
