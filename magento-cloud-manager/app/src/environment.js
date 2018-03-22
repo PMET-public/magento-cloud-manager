@@ -72,31 +72,38 @@ exports.redeployEnv = function(project, environment = 'master') {
     })
 }
 
-exports.checkCertificate = async (project, environment) => {
-  let result = db
-    .prepare(
-      `SELECT machine_name, region FROM environments e 
-      LEFT JOIN projects p ON p.id = e.project_id
-      WHERE p.id = ? AND e.id = ?
-      `
-    )
-    .get(project, environment)
-  logger.mylog('debug', result)
-  const hostName = `${result.machine_name}-${project}.${result.region}.magentosite.cloud`
-  result = await new Promise((resolve, reject) => {
-    const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, response => {
-      const certificateInfo = response.connection.getPeerCertificate()
-      const expiration = Math.floor(new Date(certificateInfo.valid_to) / 1000)
-      const result = db
-        .prepare('INSERT OR REPLACE INTO cert_expirations (host_name, expiration) VALUES (?, ?)')
-        .run(hostName, expiration)
-      resolve({...result, expiration: expiration, host: hostName})
+exports.checkCertificate = async (project, environment = 'master') => {
+  try {
+    let result = db
+      .prepare(
+        `SELECT machine_name, region FROM environments e 
+        LEFT JOIN projects p ON p.id = e.project_id
+        WHERE p.id = ? AND e.id = ?
+        `
+      )
+      .get(project, environment)
+    if (typeof result == 'undefined') {
+      throw 'Row not found.'
+    }
+    logger.mylog('debug', result)
+    const hostName = `${result.machine_name}-${project}.${result.region}.magentosite.cloud`
+    result = await new Promise((resolve, reject) => {
+      const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, response => {
+        const certificateInfo = response.connection.getPeerCertificate()
+        const expiration = Math.floor(new Date(certificateInfo.valid_to) / 1000)
+        const result = db
+          .prepare('INSERT OR REPLACE INTO cert_expirations (host_name, expiration) VALUES (?, ?)')
+          .run(hostName, expiration)
+        resolve({...result, expiration: expiration, host: hostName})
+      })
+      request.end()
     })
-    request.end()
-  })
-  logger.mylog('debug', result)
-  logger.mylog('info', `${result.host} expires on ${new Date(result.expiration*1000).toDateString()}`)
-  return result
+    logger.mylog('debug', result)
+    logger.mylog('info', `${result.host} expires on ${new Date(result.expiration*1000).toDateString()}`)
+    return result
+  } catch (error) {
+    logger.mylog('error',error)
+  }
 }
 
 exports.redeployExpiringEnvs = async () => {

@@ -16,6 +16,7 @@ const validTests = fullCmd => {
   describe(`valid tests: ${fullCmd}`, () => {
     it('has [debug], [info], and no [error]', async () => {
       const result = await execCmd(fullCmd)
+      console.log('[info]', result.stdout.replace(/[\s\S]+(info.*)[\s\S]*/g,'$1'))
       // accout for possible color codes in [loglevel]
       assert.match(result.stdout, /\[[^ ]*debug[^ ]*\]:/)
       assert.match(result.stdout, /\[[^ ]*info[^ ]*\]:/)
@@ -45,11 +46,12 @@ describe('testing individual command functionality', () => {
   before(() => {
     writeFileSync(tmpShFile,'#!/bin/bash\necho "hello world"')
     writeFileSync(tmpSqlFile,'select 1 from dual')
-  })
+ })
 
-  ['hu', 'pu', 'pg', 'eu', 'ec', 'er', 'es'].forEach(cmd => {
-    validTests(getCmdWithValidPid('hu'))
-    invalidTests(getCmdWithInvalidPid('hu'))
+  const cmdsToTest = ['hu', 'pu', 'pg', 'eu', 'ec', 'es']
+  cmdsToTest.forEach(cmd => {
+    validTests(getCmdWithValidPid(cmd))
+    invalidTests(getCmdWithInvalidPid(cmd))
   })
 
   validTests(`ee -v ${tmpShFile} ${validPid}`)
@@ -57,9 +59,11 @@ describe('testing individual command functionality', () => {
   invalidTests(`ee -v ${tmpShFile} ${invalidPid}`)
   invalidTests(`ee -v ${tmpSqlFile} ${invalidPid}`)
 
+  // 'er',
 
-  after(() => {
+
+ after(() => {
     unlink(tmpShFile)
     unlink(tmpSqlFile)
-  })
+ })
 })

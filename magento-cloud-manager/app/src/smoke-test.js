@@ -67,7 +67,7 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     echo german_check $(curl "$store_url?___store=luma_de&___from_store=default" -s | grep "baseUrl.*de_DE" | wc -l)
     echo venia_check $(curl "$store_url?___store=venia_us&___from_store=default" -s | grep "baseUrl.*venia" | wc -l)
     php bin/magento admin:user:unlock admin > /dev/null
-    rm /tmp/myc || :
+    rm /tmp/myc || : 2> /dev/null
     read -r form_url form_key <<<$(curl -sL -c /tmp/myc -b /tmp/myc "$store_url/admin/" | 
       perl -ne "s/.*var BASE_URL.*(https.*\\/).*/\\1/ and print;s/.*var FORM_KEY = .(.*).;.*/\\1/ and print")
     echo admin_check $(curl -sv -c /tmp/myc -b /tmp/myc -X POST -d "login[username]=admin&login[password]=admin4tls&form_key=$form_key" $form_url 2>&1 | 

@@ -79,6 +79,9 @@ exports.enableAllGitlabKeysForAllConfiguredProjects = async function() {
 exports.addCloudProjectKeyToGitlabKeys = async function(cloudProject) {
   try {
     let result = db.prepare('SELECT client_ssh_key FROM projects WHERE id = ?').get(cloudProject)
+    if (typeof result == 'undefined') {
+      throw 'Row not found.'
+    }
     const clientSshKey = result.client_ssh_key
     logger.mylog('debug', result)
     for (let gitlabProjectId of gitlabProjectIds) {

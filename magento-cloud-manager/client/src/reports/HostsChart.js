@@ -44,7 +44,7 @@ export default class extends Component {
               projData[row.project_id] = []
             }
             // convert timestamp into "days ago"
-            let x = (new Date(row.timestamp) - new Date()) / msInDay
+            let x = (new Date(row.timestamp*1000) - new Date()) / msInDay
             let y = row.load_avg_15 / row.cpus
             minX = x < minX ? x : minX
             maxY = y > maxY ? y : maxY
