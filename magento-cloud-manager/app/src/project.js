@@ -47,6 +47,7 @@ exports.updateProject = async project => {
           clientSshKey
         )
       logger.mylog('debug', result)
+      logger.mylog('info', `Project updated.`)
       return result
     })
     .catch(error => {

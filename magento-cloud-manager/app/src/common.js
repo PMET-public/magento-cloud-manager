@@ -14,7 +14,8 @@ logger.simpleConsole = new winston.transports.Console({
   format: winston.format.combine(
     winston.format.printf(info => {
       const {level, message, stderr} = info
-      return `${message ? message + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''}`
+      // strip outer double quotes and escaping \" in  message for console output
+      return `${message ? message.replace(/^"|"$/g,'').replace(/\\"/g,'"') + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''}`
     })
   )
 })
@@ -23,6 +24,7 @@ logger.add(logger.simpleConsole)
 // create a verbose console logger for the --verbose option
 logger.verboseConsole = new winston.transports.Console({
   level: 'debug',
+  stderrLevels: ['error'],
   format: winston.format.combine(
     winston.format.colorize(),
     winston.format.timestamp(),
@@ -83,7 +85,7 @@ exports.execOutputHandler = ({stdout, stderr}) => {
     // a subsequent handler may parse stderr and decide to throw an
     logger.mylog('error', stderr)
   }
-  logger.mylog('info', stdout)
+  logger.mylog('debug', stdout)
   return {stdout, stderr}
 }
 
@@ -111,21 +113,4 @@ exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], add
   const result = db.prepare(sql).run(...vals)
   logger.mylog('debug', result)
   return result
-}
-
-const https = require('https')
-exports.checkCertificate = async hostName => {
-  hostName = hostName.replace(/https?:\/\//, '').replace(/\/.*/, '')
-  new Promise((resolve, reject) => {
-    const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, response => {
-      const certificateInfo = response.connection.getPeerCertificate()
-      const expiration = Math.floor(new Date(certificateInfo.valid_to) / 1000)
-      let result = db
-        .prepare('INSERT OR REPLACE INTO cert_expirations (host, expiration) VALUES (?, ?)')
-        .run(hostName, expiration)
-      logger.mylog('debug', result)
-      resolve({...result, expiration: expiration, host: hostName})
-    })
-    request.end()
-  })
 }

@@ -16,7 +16,8 @@ const {
   deleteInactiveEnvironments,
   execInEnv,
   redeployEnv,
-  redeployExpiringEnvs
+  redeployExpiringEnvs,
+  checkCertificate
 } = require('../src/environment')
 const {smokeTestApp, smokeTestAllLiveApps} = require('../src/smoke-test')
 const {searchActivitiesForFailures} = require('../src/activity')
@@ -41,19 +42,6 @@ const defaultAllOptions = {
     coerce: coercer
 }
 
-const addSharedPidEnvOpts = () => {
-  yargs.positional('pid:env', {
-    type: 'string',
-    describe: 'A list of proj:env pairs',
-    coerce: coercer
-  })
-  yargs.option('a', {
-    description: 'Apply to all active envs',
-    conflicts: ['pid:env'],
-    ...defaultAllOptions
-  })
-}
-
 const addSharedPidOpts = () => {
   yargs.positional('pid', {
     type: 'string',
@@ -62,23 +50,52 @@ const addSharedPidOpts = () => {
   })
   yargs.option('a', {
     description: 'Apply to all projects',
-    conflicts: ['pid'],
+    conflicts: 'pid',
     ...defaultAllOptions
   })
 }
 
-const handleEnvListCmd = (handler, pidEnvs, ...remainingArgs) => {
+const addSharedPidEnvOpts = () => {
+  yargs.positional('pid:env', {
+    type: 'string',
+    describe: 'A list of proj:env pairs. If not specified, env defaults to "master".',
+    coerce: coercer
+  })
+  yargs.option('a', {
+    description: 'Apply to all active envs',
+    conflicts: 'pid:env',
+    ...defaultAllOptions
+  })
+}
+
+const verifyOnlyArg = (argv) => {
+  if (argv._.length > 1) {
+    yargs.showHelp()
+    // invoked by command handler so must explicitly invoke console
+    console.error(errorTxt(`The "${argv._[0]}" command expects no additional args.`))
+    process.exit(1)
+  }
+}
+
+const handleListCmd = (handler, isPairedList, listArgs, ...remainingArgs) => {
+  // logic error
   if (typeof handler !== "function") {
     throw 'Handler must be a function'
   }
-  if (!pidEnvs || pidEnvs.length === 0) {
+  // user error
+  if (!listArgs || listArgs.length === 0) {
     yargs.showHelp()
-    console.error(errorTxt('At least 1 pid:env is required.'))
-    return
+    // invoked by command handler so must explicitly invoke console
+    console.error(errorTxt('At least 1 additional arg is required.'))
+    return false
   }
-  pidEnvs.forEach(x => {
-    const [proj, env] = x.split(':')
-    handler(proj, env, ...remainingArgs)
+  listArgs.forEach(arg => {
+    if (isPairedList) {
+      const [pid, env] = arg.split(':')
+      handler(pid, env ? env : 'master', ...remainingArgs)
+    } else {
+      handler(arg, ...remainingArgs)
+    }
   })
 }
 
@@ -88,7 +105,7 @@ yargs
   .strict()
   .updateStrings({
     'Commands:': headerTxt('Commands:'),
-    'Options:': headerTxt('Options:'),
+    'Options:': headerTxt('Global Options: (Commands may have additional options. See <cmd> -h.)'),
     'Positionals:': headerTxt('Positionals:'),
     'Not enough non-option arguments: got %s, need at least %s': errorTxt(
       'Not enough non-option arguments: got %s, need at least %s'
@@ -105,6 +122,7 @@ yargs
   }, true)
   .option('v', {
     alias: 'verbose',
+    description: 'Display debugging information',
     global: true,
     type: 'boolean',
     coerce: coercer,
@@ -112,6 +130,7 @@ yargs
   })
   .option('q', {
     alias: 'quiet',
+    description: 'Suppress normal output. Only display errors.',
     global: true,
     type: 'boolean',
     coerce: coercer,
@@ -120,14 +139,14 @@ yargs
   .demandCommand(1)
 
 yargs.command(
-  ['host:update [pid...]', 'hu'],
+  ['host:update [pid:env...]', 'hu'],
   'Update DB with info about hosts for provided projects',
-  addSharedPidOpts,
+  addSharedPidEnvOpts,
   argv => {
     if (argv.all) {
       updateHostsUsingAllProjects()
     } else {
-      argv.pid.forEach(pid => updateHost(pid))
+      handleListCmd(updateHost, true, argv['pid:env'])
     }
   }
 )
@@ -136,14 +155,20 @@ yargs.command(
   ['host:sample', 'hs'],
   'Update DB with info about hosts using 1 proj per host sample',
   () => {},
-  argv => updateHostsUsingSampleProjects()
+  argv => {
+    verifyOnlyArg(argv)
+    updateHostsUsingSampleProjects()
+  }
 )
 
 yargs.command(
   ['host:project-match', 'hp'],
   'Update DB matching hosts and projects',
   () => {},
-  argv => updateProjectHostRelationships()
+  argv => {
+    verifyOnlyArg(argv)
+    updateProjectHostRelationships()
+  }
 )
 
 yargs.command(
@@ -154,7 +179,7 @@ yargs.command(
     if (argv.all) {
       updateProjects()
     } else {
-      argv.pid.forEach(pid => updateProject(pid))
+      handleListCmd(updateProject, false, argv['pid'])
     }
   }
 )
@@ -167,32 +192,32 @@ yargs.command(
     if (argv.all) {
       enableAllGitlabKeysForAllConfiguredProjects()
     } else {
-      argv.pid.forEach(pid => addCloudProjectKeyToGitlabKeys(pid))
+      handleListCmd(addCloudProjectKeyToGitlabKeys, false, argv['pid'])
     }
   }
 )
 
-
 yargs.command(
   ['env:update [pid:env...]', 'eu'],
-  'Query API about envs',
+  'Query API about env(s)',
   addSharedPidEnvOpts,
   argv => {
     if (argv.all) {
       updateAllCurrentProjectsEnvironmentsFromAPI()
     } else {
-      handleEnvListCmd(updateEnvironment, argv['pid:env'])
+      handleListCmd(updateEnvironment, true, argv['pid:env'])
     }
   }
 )
 
 yargs.command(
   ['env:exec <file> [pid:env...]', 'ee'],
-  'Execute a file in envs',
+  'Execute a file in env(s)',
   yargs => {
     yargs.positional('file', {
       type: 'string',
-      describe: 'The full file path to copy to the remote env'
+      describe: 'The full file path to copy to the remote env',
+      normalize: true
     })
     addSharedPidEnvOpts()
   },
@@ -200,20 +225,34 @@ yargs.command(
     if (argv.all) {
       console.log('not implemented yet')
     } else {
-      handleEnvListCmd(execInEnv, argv['pid:env'], argv.file)
+      handleListCmd(execInEnv, true, argv['pid:env'], argv.file)
     }
   }
 )
 
 yargs.command(
+  ['env:check-cert [pid:env...]', 'ec'],
+  'Check the https cert of env(s)',
+  addSharedPidEnvOpts,
+  argv => {
+    if (argv.all) {
+      console.log('not implemented yet')
+    } else {
+      handleListCmd(checkCertificate, true, argv['pid:env'])
+    }
+  }
+)
+
+
+yargs.command(
   ['env:redeploy [pid:env...]', 'er'],
-  'Redeploy envs without changes',
+  'Redeploy env(s) without changes',
   yargs => {
     addSharedPidEnvOpts()
     yargs.option('x', {
       alias: 'expiring',
       description: 'Redeploy expiring envs',
-      conflicts: ['pid', 'a'],
+      conflicts: ['pid:env', 'a'],
       coerce: coercer
     })
   },
@@ -223,20 +262,20 @@ yargs.command(
     } else if (argv.expiring) {
       redeployExpiringEnvs()
     } else {
-      handleEnvListCmd(redeployEnv, argv['pid:env'])
+      handleListCmd(redeployEnv, true, argv['pid:env'])
     }
   }
 )
 
 yargs.command(
   ['env:smoke-test [pid:env...]', 'es'],
-  'Run smoke tests in envs',
+  'Run smoke tests in env(s)',
   addSharedPidEnvOpts,
   argv => {
     if (argv.all) {
       smokeTestAllLiveApps()
     } else {
-      handleEnvListCmd(smokeTestApp, argv['pid:env'])
+      handleListCmd(smokeTestApp, true, argv['pid:env'])
     }
   }
 )
@@ -245,14 +284,20 @@ yargs.command(
   ['env:delete-inactive', 'ed'],
   'Delete ALL inactive environments across all projs',
   () => {},
-  argv => deleteInactiveEnvironments()
+  argv => {
+    verifyOnlyArg(argv)
+    deleteInactiveEnvironments()
+  }
 )
 
 yargs.command(
   ['activity:find-failures', 'af'],
   'Query activity API to find envs that failed to deploy',
   () => {},
-  argv => searchActivitiesForFailures()
+  argv => {
+    verifyOnlyArg(argv)
+    searchActivitiesForFailures()
+  }
 )
 
 yargs.argv

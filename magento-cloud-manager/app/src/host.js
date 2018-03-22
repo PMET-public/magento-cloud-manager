@@ -28,6 +28,7 @@ exports.updateHost = (project, environment = 'master') => {
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', ['project_id', 'environment_id'], [project, environment])
+      logger.mylog('info', `Host updated.`)
     })
     .catch(error => {
       logger.mylog('error', error)
