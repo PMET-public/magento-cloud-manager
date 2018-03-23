@@ -79,6 +79,7 @@ exports.redeployEnv = async (project, environment = 'master') => {
 exports.redeployExpiringEnvs = async () => {
   const promises = []
   const expirationInAWk = new Date() / 1000 + 24 * 60 * 60 * 7
+  let counter = 0
   // get live envs from db b/c if they are about to expire they are not new and we can use older data
   exports.getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id, expiration}) => {
     promises.push(sshLimit(async () => {
@@ -87,13 +88,14 @@ exports.redeployExpiringEnvs = async () => {
         let result = await exports.checkCertificate(project_id, environment_id)
         if (result.expiration < expirationInAWk) {
           result = await exports.redeployEnv(project_id, environment_id)
+          counter++
         }
         return result
       }
     }))
   })
   const result = await Promise.all(promises)
-  logger.mylog('info', `Expiring projects redeployed`)
+  logger.mylog('info', `${counter} expiring projects redeployed`)
   return result
 }
 
@@ -174,7 +176,7 @@ exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function() {
     )
   })
   result = await Promise.all(promises)
-  logger.mylog('info', 'All environments updated in DB with API data.')
+  logger.mylog('info', `All ${promises.length} environments updated in DB with API data.`)
   return result
 }
 
@@ -192,7 +194,7 @@ exports.deleteInactiveEnvironments = async function() {
     )
   })
   const result = await Promise.all(promises)
-  logger.mylog('info', 'All inactive environments scheduled for deletion.')
+  logger.mylog('info', `All inactive environments in ${promises.length} projects scheduled for deletion.`)
   return result
 }
 

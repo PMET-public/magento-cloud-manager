@@ -33,13 +33,13 @@ exports.updateHost = (project, environment = 'master') => {
     .catch(error => logger.mylog('error', error))
 }
 
-exports.updateHostsUsingAllProjects = async () => {
+exports.updateHostsUsingAllLiveEnvs = async () => {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(sshLimit(() => exports.updateHost(project)))
   })
   const result = await Promise.all(promises)
-  logger.mylog('info', 'All envs\' hosts updated.')
+  logger.mylog('info', `All ${promises.length} envs\' hosts updated.`)
   return result
 }
 
@@ -51,7 +51,7 @@ exports.updateHostsUsingSampleEnvs = async () => {
     promises.push(sshLimit(() => exports.updateHost(row.project)))
   })
   result = await Promise.all(promises)
-  logger.mylog('info', 'Sample envs\' hosts updated.')
+  logger.mylog('info', `${promises.length} sample envs\' hosts updated.`)
   return result
 }
 

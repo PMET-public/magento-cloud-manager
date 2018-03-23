@@ -74,6 +74,6 @@ exports.searchActivitiesForFailures = async () => {
     )
   })
   const result = await Promise.all(promises)
-  logger.mylog('info', 'Activities searched for failures.')
+  logger.mylog('info', `Activities in ${promises.length} projects searched for failures.`)
   return result
 }

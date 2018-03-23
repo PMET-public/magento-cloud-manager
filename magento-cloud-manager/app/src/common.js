@@ -1,7 +1,16 @@
 // setup logging
 const winston = require('winston')
+const vsprintf = require('sprintf-js').vsprintf
+
+// https://github.com/winstonjs/winston/issues/1175
+const myFormat = winston.format.printf(info => `${info.timestamp} [${info.level}]: ${vsprintf(info.message, ...(info.splat || []))}`)
+
 // create 2 active file loggers, 1 for just errors, 1 for debugging
 const logger = winston.createLogger({
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    myFormat
+  ),
   transports: [
     new winston.transports.File({filename: `${__dirname}/../error.log`, level: 'error'}),
     new winston.transports.File({filename: `${__dirname}/../debug.log`, level: 'debug'})

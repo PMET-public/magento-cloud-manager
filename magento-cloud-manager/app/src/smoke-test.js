@@ -101,5 +101,7 @@ exports.smokeTestAllLiveApps = async () => {
   })
   // possible issue if one promise fails?
   // https://stackoverflow.com/questions/30362733/handling-errors-in-promise-all
-  return await Promise.all(promises)
+  const result = await Promise.all(promises)
+  logger.mylog('info', `All ${promises.length} live apps (1 per live project:environmnet) smoke tested`)
+  return result
 }

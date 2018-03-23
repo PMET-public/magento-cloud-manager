@@ -84,6 +84,6 @@ exports.updateProjects = async () => {
     )
   })
   result = await Promise.all(promises)
-  logger.mylog('info', 'All projects updated.')
+  logger.mylog('info', `All ${promises.length} projects updated.`)
   return result
 }

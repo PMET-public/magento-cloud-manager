@@ -5,7 +5,7 @@ const chalk = require('chalk')
 const {logger} = require('../src/common')
 const {
   updateHost,
-  updateHostsUsingAllProjects,
+  updateHostsUsingAllLiveEnvs,
   updateHostsUsingSampleEnvs,
   updateProjectHostRelationships
 } = require('../src/host')
@@ -152,7 +152,7 @@ yargs.command(
   },
   argv => {
     if (argv.all) {
-      updateHostsUsingAllProjects()
+      updateHostsUsingAllLiveEnvs()
     } else if (argv.sample) {
       updateHostsUsingSampleEnvs()
     } else {
