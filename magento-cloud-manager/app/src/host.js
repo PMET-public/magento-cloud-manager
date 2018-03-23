@@ -28,7 +28,7 @@ exports.updateHost = (project, environment = 'master') => {
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', ['project_id', 'environment_id'], [project, environment])
-      logger.mylog('info', `Host updated.`)
+      logger.mylog('info', `Host of env: ${environment} of project: ${project} updated.`)
     })
     .catch(error => logger.mylog('error', error))
 }
@@ -38,17 +38,21 @@ exports.updateHostsUsingAllProjects = async () => {
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(sshLimit(() => exports.updateHost(project)))
   })
-  return await Promise.all(promises)
+  const result = await Promise.all(promises)
+  logger.mylog('info', 'All envs\' hosts updated.')
+  return result
 }
 
-exports.updateHostsUsingSampleProjects = async () => {
+exports.updateHostsUsingSampleEnvs = async () => {
   const promises = []
-  const result = db.prepare('SELECT MIN(project_id) project FROM matched_projects_hosts GROUP BY id').all()
+  let result = db.prepare('SELECT MIN(project_id) project FROM matched_projects_hosts GROUP BY id').all()
   logger.mylog('debug', result)
   result.forEach(row => {
     promises.push(sshLimit(() => exports.updateHost(row.project)))
   })
-  return await Promise.all(promises)
+  result = await Promise.all(promises)
+  logger.mylog('info', 'Sample envs\' hosts updated.')
+  return result
 }
 
 exports.updateProjectHostRelationships = () => {

@@ -45,13 +45,13 @@ exports.updateProject = async project => {
           clientSshKey
         )
       logger.mylog('debug', result)
-      logger.mylog('info', `Project updated.`)
+      logger.mylog('info', `Project: ${project} updated.`)
       return result
     })
     .catch(error => logger.mylog('error', error))
 }
 
-async function recordUsers(project) {
+const recordUsers = async project => {
   return exec(`${MC_CLI} user:list -p ${project} --format=tsv | sed '1d'`)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -72,7 +72,7 @@ async function recordUsers(project) {
 
 exports.updateProjects = async () => {
   // mark all projects inactive; active ones will be updated to active
-  const result = db.exec('UPDATE projects SET active = 0')
+  let result = db.exec('UPDATE projects SET active = 0')
   logger.mylog('debug', result)
   const promises = []
   ;(await exports.getProjectsFromApi()).forEach(project => {
@@ -83,5 +83,7 @@ exports.updateProjects = async () => {
       })
     )
   })
-  return await Promise.all(promises)
+  result = await Promise.all(promises)
+  logger.mylog('info', 'All projects updated.')
+  return result
 }

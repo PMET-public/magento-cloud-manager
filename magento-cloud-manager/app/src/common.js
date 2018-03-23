@@ -89,9 +89,12 @@ exports.execOutputHandler = ({stdout, stderr}) => {
   return {stdout, stderr}
 }
 
+// be kind with our requests and don't abuse the API or servers
+// remember p-limit expects an async function or a function that returns a promise
 const pLimit = require('p-limit')
-exports.apiLimit = pLimit(8)
+exports.apiLimit = pLimit(6)
 exports.sshLimit = pLimit(4)
+
 exports.MC_CLI = '~/.magento-cloud/bin/magento-cloud'
 
 const fetch = require('node-fetch')

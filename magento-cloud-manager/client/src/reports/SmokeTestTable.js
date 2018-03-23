@@ -490,7 +490,16 @@ export default class extends Component {
               {
                 Header: 'Cert Expiration',
                 accessor: 'expiration',
-                Cell: cell => moment(new Date(cell.value*1000)).fromNow(),
+                Cell: cell => {
+                  if (!cell.value) {
+                    return 'N/A'
+                  }
+                  const expiryDate = new Date(cell.value*1000)
+                  if (expiryDate < new Date()) {
+                    return 'Expired!'
+                  }
+                  return moment(expiryDate).fromNow()
+                },
                 maxWidth: this.calcWidth(5),
                 className: 'right'
               }

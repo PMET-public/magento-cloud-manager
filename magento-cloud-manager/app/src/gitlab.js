@@ -8,11 +8,11 @@ const defaultHeaders = {
   'content-type': 'application/json'
 }
 
-function buildApiUrl(apiPath, pageNumber = 1) {
+const buildApiUrl = (apiPath, pageNumber = 1) => {
   return `${gitlabDomain}/api/v4/${apiPath}?page=${pageNumber}&per_page=${perPage}`
 }
 
-async function getNumberOfResultPages(apiPath) {
+const getNumberOfResultPages = async apiPath => {
   let promise = await fetch(buildApiUrl(apiPath), {
     headers: defaultHeaders,
     method: 'GET'
@@ -22,7 +22,7 @@ async function getNumberOfResultPages(apiPath) {
   return promise
 }
 
-async function apiGet(apiPath) {
+const apiGet = async apiPath => {
   const totalPages = await getNumberOfResultPages(apiPath)
   let results = []
   for (let i = 1; i <= totalPages; i++) {
@@ -37,7 +37,7 @@ async function apiGet(apiPath) {
   return results
 }
 
-async function apiPost(apiPath, data = {}) {
+const apiPost = async (apiPath, data = {}) => {
   return await fetch(buildApiUrl(apiPath), {
     headers: defaultHeaders,
     method: 'POST',
@@ -47,20 +47,21 @@ async function apiPost(apiPath, data = {}) {
     .then(body => JSON.parse(body))
 }
 
-async function getAllDeployKeysFromGitlab() {
-  return await apiGet('deploy_keys')
+const getAllDeployKeysFromGitlab = () => {
+  return apiGet('deploy_keys')
 }
 
-async function getGitlabProjectDeployKeys(gitlabProjectId) {
-  return await apiGet(`projects/${gitlabProjectId}/deploy_keys`)
+const getGitlabProjectDeployKeys = gitlabProjectId => {
+  return apiGet(`projects/${gitlabProjectId}/deploy_keys`)
 }
 
-async function enableDeployKey(gitlabProjectId, keyId) {
-  return await apiPost(`projects/${gitlabProjectId}/deploy_keys/${keyId}/enable`)
+const enableDeployKey = (gitlabProjectId, keyId) => {
+  return apiPost(`projects/${gitlabProjectId}/deploy_keys/${keyId}/enable`)
 }
 
-exports.enableAllGitlabKeysForAllConfiguredProjects = async function() {
-  const promises = []
+exports.enableAllGitlabKeysForAllConfiguredProjects = async () => {
+  // use awaits to run requests sequentially and reduce load on gitlab
+  // this function should complete in < 1 min regardless and is only run infrequently
   const allCloudKeyIdsInGitlab = (await getAllDeployKeysFromGitlab())
     .filter(key => /@platform|@magento/.test(key.key))
     .map(key => key.id)
@@ -69,14 +70,14 @@ exports.enableAllGitlabKeysForAllConfiguredProjects = async function() {
     for (let keyId of allCloudKeyIdsInGitlab) {
       if (gitlabProjectDeployKeyIds.indexOf(keyId) === -1) {
         let result = await enableDeployKey(gitlabProjectId, keyId)
-        logger.mylog('info', result)
+        logger.mylog('debug', result)
       }
     }
   }
-  return await Promise.all(promises)
+  logger.mylog('info', `All public cloud keys added to Gitlab enabled to access all configured Gitlab projects.`)
 }
 
-exports.addCloudProjectKeyToGitlabKeys = async function(cloudProject) {
+exports.addCloudProjectKeyToGitlabKeys = async cloudProject => {
   try {
     let result = db.prepare('SELECT client_ssh_key FROM projects WHERE id = ?').get(cloudProject)
     if (typeof result == 'undefined') {
@@ -89,8 +90,9 @@ exports.addCloudProjectKeyToGitlabKeys = async function(cloudProject) {
         title: 'MECE',
         key: clientSshKey
       })
-      logger.mylog('info', result)
+      logger.mylog('debug', result)
     }
+    logger.mylog('info', `Public key of project: ${cloudProject} added to Gitlab projects.`)
   } catch (error) {
     logger.mylog('error', error)
   }

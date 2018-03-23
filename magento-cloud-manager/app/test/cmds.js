@@ -22,7 +22,7 @@ const validTests = (fullCmd, timeout = ms15sec) => {
   describe(`valid tests: ${fullCmd}`, () => {
     it('has [debug], has [info], and has no [error]', async () => {
       const result = await execCmd(fullCmd)
-      console.log('[info]', result.stdout.replace(/[\s\S]+(info.*)[\s\S]*/g,'$1'))
+      // console.log('[info]', result.stdout.replace(/[\s\S]+(info.*)[\s\S]*/g,'$1'))
       // accout for possible color codes in [loglevel]
       assert.match(result.stdout, /\[[^ ]*debug[^ ]*\]:/)
       assert.match(result.stdout, /\[[^ ]*info[^ ]*\]:/)

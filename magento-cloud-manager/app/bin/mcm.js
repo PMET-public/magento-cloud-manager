@@ -6,7 +6,7 @@ const {logger} = require('../src/common')
 const {
   updateHost,
   updateHostsUsingAllProjects,
-  updateHostsUsingSampleProjects,
+  updateHostsUsingSampleEnvs,
   updateProjectHostRelationships
 } = require('../src/host')
 const {updateProject, updateProjects} = require('../src/project')
@@ -141,23 +141,23 @@ yargs
 yargs.command(
   ['host:update [pid:env...]', 'hu'],
   'Update DB with info about hosts for provided projects',
-  addSharedPidEnvOpts,
+  yargs => {
+    addSharedPidEnvOpts()
+    yargs.option('s', {
+      alias: 'sample',
+      description: 'Update DB with info about hosts using 1 sample env per host',
+      conflicts: ['pid:env', 'a'],
+      coerce: coercer
+    })
+  },
   argv => {
     if (argv.all) {
       updateHostsUsingAllProjects()
+    } else if (argv.sample) {
+      updateHostsUsingSampleEnvs()
     } else {
       handleListCmd(updateHost, true, argv['pid:env'])
     }
-  }
-)
-
-yargs.command(
-  ['host:sample', 'hs'],
-  'Update DB with info about hosts using 1 proj per host sample',
-  () => {},
-  argv => {
-    verifyOnlyArg(argv)
-    updateHostsUsingSampleProjects()
   }
 )
 
@@ -242,7 +242,6 @@ yargs.command(
     }
   }
 )
-
 
 yargs.command(
   ['env:redeploy [pid:env...]', 'er'],

@@ -1,11 +1,11 @@
 const https = require('https')
-const {exec, execOutputHandler, db, apiLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
 const {getProjectsFromApi} = require('./project')
 
 exports.updateEnvironment = async function(project, environment = 'master') {
   return exec(`${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`)
     .then(execOutputHandler)
-    .then(async ({stdout, stderr}) => {
+    .then(({stdout, stderr}) => {
       const title = stdout.replace(/[\s\S]*title\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const machineName = stdout.replace(/[\s\S]*machine_name\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const active = /\nstatus\s+active/.test(stdout) ? 1 : 0
@@ -21,7 +21,7 @@ exports.updateEnvironment = async function(project, environment = 'master') {
         )
         .run(environment, project, title, machineName, active, createdAt, environment, project)
       logger.mylog('debug', result)
-      logger.mylog('info', `Env updated.`)
+      logger.mylog('info', `Env: ${environment} of project: ${project} updated.`)
       return result
     })
     .catch(error => {
@@ -33,7 +33,7 @@ exports.updateEnvironment = async function(project, environment = 'master') {
     })
 }
 
-exports.setEnvironmentInactive = function(project, environment) {
+exports.setEnvironmentInactive = (project, environment) => {
   const result = db
     .prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
@@ -41,7 +41,7 @@ exports.setEnvironmentInactive = function(project, environment) {
   return result
 }
 
-exports.setEnvironmentFailed = function(project, environment) {
+exports.setEnvironmentFailed = (project, environment) => {
   const result = db
     .prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
@@ -49,7 +49,7 @@ exports.setEnvironmentFailed = function(project, environment) {
   return result
 }
 
-exports.setEnvironmentMissing = function(project, environment) {
+exports.setEnvironmentMissing = (project, environment) => {
   const result = db
     .prepare('UPDATE environments SET missing = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
@@ -57,7 +57,7 @@ exports.setEnvironmentMissing = function(project, environment) {
   return result
 }
 
-exports.redeployEnv = function(project, environment = 'master') {
+exports.redeployEnv = async (project, environment = 'master') => {
   return exec(`${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}"
     cd "/tmp/${project}-${environment}"
     pwd
@@ -71,21 +71,30 @@ exports.redeployEnv = function(project, environment = 'master') {
       if (/Failed to identify project/.test(stderr)) {
         throw 'Project not found.'
       }
-      logger.mylog('info', `Env redeployed.`)
+      logger.mylog('info', `Env: ${environment} of project: ${project} redeployed.`)
     })
     .catch(error => logger.mylog('error', error))
 }
 
 exports.redeployExpiringEnvs = async () => {
+  const promises = []
   const expirationInAWk = new Date() / 1000 + 24 * 60 * 60 * 7
   // get live envs from db b/c if they are about to expire they are not new and we can use older data
-  exports.getAllLiveEnvironmentsFromDB().forEach(async ({project_id, environment_id, expiration}) => {
-    if (expiration < expirationInAWk) {
-      // b/c redeploys are expensive compared to checking the expiration, check first
-      const result = await exports.checkCertificate(project_id, environment_id)
-      console.log(result)
-    }
+  exports.getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id, expiration}) => {
+    promises.push(sshLimit(async () => {
+      if (expiration < expirationInAWk) {
+        // redeploys are expensive compared to rechecking expiration, so update check to prevent unnecessary redeploys
+        let result = await exports.checkCertificate(project_id, environment_id)
+        if (result.expiration < expirationInAWk) {
+          result = await exports.redeployEnv(project_id, environment_id)
+        }
+        return result
+      }
+    }))
   })
+  const result = await Promise.all(promises)
+  logger.mylog('info', `Expiring projects redeployed`)
+  return result
 }
 
 exports.checkCertificate = async (project, environment = 'master') => {
@@ -150,7 +159,7 @@ exports.getAllLiveEnvironmentsFromDB = () => {
 
 exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function() {
   // mark all envs inactive and missing; then only found, active ones will be updated
-  const result = db.prepare('UPDATE environments SET active = 0, missing = 1').run()
+  let result = db.prepare('UPDATE environments SET active = 0, missing = 1').run()
   logger.mylog('debug', result)
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
@@ -164,8 +173,9 @@ exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function() {
       })
     )
   })
-  const promiseResult = await Promise.all(promises)
-  return promiseResult
+  result = await Promise.all(promises)
+  logger.mylog('info', 'All environments updated in DB with API data.')
+  return result
 }
 
 // need to delete from child first
@@ -174,14 +184,16 @@ exports.deleteInactiveEnvironments = async function() {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
-      apiLimit(() => {
+      apiLimit(() => 
         exec(`${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`)
           .then(execOutputHandler)
           .catch(error => logger.mylog('error', error))
-      })
+      )
     )
   })
-  return await Promise.all(promises)
+  const result = await Promise.all(promises)
+  logger.mylog('info', 'All inactive environments scheduled for deletion.')
+  return result
 }
 
 exports.execInEnv = function(project, environment, filePath) {
@@ -197,6 +209,6 @@ exports.execInEnv = function(project, environment, filePath) {
     ${ssh} '${remoteCmd}'
   `)
     .then(execOutputHandler)
-    .then(() => logger.mylog('info', `File executed in remote env.`))
+    .then(() => logger.mylog('info', `File: ${filePath} executed in remote env: ${environment} of project: ${project}.`))
     .catch(error => logger.mylog('error', error))
 }
