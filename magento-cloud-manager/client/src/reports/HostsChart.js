@@ -40,23 +40,23 @@ export default class extends Component {
 
           // group rows by project
           res.forEach(row => {
-            if (typeof projData[row.project_id] === 'undefined') {
-              projData[row.project_id] = []
+            if (typeof projData[row.host_id] === 'undefined') {
+              projData[row.host_id] = []
             }
             // convert timestamp into "days ago"
             let x = (new Date(row.timestamp*1000) - new Date()) / msInDay
             let y = row.load_avg_15 / row.cpus
             minX = x < minX ? x : minX
             maxY = y > maxY ? y : maxY
-            projData[row.project_id].push({x: x, y: y})
-            regions[row.project_id] = row.region
-            titles[row.project_id] = row.title
+            projData[row.host_id].push({x: x, y: y})
+            regions[row.host_id] = row.region
+            titles[row.host_id] = row.host_id
           })
 
           Object.entries(projData).forEach(([key, val]) => {
             const c = regions[key] === 'us-3' ? regionColors1() : regionColors2()
             data.datasets.push({
-              label: `${titles[key]} (${regions[key]}, ${key})`,
+              label: `${titles[key]}`,
               fill: false,
               borderColor: c,
               backgroundColor: c,

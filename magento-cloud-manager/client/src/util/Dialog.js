@@ -12,18 +12,11 @@ import Icon from 'material-ui/Icon'
 class SimpleDialog extends React.Component {
   render() {
     const {classes, ...other} = this.props
-    const errors = this.props.children
-      ? this.props.children
-          .trim()
-          .split(/\(\(\d+\s*\)\)/)
-          .slice(1)
-          .sort()
-      : []
     return (
       <Dialog onClose={this.handleClose} aria-labelledby="simple-dialog-title" {...other}>
-        <DialogTitle id="simple-dialog-title">Environment Errors</DialogTitle>
+        <DialogTitle id="simple-dialog-title">{this.props.title}</DialogTitle>
         <List>
-          {errors.map((log, index) => (
+          {this.props.children.map((log, index) => (
             <ListItem key={index}>
               <ListItemText primary={log} />
             </ListItem>
@@ -59,9 +52,9 @@ class SimpleDialogDemo extends React.Component {
     return (
       <div>
         <Button onClick={this.handleClickOpen}>
-          <Icon color="secondary">format_align_left</Icon>
+        {this.props.children.length} <Icon color="secondary">format_align_left</Icon>
         </Button>
-        <SimpleDialogWrapped open={this.state.open} onClose={this.handleClose}>
+        <SimpleDialogWrapped open={this.state.open} onClose={this.handleClose} title={this.props.title}>
           {this.props.children}
         </SimpleDialogWrapped>
       </div>

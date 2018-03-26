@@ -28,7 +28,7 @@ class DrawerContent extends Component {
               <ListItemIcon className={classes.icon}>
                 <Icon color="secondary">cloud_done</Icon>
               </ListItemIcon>
-              <ListItemText classes={{primary: classes.primary}} inset primary="Hosts" />
+              <ListItemText classes={{primary: classes.primary}} inset primary="Hosts (current)" />
             </MenuItem>
           </Link>
           <Link to={'/hosts-chart'}>
@@ -36,23 +36,23 @@ class DrawerContent extends Component {
               <ListItemIcon className={classes.icon}>
                 <Icon color="secondary">show_chart</Icon>
               </ListItemIcon>
-              <ListItemText classes={{primary: classes.primary}} inset primary="Chart" />
+              <ListItemText classes={{primary: classes.primary}} inset primary="Hosts (historic)" />
             </MenuItem>
           </Link>
-          <Link to={'/environments-table'}>
+          {/* <Link to={'/environments-table'}>
             <MenuItem className={classes.menuItem}>
               <ListItemIcon className={classes.icon}>
                 <Icon color="secondary">exit_to_app</Icon>
               </ListItemIcon>
               <ListItemText classes={{primary: classes.primary}} inset primary="Environments" />
             </MenuItem>
-          </Link>
+          </Link> */}
           <Link to={'/smoke-test-table'}>
             <MenuItem className={classes.menuItem}>
               <ListItemIcon className={classes.icon}>
                 <Icon color="secondary">list</Icon>
               </ListItemIcon>
-              <ListItemText classes={{primary: classes.primary}} inset primary="Smoke Tests" />
+              <ListItemText classes={{primary: classes.primary}} inset primary="Environments" />
             </MenuItem>
           </Link>
         </MenuList>

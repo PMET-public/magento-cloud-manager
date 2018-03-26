@@ -462,10 +462,18 @@ export default class extends Component {
               {
                 Header: 'Errors',
                 accessor: 'error_logs',
-                Cell: cell => <Dialog>{cell.value}</Dialog>,
+                Cell: cell => {
+                  const list = cell.value ? cell.value.trim()
+                    .split(/\(\(\d+\s*\)\)/) : []
+                return list.length ? <Dialog title="Environmental Errors">{list}</Dialog> : ''},
                 maxWidth: 200,
                 filterMethod: (filter, row, column) => {
                   return new RegExp(filter.value, 'i').test(row[filter.id])
+                },
+                sortMethod: (a, b) => {
+                  const aLength = a ? a.trim().split(/\(\(\d+\s*\)\)/).length : 0
+                  const bLength = b ? b.trim().split(/\(\(\d+\s*\)\)/).length : 0
+                  return bLength - aLength
                 }
               }
             ]

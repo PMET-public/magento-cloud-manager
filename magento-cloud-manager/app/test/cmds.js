@@ -2,7 +2,7 @@ const {assert} = require('chai')
 const {execCmd} = require('./common')
 const {writeFileSync, unlink} = require('fs')
 
-//require('./options')
+// require('./options')
 
 const validPid = 'xpwgonshm6qm2'
 const validPidEnv = 'xpwgonshm6qm2:master'
@@ -25,6 +25,7 @@ const validTests = (fullCmd, timeout = ms15sec) => {
       // console.log('[info]', result.stdout.replace(/[\s\S]+(info.*)[\s\S]*/g,'$1'))
       // accout for possible color codes in [loglevel]
       assert.match(result.stdout, /\[[^ ]*debug[^ ]*\]:/)
+      // log level [info] is used for the final success msg
       assert.match(result.stdout, /\[[^ ]*info[^ ]*\]:/)
       assert.notMatch(result.stdout, /\[[^ ]*error[^ ]*\]:/)
     }).timeout(timeout)
@@ -43,36 +44,43 @@ const invalidTests = fullCmd => {
   })
 }
 
-describe('testing individual command functionality', () => {
-  // create files for testing 'ee'
-  const sEpoch = Math.floor(new Date() / 1000)
-  const tmpShFile = `/tmp/${sEpoch}.sh`
-  const tmpSqlFile = `/tmp/${sEpoch}.sql`
+// describe('test quick (< 5 min max) commands operating on a single project', () => {
+//   // create files for testing 'ee'
+//   const sEpoch = Math.floor(new Date() / 1000)
+//   const tmpShFile = `/tmp/${sEpoch}.sh`
+//   const tmpSqlFile = `/tmp/${sEpoch}.sql`
 
-  before(() => {
-    writeFileSync(tmpShFile,'#!/bin/bash\necho "hello world"')
-    writeFileSync(tmpSqlFile,'select 1 from dual')
- })
+//   before(() => {
+//     writeFileSync(tmpShFile,'#!/bin/bash\necho "hello world"')
+//     writeFileSync(tmpSqlFile,'select 1 from dual')
+//  })
 
-  const shortSimpleCmdsToTest = ['hu', 'pu', 'pg', 'eu', 'ec']
-  shortSimpleCmdsToTest.forEach(cmd => {
-    validTests(getCmdWithValidPid(cmd))
-    invalidTests(getCmdWithInvalidPid(cmd))
-  })
+//   const shortSimpleCmdsToTest = ['hu', 'pu', 'pg', 'eu', 'ec']
+//   shortSimpleCmdsToTest.forEach(cmd => {
+//     validTests(getCmdWithValidPid(cmd))
+//     invalidTests(getCmdWithInvalidPid(cmd))
+//   })
 
-  validTests(`ee -v ${tmpShFile} ${validPid}`, ms1min)
-  validTests(`ee -v ${tmpSqlFile} ${validPid}`, ms1min)
-  invalidTests(`ee -v ${tmpShFile} ${invalidPid}`)
-  invalidTests(`ee -v ${tmpSqlFile} ${invalidPid}`)
+//   validTests(`ee -v ${tmpShFile} ${validPid}`, ms1min)
+//   validTests(`ee -v ${tmpSqlFile} ${validPid}`, ms1min)
+//   invalidTests(`ee -v ${tmpShFile} ${invalidPid}`)
+//   invalidTests(`ee -v ${tmpSqlFile} ${invalidPid}`)
 
-  validTests(`es -v ${validPid}`, ms5min)
-  invalidTests(`es -v ${invalidPid}`)
+//   validTests(`es -v ${validPid}`, ms5min)
+//   invalidTests(`es -v ${invalidPid}`)
 
+//  after(() => {
+//     unlink(tmpShFile)
+//     unlink(tmpSqlFile)
+//  })
+// })
+
+describe('test batch commands', () => {
+  validTests(`af -v`, ms5min)
+  validTests(`ed -v`, ms5min)
+})
+
+describe('long running commands (up to 15 min)', () => {
   validTests(`er -v ${validPid}`, ms15min)
   invalidTests(`er -v ${invalidPid}`)
-
- after(() => {
-    unlink(tmpShFile)
-    unlink(tmpSqlFile)
- })
 })

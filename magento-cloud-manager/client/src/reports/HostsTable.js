@@ -2,6 +2,7 @@ import React, {Component} from 'react'
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
 import UniqueOptions from '../util/UniqueOptions'
+import Dialog from '../util/Dialog'
 
 export default class extends Component {
   constructor(props) {
@@ -29,14 +30,16 @@ export default class extends Component {
             })
         }}
         minRows={0}
+        defaultPageSize={50}
         filterable
         defaultFilterMethod={this.matchRow}
-        className={'-striped -highlight'}
+        className={'-striped -highlight hosts-current-table'}
         columns={[
           {
-            Header: 'Project Names',
-            accessor: 'projects',
-            Cell: cell => cell.value.replace(/,/g, ', ')
+            Header: 'Cotenants',
+            accessor: 'cotenants',
+            Cell: cell => <div><Dialog title="Cotenants">{cell.value.split(/,/)}</Dialog></div>,
+            maxWidth: 100,
           },
           {
             Header: 'Region',
@@ -74,7 +77,6 @@ export default class extends Component {
             Header: '% Utilization',
             accessor: 'utilization',
             filterable: false,
-            maxWidth: 60,
             style: {textAlign: 'right'},
             Cell: cell => (
               <div

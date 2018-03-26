@@ -9,7 +9,6 @@ const commonValidOpts = [verboseOpt, quietOpt, helpOpt]
 const inCompatibleOpts = [verboseOpt, quietOpt]
 const validCommands = [
   {cmd: 'host:update', alias: 'hu'},
-  {cmd: 'host:sample', alias: 'hs'},
   {cmd: 'host:project-match', alias: 'hp'},
   {cmd: 'project:update', alias: 'pu'},
   {cmd: 'project:grant-gitlab', alias: 'pg'},
@@ -32,7 +31,7 @@ validCommands.forEach(cmd => {
 
 // add all opt for relevant
 cmdsWithAllOpt = ['hu', 'pu', 'pg', 'eu', 'ee', 'ec', 'er', 'es']
-cmdsWithoutAllOpt = ['hs', 'hp', 'ed', 'af']
+cmdsWithoutAllOpt = ['hp', 'ed', 'af']
 const combinedCmdsWrtAllOpt = new Set(cmdsWithAllOpt.concat(cmdsWithoutAllOpt))
 validCommands.forEach(cmd => {
   if (cmdsWithAllOpt.indexOf(cmd.alias) !== -1) {
@@ -42,11 +41,10 @@ validCommands.forEach(cmd => {
 
 describe('testing the CLI ...', () => {
   describe('valid cmds', () => {
-    validCommands.forEach(({cmd, alias}) => {
-      it(`alias ${alias} equals ${cmd}`, async () => {
-        cmd = await execCmd(`${cmd} -h`)
-        alias = await execCmd(`${alias} -h`)
-        assert.equal(cmd.stdout, alias.stdout)
+    it(`cmds and aliases are equal`, async () => {
+      const help = await execCmd()
+      validCommands.forEach(({cmd, alias}) => {
+          assert.match(help.stderr, new RegExp(`${cmd}.*aliases: ${alias}`))
       })
     })
   })

@@ -140,6 +140,13 @@ a {
   color: #424242;
 }
 
+.hosts-current-table, .hosts-current-table .-pagination {
+  max-width: 500px;
+}
+
+.-pagination {
+  
+}
 
 .gauge-wrapper {
   height: 5px;

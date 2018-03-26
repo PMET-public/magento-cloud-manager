@@ -1,9 +1,8 @@
 // setup logging
 const winston = require('winston')
-const vsprintf = require('sprintf-js').vsprintf
 
-// https://github.com/winstonjs/winston/issues/1175
-const myFormat = winston.format.printf(info => `${info.timestamp} [${info.level}]: ${vsprintf(info.message, ...(info.splat || []))}`)
+// need to create format to show timestamps? https://github.com/winstonjs/winston/issues/1175
+const myFormat = winston.format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
 
 // create 2 active file loggers, 1 for just errors, 1 for debugging
 const logger = winston.createLogger({
@@ -88,11 +87,17 @@ exports.exec = function() {
   logger.mylog('debug', arguments[0])
   return exec.apply(this, arguments)
 }
+
 exports.execOutputHandler = ({stdout, stderr}) => {
   if (stderr) {
-    // if we're in this handler an error hasn't been thrown yet, so just log the error output
+    // an error hasn't been thrown yet, so just log the error output if it shouldn't be filtered
     // a subsequent handler may parse stderr and decide to throw one
-    logger.mylog('error', stderr)
+    const nonErrorRegexes = [ // non-error "errors"
+    ]
+    const result = nonErrorRegexes.filter(regex => regex.test(stderr))
+    if (result.length === 0) { // stderr did not match any filtering regex
+      logger.mylog('error', stderr)
+    }
   }
   logger.mylog('debug', stdout)
   return {stdout, stderr}

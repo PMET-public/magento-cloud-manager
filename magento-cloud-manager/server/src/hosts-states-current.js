@@ -3,13 +3,19 @@ const {db} = require('../util/common')
 module.exports = (req, res) => {
   const rows = db
     .prepare(
-      `SELECT GROUP_CONCAT(p.title || ' (' || p.id || ')' ) projects, region, cpus,
-        cast(avg(h.load_avg_15) as int) load, cast ((avg(h.load_avg_15) *100 / h.cpus) as int) utilization
-      FROM 
-        (SELECT project_id, boot_time, cpus, ip, load_avg_15, MAX(timestamp) 
-          FROM hosts_states WHERE environment_id = 'master' GROUP BY project_id) AS h
-      LEFT JOIN projects p ON h.project_id = p.id
-      GROUP BY h.boot_time, h.cpus, h.ip`
+      `SELECT m.host_id, GROUP_CONCAT(hs.proj_env_id) cotenants, hs.*, cast (hs.load_avg_15 * 100 / hs.cpus as int) utilization
+      FROM
+        ( /* the most recent query from each env */
+        SELECT project_id || ':' || environment_id proj_env_id, region, boot_time, cpus, ip, load_avg_15, hs.timestamp
+        FROM hosts_states hs 
+        /* join w/ projects to get region */
+        LEFT JOIN projects p ON p.id = hs.project_id
+        GROUP BY proj_env_id
+        ORDER BY hs.timestamp ASC
+        ) hs
+      LEFT JOIN matched_envs_hosts m ON m.proj_env_id = hs.proj_env_id
+      GROUP BY host_id
+      ORDER BY timestamp ASC`
     )
     .all()
   res.json(rows)

@@ -8,12 +8,14 @@ const {
   logger,
   parseFormattedCmdOutputIntoDB
 } = require('./common')
-const {getProjectsFromApi} = require('./project')
+const {getAllLiveEnvironmentsFromDB} = require('./environment')
 
 exports.updateHost = (project, environment = 'master') => {
   return exec(`${MC_CLI} ssh -p ${project} -e "${environment}" '
       echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
-      echo ip $(netstat -r | perl -ne "s/default *([\\d\\.]*).*/\\1/ and print")
+      # netstat not available on all containers
+      # echo ip $(netstat -r | perl -ne "s/default *([\\d\\.]*).*/\\1/ and print")
+      echo ip $(cat /proc/net/arp | sed -n "/eth0/ s/ .*//p")
       echo total_memory $(cat /proc/meminfo | sed -n "s/ kB//;s/MemTotal: *//p")
       echo cpus $(nproc)
       read load_avg_1 load_avg_5 load_avg_15 running_processes total_processes last_process_id <<<$(cat /proc/loadavg |
@@ -35,8 +37,8 @@ exports.updateHost = (project, environment = 'master') => {
 
 exports.updateHostsUsingAllLiveEnvs = async () => {
   const promises = []
-  ;(await getProjectsFromApi()).forEach(project => {
-    promises.push(sshLimit(() => exports.updateHost(project)))
+  getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id}) => {
+    promises.push(sshLimit(() => exports.updateHost(project_id, environment_id)))
   })
   const result = await Promise.all(promises)
   logger.mylog('info', `All ${promises.length} envs\' hosts updated.`)
@@ -45,43 +47,56 @@ exports.updateHostsUsingAllLiveEnvs = async () => {
 
 exports.updateHostsUsingSampleEnvs = async () => {
   const promises = []
-  let result = db.prepare('SELECT MIN(project_id) project FROM matched_projects_hosts GROUP BY id').all()
+  // prefer master envs b/c masters can not be deleted and so can't be recreated on new host
+  // can still be rebalanced/migrated if enabled by infrastructure
+  let result = db.prepare(`
+    SELECT * FROM 
+	    (SELECT proj_env_id, host_id, instr(proj_env_id, ':master') is_master 
+	    FROM matched_envs_hosts ORDER BY is_master ASC) 
+    GROUP BY host_id
+  `).all()
   logger.mylog('debug', result)
   result.forEach(row => {
-    promises.push(sshLimit(() => exports.updateHost(row.project)))
+    const [project, environment] = row.proj_env_id.split(':')
+    promises.push(sshLimit(() => exports.updateHost(project, environment)))
   })
   result = await Promise.all(promises)
   logger.mylog('info', `${promises.length} sample envs\' hosts updated.`)
   return result
 }
 
-exports.updateProjectHostRelationships = () => {
-  const promises = []
-  const projectHosts = {} // a dictionary to lookup each project's host
-  let hostsProjects = [] // list of projects associated with each host
+// this method allows us to reduce the performance queries.
+// by occasionally querying all the envs and then mapping envs 
+// to specific hosts based on the same boot time, # cpus, and ip address,
+// on subsequent queries, just query one representative env per host
+exports.updateEnvHostRelationships = () => {
+  // since all of a project's environments are no longer constrained to a single host,
+  // track environments by a project:environment pair to have a unique identifier
+  const envHosts = {} // a dictionary to lookup each env's host
+  let hostsEnvs = [] // list of envs associated with each host
 
-  // identify cotenants - projects grouped by same boot time, # cpus, & ip address
+  // identify cotenants - envs grouped by same boot time, # cpus, & ip address
+  // using only the most recent result since environments can migrate across hosts over time
   let cotenantGroups = db
     .prepare(
-      `SELECT GROUP_CONCAT(p.id) cotenant_groups, boot_time, cpus, ip
+      `SELECT GROUP_CONCAT(h.id) cotenant_group, boot_time, cpus, ip
       FROM 
-        (SELECT project_id, boot_time, cpus, ip, MAX(timestamp) 
-          FROM hosts_states WHERE environment_id = 'master' GROUP BY project_id) AS h
-      LEFT JOIN projects p ON h.project_id = p.id
-      GROUP BY h.boot_time, h.cpus, h.ip`
+      (SELECT project_id || ':' || environment_id id, boot_time, cpus, ip, MAX(timestamp) 
+        FROM hosts_states GROUP BY project_id, environment_id) AS h
+      GROUP BY boot_time, cpus, ip`
     )
     .all()
   logger.mylog('debug', cotenantGroups)
-  cotenantGroups = cotenantGroups.map(row => row['cotenant_groups'].split(','))
-  // since hosts reboot, are assigned new IPs, upsized, etc., the groupings based on those values are incomplete
-  // however, projects should not migrate from hosts often (ever?)
-  // so any project cotenancy can be merged with another if they share a host
-  cotenantGroups.forEach(cotenants => {
+  cotenantGroups = cotenantGroups.map(row => row['cotenant_group'].split(','))
+  // since hosts reboot and then are assigned new IPs, upsized, etc., the groupings based on those values are incomplete
+  // however, envs should not migrate from hosts often (ever?)
+  // so any env cotenancy can be merged with another if they share a host
+  cotenantGroups.forEach(group => {
     let hostsThatAreActuallyTheSame = []
-    const nextNewHostIndex = hostsProjects.length
-    cotenants.forEach(cotenant => {
+    const nextNewHostIndex = hostsEnvs.length
+    group.forEach(cotenant => {
       hostsThatAreActuallyTheSame.push(
-        typeof projectHosts[cotenant] === 'undefined' ? nextNewHostIndex : projectHosts[cotenant]
+        typeof envHosts[cotenant] === 'undefined' ? nextNewHostIndex : envHosts[cotenant]
       )
     })
     hostsThatAreActuallyTheSame = [...new Set(hostsThatAreActuallyTheSame)].sort((a, b) => {
@@ -90,40 +105,40 @@ exports.updateProjectHostRelationships = () => {
     const minHost = Math.min(...hostsThatAreActuallyTheSame)
     if (minHost === nextNewHostIndex) {
       // no cotenants were found on an existing host, append new host with these cotenants
-      hostsProjects[nextNewHostIndex] = cotenants
-      cotenants.forEach(cotenant => (projectHosts[cotenant] = nextNewHostIndex))
+      hostsEnvs[nextNewHostIndex] = group
+      group.forEach(cotenant => (envHosts[cotenant] = nextNewHostIndex))
     } else {
-      // add the contenants to the minHost
-      hostsProjects[minHost] = hostsProjects[minHost].concat(cotenants)
-      cotenants.forEach(cotenant => (projectHosts[cotenant] = minHost))
-      // combine with projects from the other hosts in hostsThatAreActuallyTheSame
-      // set the combined list of projects to the host with the lowest index
+      // add the cotenants to the minHost
+      hostsEnvs[minHost] = hostsEnvs[minHost].concat(group)
+      group.forEach(cotenant => (envHosts[cotenant] = minHost))
+      // combine with envs from the other hosts in hostsThatAreActuallyTheSame
+      // set the combined list of envs to the host with the lowest index
       hostsThatAreActuallyTheSame.forEach(curHostIndex => {
         if (curHostIndex !== minHost) {
           if (curHostIndex !== nextNewHostIndex) {
-            hostsProjects[minHost] = hostsProjects[minHost].concat(hostsProjects[curHostIndex])
+            hostsEnvs[minHost] = hostsEnvs[minHost].concat(hostsEnvs[curHostIndex])
             // remove host that was combined
-            hostsProjects = hostsProjects.filter((projects, index) => index !== curHostIndex)
-            Object.entries(projectHosts).forEach(([project, prevHostIndex]) => {
+            hostsEnvs = hostsEnvs.filter((envs, index) => index !== curHostIndex)
+            Object.entries(envHosts).forEach(([env, prevHostIndex]) => {
               if (prevHostIndex === curHostIndex) {
-                // find projects with this host index
-                projectHosts[project] = minHost // update to the new host index
+                // find envs with this host index
+                envHosts[env] = minHost // update to the new host index
               } else if (prevHostIndex > curHostIndex) {
                 // since 1 less host, decrement any index above the old one
-                projectHosts[project] = projectHosts[project] - 1
+                envHosts[env] = envHosts[env] - 1
               }
             })
           }
         }
       })
       // finally, uniqify cotenants
-      hostsProjects[minHost] = [...new Set((hostsProjects[minHost] || []).concat(cotenants))]
+      hostsEnvs[minHost] = [...new Set((hostsEnvs[minHost] || []).concat(group))]
     }
   })
   const insertValues = []
-  Object.entries(projectHosts).forEach(([projectId, hostId]) => insertValues.push(`(${hostId},"${projectId}")`))
+  Object.entries(envHosts).forEach(([projEnvId, hostId]) => insertValues.push(`("${projEnvId}", ${hostId})`))
   const result = db.exec(
-    `DELETE FROM matched_projects_hosts; INSERT INTO matched_projects_hosts (id, project_id) VALUES ${insertValues.join(
+    `DELETE FROM matched_envs_hosts; INSERT INTO matched_envs_hosts (proj_env_id, host_id) VALUES ${insertValues.join(
       ','
     )}`
   )

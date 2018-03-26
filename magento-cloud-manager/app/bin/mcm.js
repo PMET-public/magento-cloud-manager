@@ -7,7 +7,7 @@ const {
   updateHost,
   updateHostsUsingAllLiveEnvs,
   updateHostsUsingSampleEnvs,
-  updateProjectHostRelationships
+  updateEnvHostRelationships
 } = require('../src/host')
 const {updateProject, updateProjects} = require('../src/project')
 const {
@@ -162,12 +162,12 @@ yargs.command(
 )
 
 yargs.command(
-  ['host:project-match', 'hp'],
-  'Update DB matching hosts and projects',
+  ['host:env-match', 'he'],
+  'Match hosts and envs',
   () => {},
   argv => {
     verifyOnlyArg(argv)
-    updateProjectHostRelationships()
+    updateEnvHostRelationships()
   }
 )
 

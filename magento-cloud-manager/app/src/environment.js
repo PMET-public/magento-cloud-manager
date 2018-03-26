@@ -41,10 +41,10 @@ exports.setEnvironmentInactive = (project, environment) => {
   return result
 }
 
-exports.setEnvironmentFailed = (project, environment) => {
+exports.setEnvironmentFailure = (project, environment, value) => {
   const result = db
-    .prepare('UPDATE environments SET failure = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
-    .run(project, environment)
+    .prepare('UPDATE environments SET failure = ?, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
+    .run(value, project, environment)
   logger.mylog('debug', result)
   return result
 }
@@ -189,7 +189,15 @@ exports.deleteInactiveEnvironments = async function() {
       apiLimit(() => 
         exec(`${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`)
           .then(execOutputHandler)
-          .catch(error => logger.mylog('error', error))
+          .catch(error => {
+            if (/No inactive environments found/.test(error.stderr)) { 
+              // this should not be considered an error, but the CLI has a non-zero exit status
+              // log the "error" for verbose mode and return
+              logger.mylog('debug', error.stderr)
+              return
+            }
+            logger.mylog('error', error)
+          })
       )
     )
   })

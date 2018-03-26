@@ -1,5 +1,5 @@
 const {exec, execOutputHandler, db, apiLimit, MC_CLI, logger} = require('./common')
-const {setEnvironmentFailed} = require('./environment')
+const {setEnvironmentFailure} = require('./environment')
 const {getProjectsFromApi} = require('./project')
 
 const parseActivityList = activities => {
@@ -31,10 +31,13 @@ const getActivitiesFromApi = (project, type) => {
         .slice(1)
     })
     .catch(error => {
-      logger.mylog('error', error)
-      if (/No activities found/.test(error.stderr)) {
+      if (/No activities found/.test(error.stderr)) { 
+        // this should not be considered an error, but the CLI has a non-zero exit status
+        // log the "error" for verbose mode and return an empty array
+        logger.mylog('debug', error.stderr)
         return []
       }
+      logger.mylog('error', error)
       return []
     })
 }
@@ -63,12 +66,9 @@ exports.searchActivitiesForFailures = async () => {
         const combinedSuccesses = mergeMostRecentActivityResultByEnv(branchResults.successes, pushResults.successes)
         const combinedFailures = mergeMostRecentActivityResultByEnv(branchResults.failures, pushResults.failures)
         for (let environment in combinedFailures) {
-          if (
-            typeof combinedSuccesses[environment] === 'undefined' ||
-            combinedSuccesses[environment] < combinedFailures[environment]
-          ) {
-            setEnvironmentFailed(project, environment)
-          }
+          const value = typeof combinedSuccesses[environment] === 'undefined' ||
+            combinedSuccesses[environment] < combinedFailures[environment] ? 1 : 0
+          setEnvironmentFailure(project, environment, value)
         }
       })
     )
