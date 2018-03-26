@@ -30,10 +30,6 @@ CREATE TABLE "hosts_states" (
 	`last_process_id`	INTEGER NOT NULL,
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
-CREATE TABLE "matched_projects_hosts" (
-	`id`	INTEGER NOT NULL,
-	`project_id`	TEXT NOT NULL UNIQUE
-);
 CREATE TABLE "users" (
 	`project_id`	TEXT NOT NULL,
 	`email`	TEXT NOT NULL,
@@ -92,4 +88,9 @@ CREATE TABLE "cert_expirations" (
 	`expiration`	INTEGER NOT NULL,
 	`timestamp`	INTEGER NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
 	PRIMARY KEY(`host_name`)
+);
+CREATE TABLE "matched_envs_hosts" (
+	`proj_env_id`	TEXT NOT NULL,
+	`host_id`	INTEGER NOT NULL,
+	PRIMARY KEY(`proj_env_id`)
 );
