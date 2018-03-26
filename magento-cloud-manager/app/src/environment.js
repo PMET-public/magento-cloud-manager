@@ -1,5 +1,5 @@
 const https = require('https')
-const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, MC_CLI_SSH, logger} = require('./common')
 const {getProjectsFromApi} = require('./project')
 
 exports.updateEnvironment = async function(project, environment = 'master') {
@@ -210,7 +210,7 @@ exports.execInEnv = function(project, environment, filePath) {
   // create a unique remote tmp file to run
   // do not delete it to identify what's been run in an env
   const file = '/tmp/' + Math.floor(new Date() / 1000) + '-' + filePath.replace(/.*\//, '')
-  const ssh = `${MC_CLI} ssh -p "${project}" -e "${environment}"`
+  const ssh = `${MC_CLI_SSH} -p "${project}" -e "${environment}"`
   const remoteCmd = /\.sql$/.test(file)
     ? `mysql main -h database.internal < "${file}"`
     : `chmod +x "${file}"; "${file}"`

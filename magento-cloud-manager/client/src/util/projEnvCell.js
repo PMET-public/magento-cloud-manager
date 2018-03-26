@@ -6,6 +6,7 @@ export default {
   Header: 'Project Env',
   accessor: 'id',
   minWidth: 200,
+  maxWidth: 200,
   Cell: cell => (
     <div>
       <a

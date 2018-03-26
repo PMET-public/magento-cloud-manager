@@ -1,10 +1,10 @@
 import React, {Component} from 'react'
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
-import UniqueOptions from '../util/UniqueOptions'
 import Icon from 'material-ui/Icon'
 import projEnvCell from '../util/projEnvCell'
-import moment from 'moment'
+import { calcWidth, moment } from '../util/common'
+import UniqueOptions from '../util/UniqueOptions'
 import Dialog from '../util/Dialog'
 import Gauge from '../util/Gauge'
 import Tooltip from 'material-ui/Tooltip'
@@ -75,12 +75,6 @@ export default class extends Component {
 
   formatSecs = secs => {
     return /^[\d.]+$/.test(secs) ? secs.toFixed(1) : ''
-  }
-
-  calcWidth = maxExpectedChars => {
-    const minWidth = 25
-    const width = maxExpectedChars * 11
-    return width < minWidth ? minWidth : width
   }
 
   validate = (value, validator, successCb, failureCb) => {
@@ -218,7 +212,7 @@ export default class extends Component {
               Header: 'Region',
               accessor: 'region',
               className: 'right',
-              width: this.calcWidth(5),
+              width: calcWidth(5),
               Filter: ({filter, onChange}) => (
                 <select
                   onChange={event => onChange(event.target.value)}
@@ -239,7 +233,7 @@ export default class extends Component {
                 Header: 'EE Version',
                 accessor: 'ee_composer_version',
                 className: 'right',
-                width: this.calcWidth(10),
+                width: calcWidth(10),
                 Filter: ({filter, onChange}) => (
                   <select
                     onChange={event => onChange(event.target.value)}
@@ -254,21 +248,21 @@ export default class extends Component {
                 Header: 'app.yaml MD5',
                 accessor: 'app_yaml_md5',
                 Cell: cell => cell.value.slice(0, 3),
-                maxWidth: this.calcWidth(4),
+                maxWidth: calcWidth(4),
                 filterable: false
               },
               {
                 Header: 'composer.lock MD5',
                 accessor: 'composer_lock_md5',
                 Cell: cell => cell.value.slice(0, 3),
-                maxWidth: this.calcWidth(4),
+                maxWidth: calcWidth(4),
                 filterable: false
               },
               {
                 Header: 'composer.lock Age',
                 accessor: 'composer_lock_mtime',
                 Cell: cell => this.formatDate(cell.value),
-                maxWidth: this.calcWidth(5),
+                maxWidth: calcWidth(5),
                 className: 'right',
                 filterable: false
               }
@@ -281,7 +275,7 @@ export default class extends Component {
                 Header: 'Cumulative CPU',
                 accessor: 'cumulative_cpu_percent',
                 Cell: cell => cell.value.toFixed(0),
-                maxWidth: this.calcWidth(3),
+                maxWidth: calcWidth(3),
                 className: 'right',
                 Filter: '%'
               },
@@ -289,7 +283,7 @@ export default class extends Component {
                 Header: 'Storefront (uncached)',
                 accessor: 'store_url_uncached',
                 Cell: cell => this.formatSecs(cell.value),
-                maxWidth: this.calcWidth(4.5),
+                maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon
               },
@@ -297,7 +291,7 @@ export default class extends Component {
                 Header: 'Storefront (cached)',
                 accessor: 'store_url_cached',
                 Cell: cell => this.formatSecs(cell.value),
-                maxWidth: this.calcWidth(4.5),
+                maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon
               },
@@ -305,7 +299,7 @@ export default class extends Component {
                 Header: 'Cat Page (uncached)',
                 accessor: 'cat_url_uncached',
                 Cell: cell => this.formatSecs(cell.value),
-                maxWidth: this.calcWidth(4.5),
+                maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon
               },
@@ -313,7 +307,7 @@ export default class extends Component {
                 Header: 'Cat Page (partial cache)',
                 accessor: 'cat_url_partial_cache',
                 Cell: cell => this.formatSecs(cell.value),
-                maxWidth: this.calcWidth(4.5),
+                maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon
               },
@@ -321,7 +315,7 @@ export default class extends Component {
                 Header: 'Cat Page (cached)',
                 accessor: 'cat_url_cached',
                 Cell: cell => this.formatSecs(cell.value),
-                maxWidth: this.calcWidth(4.5),
+                maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon
               },
@@ -333,7 +327,7 @@ export default class extends Component {
                     {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
                   </Tooltip>
                 ),
-                maxWidth: this.calcWidth(2),
+                maxWidth: calcWidth(2),
                 className: 'right',
                 filterable: false
               },
@@ -361,7 +355,7 @@ export default class extends Component {
                 Header: 'HTTP Status',
                 accessor: 'http_status',
                 Cell: cell => this.validate(cell.value, v => v === 302, this.checkIcon, this.errorIcon),
-                maxWidth: this.calcWidth(3),
+                maxWidth: calcWidth(3),
                 className: 'right',
                 Filter: ({filter, onChange}) => (
                   <select
@@ -377,35 +371,35 @@ export default class extends Component {
                 Header: 'Not valid indexes',
                 accessor: 'not_valid_index_count',
                 Cell: cell => this.validate(cell.value, v => v === 0, this.checkIcon, this.errorIcon),
-                maxWidth: this.calcWidth(2),
+                maxWidth: calcWidth(2),
                 className: 'right'
               },
               {
                 Header: 'Products',
                 accessor: 'catalog_product_entity_count',
                 Cell: cell => <div>{cell.value}</div>,
-                maxWidth: this.calcWidth(4),
+                maxWidth: calcWidth(4),
                 className: 'right'
               },
               {
                 Header: 'Category Assignments',
                 accessor: 'catalog_category_product_count',
                 Cell: cell => <div>{cell.value}</div>,
-                maxWidth: this.calcWidth(5),
+                maxWidth: calcWidth(5),
                 className: 'right'
               },
               {
                 Header: 'Admins',
                 accessor: 'admin_user_count',
                 Cell: cell => this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon),
-                maxWidth: this.calcWidth(2),
+                maxWidth: calcWidth(2),
                 className: 'right'
               },
               {
                 Header: 'Stores',
                 accessor: 'store_count',
                 Cell: cell => <div>{cell.value}</div>,
-                maxWidth: this.calcWidth(2),
+                maxWidth: calcWidth(2),
                 className: 'right',
                 Filter: ({filter, onChange}) => (
                   <select
@@ -421,42 +415,42 @@ export default class extends Component {
                 Header: 'Orders',
                 accessor: 'order_count',
                 Cell: cell => <div>{cell.value}</div>,
-                maxWidth: this.calcWidth(4),
+                maxWidth: calcWidth(4),
                 className: 'right'
               },
               {
                 Header: 'CMS Blocks',
                 accessor: 'cms_block_count',
                 Cell: cell => <div>{cell.value}</div>,
-                maxWidth: this.calcWidth(3),
+                maxWidth: calcWidth(3),
                 className: 'right'
               },
               {
                 Header: 'Templates',
                 accessor: 'template_count',
                 Cell: cell => <div>{cell.value}</div>,
-                maxWidth: this.calcWidth(2),
+                maxWidth: calcWidth(2),
                 className: 'right'
               },
               {
                 Header: 'German',
                 accessor: 'german_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
-                maxWidth: this.calcWidth(1),
+                maxWidth: calcWidth(1),
                 Filter: this.httpTestFilter
               },
               {
                 Header: 'Venia',
                 accessor: 'venia_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
-                maxWidth: this.calcWidth(1),
+                maxWidth: calcWidth(1),
                 Filter: this.httpTestFilter
               },
               {
                 Header: 'Admin',
                 accessor: 'admin_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.errorIcon),
-                maxWidth: this.calcWidth(1),
+                maxWidth: calcWidth(1),
                 Filter: this.httpTestFilter
               },
               {
@@ -466,7 +460,7 @@ export default class extends Component {
                   const list = cell.value ? cell.value.trim()
                     .split(/\(\(\d+\s*\)\)/) : []
                 return list.length ? <Dialog title="Environmental Errors">{list}</Dialog> : ''},
-                maxWidth: 200,
+                maxWidth: calcWidth(5),
                 filterMethod: (filter, row, column) => {
                   return new RegExp(filter.value, 'i').test(row[filter.id])
                 },
@@ -485,14 +479,14 @@ export default class extends Component {
                 Header: 'Last Customer Login',
                 accessor: 'last_login_customer',
                 Cell: cell => this.formatDate(cell.value),
-                maxWidth: this.calcWidth(5),
+                maxWidth: calcWidth(5),
                 className: 'right'
               },
               {
                 Header: 'Last Admin Login',
                 accessor: 'last_login_admin',
                 Cell: cell => this.formatDate(cell.value),
-                maxWidth: this.calcWidth(5),
+                maxWidth: calcWidth(5),
                 className: 'right'
               },
               {
@@ -508,7 +502,7 @@ export default class extends Component {
                   }
                   return moment(expiryDate).fromNow()
                 },
-                maxWidth: this.calcWidth(5),
+                maxWidth: calcWidth(5),
                 className: 'right'
               }
             ]
@@ -520,19 +514,19 @@ export default class extends Component {
                 Header: '% Load @ test start',
                 accessor: 'utilization_start',
                 Cell: cell => <Gauge data={cell.value} />,
-                maxWidth: 200
+                maxWidth: calcWidth(7)
               },
               {
                 Header: '% Load @ test end',
                 accessor: 'utilization_end',
                 Cell: cell => <Gauge data={cell.value} />,
-                maxWidth: 200
+                maxWidth: calcWidth(7)
               },
               {
                 Header: 'When',
                 accessor: 'timestamp',
                 Cell: cell => moment(new Date(cell.value*1000)).fromNow(),
-                maxWidth: this.calcWidth(5),
+                maxWidth: calcWidth(5),
                 className: 'right'
               }
             ]

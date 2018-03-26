@@ -1,6 +1,7 @@
 import React, {Component} from 'react'
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
+import { calcWidth, moment } from '../util/common'
 import UniqueOptions from '../util/UniqueOptions'
 import Dialog from '../util/Dialog'
 
@@ -39,7 +40,8 @@ export default class extends Component {
             Header: 'Cotenants',
             accessor: 'cotenants',
             Cell: cell => <div><Dialog title="Cotenants">{cell.value.split(/,/)}</Dialog></div>,
-            maxWidth: 100,
+            maxWidth: calcWidth(10),
+            className: 'right'
           },
           {
             Header: 'Region',
@@ -56,28 +58,30 @@ export default class extends Component {
                 <UniqueOptions data={this.state.data} accessor={'region'} />
               </select>
             ),
-            maxWidth: 100,
-            style: {textAlign: 'right'}
+            maxWidth: calcWidth(6),
+            className: 'right'
+          },
+          {
+            Header: 'Load',
+            accessor: 'load_avg_15',
+            filterable: false,
+            maxWidth: calcWidth(5),
+            className: 'right',
+            Cell: cell => Math.round(cell.value)
           },
           {
             Header: 'CPUs',
             accessor: 'cpus',
             filterable: false,
-            maxWidth: 60,
-            style: {textAlign: 'right'}
-          },
-          {
-            Header: 'Load',
-            accessor: 'load',
-            filterable: false,
-            maxWidth: 60,
-            style: {textAlign: 'right'}
+            maxWidth: calcWidth(5),
+            className: 'right'
           },
           {
             Header: '% Utilization',
             accessor: 'utilization',
             filterable: false,
-            style: {textAlign: 'right'},
+            className: 'right',
+            /* maxWidth: calcWidth(10), */
             Cell: cell => (
               <div
                 style={{
@@ -102,7 +106,15 @@ export default class extends Component {
                 />
               </div>
             )
-          }
+          },
+          {
+            Header: 'Last check',
+            accessor: 'timestamp',
+            filterable: false,
+            maxWidth: calcWidth(8),
+            className: 'right',
+            Cell: cell => moment(new Date(cell.value*1000)).fromNow()
+          },
         ]}
       />
     )

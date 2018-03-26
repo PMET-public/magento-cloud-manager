@@ -5,13 +5,14 @@ const {
   apiLimit,
   sshLimit,
   MC_CLI,
+  MC_CLI_SSH,
   logger,
   parseFormattedCmdOutputIntoDB
 } = require('./common')
 const {getAllLiveEnvironmentsFromDB} = require('./environment')
 
 exports.updateHost = (project, environment = 'master') => {
-  return exec(`${MC_CLI} ssh -p ${project} -e "${environment}" '
+  return exec(`${MC_CLI_SSH} -p ${project} -e "${environment}" '
       echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
       # netstat not available on all containers
       # echo ip $(netstat -r | perl -ne "s/default *([\\d\\.]*).*/\\1/ and print")
