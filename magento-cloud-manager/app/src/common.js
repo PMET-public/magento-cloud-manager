@@ -112,7 +112,6 @@ exports.apiLimit = pLimit(6)
 exports.sshLimit = pLimit(4)
 
 exports.MC_CLI = '~/.magento-cloud/bin/magento-cloud'
-exports.MC_CLI_SSH = `~/.magento-cloud/bin/magento-cloud ssh -i ${localCloudSshKeyPath}`
 
 const fetch = require('node-fetch')
 exports.fetch = function() {
