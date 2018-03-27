@@ -1,62 +1,106 @@
 import React, {Component} from 'react'
 import {Scatter, defaults} from 'react-chartjs-2'
+import { Parser } from 'html-to-react';
 defaults.global.animation = false
+//defaults.global.tooltips.backgroundColor = 'rgba(200,200,200,0.8)'
 
 export default class extends Component {
   constructor(props) {
     super(props)
+    //this.chartRefCallback = this.chartRefCallback.bind(this)
     this.state = {
       data: [],
-      options: {},
-      isLoaded: false
+      isLoaded: false,
+      timeframe: this.maxDays,
+      legendHtml: '',
+      options: {
+        showLines: true,
+        legend: {
+          display: true,
+          position: 'bottom'
+        },
+        tooltips: {
+          callbacks: {
+            beforeLabel: (tooltipItem, data) => {
+              return `Host ${data.datasets[tooltipItem.datasetIndex].label}: `;
+            }
+          }
+        },
+        scales: {
+          display: true,
+          labelString: 'hi',
+          xAxes: [
+            {
+              display: true,
+              labelString: 'Date',
+              labels: {
+                show: true
+              },
+              ticks: {
+                min: 0,
+                max: 0
+              }
+            }
+          ],
+          yAxes: [
+            {
+              display: true,
+              labelString: 'Utilization',
+              ticks: {
+                min: 0,
+                max: 0
+              }
+            }
+          ]
+        }
+      }
     }
   }
 
-  componentDidMount() {
-    fetch('/hosts-states-historic')
+  maxDays = 10000
+  msInDay = 1000 * 24 * 60 * 60
+  randomRange = (min, max) => Math.random() * (max - min) + min
+  randomRangeInt = (min, max) => Math.floor(Math.random() * (max - min) + min)
+  regionColors1 = () =>
+            `rgba(244,${this.randomRangeInt(100, 200)},${this.randomRangeInt(0, 100)},${this.randomRange(0.5, 1)}`
+  regionColors2 = () =>
+            `rgba(${this.randomRangeInt(0, 100)},${this.randomRangeInt(100, 200)},244,${this.randomRange(0.5, 1)}`
+  regions = {}
+  titles = {}
+  myChart = '<span>hi</span>'
+
+  fetchData = days => {
+    fetch('/hosts-states-historic?days=' + days)
       .then(res => res.json())
       .then(
         res => {
           const projData = {}
           const data = {
-            labels: ['Historic Host 15 min load avg 2'],
+            labels: ['Historic Host 15 min load avg'],
             datasets: []
           }
-          const msInDay = 1000 * 24 * 60 * 60
-          const randomRange = (min, max) => {
-            return Math.random() * (max - min) + min
-          }
-          const randomRangeInt = (min, max) => {
-            return Math.floor(Math.random() * (max - min) + min)
-          }
-          const regionColors1 = () =>
-            `rgba(244,${randomRangeInt(100, 200)},${randomRangeInt(0, 100)},${randomRange(0.5, 1)}`
-          const regionColors2 = () =>
-            `rgba(${randomRangeInt(0, 100)},${randomRangeInt(100, 200)},244,${randomRange(0.5, 1)}`
-          const regions = {}
-          const titles = {}
           let minX = 0
           let maxY = 0
-
           // group rows by project
           res.forEach(row => {
             if (typeof projData[row.host_id] === 'undefined') {
               projData[row.host_id] = []
             }
             // convert timestamp into "days ago"
-            let x = (new Date(row.timestamp*1000) - new Date()) / msInDay
-            let y = row.load_avg_15 / row.cpus
+            // use Math.round(x * 100) / 100 for 2 decimal places
+            let x = Math.round((new Date(row.timestamp*1000) - new Date()) * 100 / this.msInDay) / 100
+            let y = Math.round(row.load_avg_15 * 100 / row.cpus) / 100
             minX = x < minX ? x : minX
             maxY = y > maxY ? y : maxY
             projData[row.host_id].push({x: x, y: y})
-            regions[row.host_id] = row.region
-            titles[row.host_id] = row.host_id
+            this.regions[row.host_id] = row.region
+            this.titles[row.host_id] = row.host_id
           })
 
           Object.entries(projData).forEach(([key, val]) => {
-            const c = regions[key] === 'us-3' ? regionColors1() : regionColors2()
+            const c = this.regions[key] === 'us-3' ? this.regionColors1() : this.regionColors2()
             data.datasets.push({
-              label: `${titles[key]}`,
+              label: `${this.titles[key]}`,
               fill: false,
               borderColor: c,
               backgroundColor: c,
@@ -87,44 +131,11 @@ export default class extends Component {
             backgroundColor: 'rgba(255, 100, 100, 0.15)',
             borderColor: 'rgba(255, 100, 100, 0.15)'
           })
-          this.setState({
-            isLoaded: true,
-            data: data,
-            options: {
-              // backgroundColor:'rgb(10,10,10)',
-              showLines: true,
-              legend: {
-                display: true,
-                position: 'bottom'
-              },
-              scales: {
-                xAxes: [
-                  {
-                    display: true,
-                    labelString: 'Date',
-                    labels: {
-                      show: true
-                    },
-                    time: {
-                      unit: 'day'
-                    },
-                    ticks: {
-                      min: minX,
-                      max: 0
-                    }
-                  }
-                ],
-                yAxes: [
-                  {
-                    display: true,
-                    labelString: 'Utilization',
-                    ticks: {
-                      max: Math.ceil(maxY)
-                    }
-                  }
-                ]
-              }
-            }
+          this.setState((prevState, props) => {
+            const newState = Object.assign({}, prevState, {isLoaded: true, data: data})
+            newState.options.scales.xAxes[0].ticks.min = minX
+            newState.options.scales.yAxes[0].ticks.max = Math.ceil(maxY)
+            return newState
           })
         },
         error => {
@@ -136,11 +147,28 @@ export default class extends Component {
       )
   }
 
+  componentDidMount() {
+    this.fetchData()
+    this.forceUpdate()
+  }
+
+  // chartRefCallback = el => {
+  //   this.setState({legendHtml: el.chartInstance.generateLegend()})
+  // }
+
   render() {
     return this.state.isLoaded ? (
       <div>
         <h2>Historic Utilization</h2>
-        <Scatter data={this.state.data} options={this.state.options} height={250} />
+        Show usage for <select onChange={event => this.fetchData(event.target.value)}>
+          <option value="1">1 day</option>
+          <option value="7">1 wk</option>
+          <option value="14">2 wk</option>
+          <option value="30">1 mo</option>
+          <option value={this.maxDays}>all time</option>
+        </select>
+        <Scatter data={this.state.data} options={this.state.options} height={250} ref={this.chartRefCallback} />
+        {/* <div dangerouslySetInnerHTML={{__html: this.state.legendHtml}} /> */}
       </div>
     ) : (
       <div>Loading ...</div>

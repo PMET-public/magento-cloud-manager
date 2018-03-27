@@ -5,10 +5,9 @@ module.exports = (req, res) => {
   // rebalanced on the infrastructure)
   // this could create inaccurate historic charts but should is hopefully rare event especially for masters which should
   // can not be deleted
+  const days = isNaN(req.query.days) ? 1 : req.query.days
   const rows = db
     .prepare(
-      // `SELECT p.title, p.region, project_id, load_avg_15, cpus, h.timestamp 
-      //   FROM hosts_states h LEFT JOIN projects p ON h.project_id = p.id`
       `SELECT host_id, region, cpus, load_avg_15, timestamp
       FROM
         (
@@ -17,7 +16,7 @@ module.exports = (req, res) => {
         LEFT JOIN projects p ON p.id = hs.project_id
         ) hs
       LEFT JOIN matched_envs_hosts m ON m.proj_env_id = hs.proj_env_id
-      ORDER BY timestamp ASC`
+      WHERE timestamp > (strftime('%s','now') - ${days}*24*60*60)`
     )
     .all()
   res.json(rows)

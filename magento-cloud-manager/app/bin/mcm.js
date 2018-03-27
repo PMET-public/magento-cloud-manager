@@ -298,5 +298,5 @@ yargs.command(
     searchActivitiesForFailures()
   }
 )
-
+logger.mylog('info','asdftest')
 yargs.argv

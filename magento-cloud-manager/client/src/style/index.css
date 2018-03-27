@@ -141,11 +141,11 @@ a {
 }
 
 .hosts-current-table, .hosts-current-table .-pagination {
-  max-width: 500px;
+  max-width: 600px;
 }
 
 .-pagination {
-  
+
 }
 
 .gauge-wrapper {

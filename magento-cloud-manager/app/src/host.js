@@ -7,12 +7,13 @@ const {
   MC_CLI,
   MC_CLI_SSH,
   logger,
-  parseFormattedCmdOutputIntoDB
+  parseFormattedCmdOutputIntoDB,
+  getSshCmd
 } = require('./common')
 const {getAllLiveEnvironmentsFromDB} = require('./environment')
 
 exports.updateHost = (project, environment = 'master') => {
-  return exec(`${MC_CLI_SSH} -p ${project} -e "${environment}" '
+  return exec(`${getSshCmd(project, environment)} '
       echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
       # netstat not available on all containers
       # echo ip $(netstat -r | perl -ne "s/default *([\\d\\.]*).*/\\1/ and print")
@@ -77,14 +78,18 @@ exports.updateEnvHostRelationships = () => {
   let hostsEnvs = [] // list of envs associated with each host
 
   // identify cotenants - envs grouped by same boot time, # cpus, & ip address
+  // ordered by region to keep hosts in the same region together when enumerated
   // using only the most recent result since environments can migrate across hosts over time
   let cotenantGroups = db
     .prepare(
-      `SELECT GROUP_CONCAT(h.id) cotenant_group, boot_time, cpus, ip
-      FROM 
-      (SELECT project_id || ':' || environment_id id, boot_time, cpus, ip, MAX(timestamp) 
-        FROM hosts_states GROUP BY project_id, environment_id) AS h
-      GROUP BY boot_time, cpus, ip`
+      `SELECT GROUP_CONCAT(id) cotenant_group, boot_time, cpus, ip 
+      FROM
+        (SELECT project_id || ':' || environment_id id, boot_time, cpus, ip, MAX(h.timestamp) timestamp, region
+        FROM hosts_states h
+        LEFT JOIN projects p ON p.id = h.project_id
+        GROUP BY project_id, environment_id)
+      GROUP BY boot_time, cpus, ip
+      ORDER BY region`
     )
     .all()
   logger.mylog('debug', cotenantGroups)
@@ -143,6 +148,7 @@ exports.updateEnvHostRelationships = () => {
       ','
     )}`
   )
+  logger.mylog('info', `${Object.keys(envHosts).length} envs matched to ${hostsEnvs.length} hosts.`)
   logger.mylog('debug', result)
   return result
 }

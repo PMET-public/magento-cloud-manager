@@ -37,6 +37,14 @@ export default class extends Component {
         className={'-striped -highlight hosts-current-table'}
         columns={[
           {
+            Header: 'Host',
+            accessor: 'host_id',
+            filterable: false,
+            maxWidth: calcWidth(5),
+            className: 'right',
+            Cell: cell => cell.value
+          },
+          {
             Header: 'Cotenants',
             accessor: 'cotenants',
             Cell: cell => <div><Dialog title="Cotenants">{cell.value.split(/,/)}</Dialog></div>,

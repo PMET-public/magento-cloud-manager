@@ -9,7 +9,7 @@ const commonValidOpts = [verboseOpt, quietOpt, helpOpt]
 const inCompatibleOpts = [verboseOpt, quietOpt]
 const validCommands = [
   {cmd: 'host:update', alias: 'hu'},
-  {cmd: 'host:project-match', alias: 'hp'},
+  {cmd: 'host:env-match', alias: 'he'},
   {cmd: 'project:update', alias: 'pu'},
   {cmd: 'project:grant-gitlab', alias: 'pg'},
   {cmd: 'env:update', alias: 'eu'},
@@ -31,7 +31,7 @@ validCommands.forEach(cmd => {
 
 // add all opt for relevant
 cmdsWithAllOpt = ['hu', 'pu', 'pg', 'eu', 'ee', 'ec', 'er', 'es']
-cmdsWithoutAllOpt = ['hp', 'ed', 'af']
+cmdsWithoutAllOpt = ['he', 'ed', 'af']
 const combinedCmdsWrtAllOpt = new Set(cmdsWithAllOpt.concat(cmdsWithoutAllOpt))
 validCommands.forEach(cmd => {
   if (cmdsWithAllOpt.indexOf(cmd.alias) !== -1) {

@@ -1,5 +1,5 @@
 const https = require('https')
-const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, MC_CLI_SSH, logger} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, MC_CLI_SSH, logger, getHostName, getSshUrl} = require('./common')
 const {getProjectsFromApi} = require('./project')
 
 exports.updateEnvironment = async function(project, environment = 'master') {
@@ -101,20 +101,8 @@ exports.redeployExpiringEnvs = async () => {
 
 exports.checkCertificate = async (project, environment = 'master') => {
   try {
-    let result = db
-      .prepare(
-        `SELECT machine_name, region FROM environments e 
-        LEFT JOIN projects p ON p.id = e.project_id
-        WHERE p.id = ? AND e.id = ?
-        `
-      )
-      .get(project, environment)
-    if (typeof result == 'undefined') {
-      throw 'Row not found.'
-    }
-    logger.mylog('debug', result)
-    const hostName = `${result.machine_name}-${project}.${result.region}.magentosite.cloud`
-    result = await new Promise((resolve, reject) => {
+    const hostName = getHostName(project, environment)
+    const result = await new Promise((resolve, reject) => {
       const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, response => {
         const certificateInfo = response.connection.getPeerCertificate()
         const expiration = Math.floor(new Date(certificateInfo.valid_to) / 1000)
@@ -182,7 +170,7 @@ exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function() {
 
 // need to delete from child first
 // or how to warn if inactive parent & active child?
-exports.deleteInactiveEnvironments = async function() {
+exports.deleteInactiveEnvironments = async () => {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
@@ -206,7 +194,7 @@ exports.deleteInactiveEnvironments = async function() {
   return result
 }
 
-exports.execInEnv = function(project, environment, filePath) {
+exports.execInEnv = (project, environment, filePath) => {
   // create a unique remote tmp file to run
   // do not delete it to identify what's been run in an env
   const file = '/tmp/' + Math.floor(new Date() / 1000) + '-' + filePath.replace(/.*\//, '')
