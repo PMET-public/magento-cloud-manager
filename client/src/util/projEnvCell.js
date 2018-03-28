@@ -15,8 +15,8 @@ export default {
         href={`https://${cell.original.region}.magento.cloud/projects/${cell.original.project_id}/environments/${
           cell.original.environment_id
         }`}>
-        {cell.original.project_title} {cell.original.environment_title} 
-        <br/>({cell.original.project_id})
+        {cell.original.project_title} {cell.original.environment_title}
+        <br />({cell.original.project_id})
       </a>
       <br />
       <a

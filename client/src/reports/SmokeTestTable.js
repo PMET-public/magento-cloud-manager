@@ -3,12 +3,12 @@ import ReactTable from 'react-table'
 import 'react-table/react-table.css'
 import Icon from 'material-ui/Icon'
 import projEnvCell from '../util/projEnvCell'
-import { calcWidth, moment } from '../util/common'
+import {calcWidth, moment} from '../util/common'
 import UniqueOptions from '../util/UniqueOptions'
 import Dialog from '../util/Dialog'
 import Gauge from '../util/Gauge'
 import Tooltip from 'material-ui/Tooltip'
-import { stat } from 'fs'
+import {stat} from 'fs'
 import checkboxHOC from 'react-table/lib/hoc/selectTable'
 
 const CheckboxTable = checkboxHOC(ReactTable)
@@ -56,8 +56,6 @@ export default class extends Component {
   updateWindowDimensions = () => {
     this.setState({width: window.innerWidth, height: window.innerHeight})
   }
-
-  
 
   matchRow = (filter, row) => {
     return String(row[filter.id]).indexOf(filter.value) !== -1
@@ -111,53 +109,48 @@ export default class extends Component {
   timerIcon = () => <Icon>timer</Icon>
 
   toggleSelection = (key, shift, row) => {
-    let selection = [
-      ...this.state.selection
-    ];
-    const keyIndex = selection.indexOf(key);
+    let selection = [...this.state.selection]
+    const keyIndex = selection.indexOf(key)
     if (keyIndex >= 0) {
-      selection = [
-        ...selection.slice(0, keyIndex),
-        ...selection.slice(keyIndex + 1)
-      ]
+      selection = [...selection.slice(0, keyIndex), ...selection.slice(keyIndex + 1)]
     } else {
-      selection.push(key);
+      selection.push(key)
     }
-    this.setState({ selection });
+    this.setState({selection})
   }
 
   toggleAll = () => {
-    const selectAll = this.state.selectAll ? false : true;
-    const selection = [];
+    const selectAll = this.state.selectAll ? false : true
+    const selection = []
     if (selectAll) {
-      const wrappedInstance = this.checkboxTable.getWrappedInstance();
-      const currentRecords = wrappedInstance.getResolvedState().sortedData;
-      currentRecords.forEach((item) => {
-        selection.push(item._original._id);
+      const wrappedInstance = this.checkboxTable.getWrappedInstance()
+      const currentRecords = wrappedInstance.getResolvedState().sortedData
+      currentRecords.forEach(item => {
+        selection.push(item._original._id)
       })
     }
-    this.setState({ selectAll, selection })
+    this.setState({selectAll, selection})
   }
 
-  isSelected = (key) => {
-    return this.state.selection.includes(key);
+  isSelected = key => {
+    return this.state.selection.includes(key)
   }
 
-  selectInputComponent = (props) => {
+  selectInputComponent = props => {
     return (
       <div>
-        <input 
-        id={props.id ? props.id : 'all'}
-        type={props.selectType || 'checkbox'} 
-        checked={props.checked} 
-        onClick={(e)=>{
-          const { shiftKey } = e;
-          e.stopPropagation();
-          props.onClick(props.id, shiftKey, props.row);
-        }} 
-        onChange={()=>{}}  
-      />
-      <label for={props.id ? props.id : 'all'}></label>
+        <input
+          id={props.id ? props.id : 'all'}
+          type={props.selectType || 'checkbox'}
+          checked={props.checked}
+          onClick={e => {
+            const {shiftKey} = e
+            e.stopPropagation()
+            props.onClick(props.id, shiftKey, props.row)
+          }}
+          onChange={() => {}}
+        />
+        <label for={props.id ? props.id : 'all'} />
       </div>
     )
   }
@@ -165,16 +158,14 @@ export default class extends Component {
   render() {
     return (
       <CheckboxTable
-
-        selectType='checkbox'
-        ref={(r)=>this.checkboxTable=r}
+        selectType="checkbox"
+        ref={r => (this.checkboxTable = r)}
         selectAll={this.selectAll}
         isSelected={this.isSelected}
         toggleAll={this.toggleAll}
         toggleSelection={this.toggleSelection}
         SelectInputComponent={this.selectInputComponent}
         SelectAllInputComponent={this.selectInputComponent}
-
         data={this.state.data}
         onFetchData={(state, instance) => {
           this.setState({loading: true})
@@ -203,27 +194,27 @@ export default class extends Component {
             className: this.isSelected(rowInfo.row.id) ? '-selected' : undefined
           }
         }}
-
         columns={[
           {
             Header: 'Project Env Info',
-            columns: [projEnvCell,
-            {
-              Header: 'Region',
-              accessor: 'region',
-              className: 'right',
-              width: calcWidth(5),
-              Filter: ({filter, onChange}) => (
-                <select
-                  onChange={event => onChange(event.target.value)}
-                  style={{width: '100%'}}
-                  value={filter ? filter.value : 'all'}>
-                  <option value="">Show All</option>
-                  <UniqueOptions data={this.state.data} accessor={'region'} />
-                </select>
-              ),
-              filterMethod: this.exactMatchRow
-            }
+            columns: [
+              projEnvCell,
+              {
+                Header: 'Region',
+                accessor: 'region',
+                className: 'right',
+                width: calcWidth(5),
+                Filter: ({filter, onChange}) => (
+                  <select
+                    onChange={event => onChange(event.target.value)}
+                    style={{width: '100%'}}
+                    value={filter ? filter.value : 'all'}>
+                    <option value="">Show All</option>
+                    <UniqueOptions data={this.state.data} accessor={'region'} />
+                  </select>
+                ),
+                filterMethod: this.exactMatchRow
+              }
             ]
           },
           {
@@ -457,9 +448,9 @@ export default class extends Component {
                 Header: 'Errors',
                 accessor: 'error_logs',
                 Cell: cell => {
-                  const list = cell.value ? cell.value.trim()
-                    .split(/\(\(\d+\s*\)\)/) : []
-                return list.length ? <Dialog title="Environmental Errors">{list}</Dialog> : ''},
+                  const list = cell.value ? cell.value.trim().split(/\(\(\d+\s*\)\)/) : []
+                  return list.length ? <Dialog title="Environmental Errors">{list}</Dialog> : ''
+                },
                 maxWidth: calcWidth(5),
                 filterMethod: (filter, row, column) => {
                   return new RegExp(filter.value, 'i').test(row[filter.id])
@@ -496,7 +487,7 @@ export default class extends Component {
                   if (!cell.value) {
                     return 'N/A'
                   }
-                  const expiryDate = new Date(cell.value*1000)
+                  const expiryDate = new Date(cell.value * 1000)
                   if (expiryDate < new Date()) {
                     return 'Expired!'
                   }
@@ -525,7 +516,7 @@ export default class extends Component {
               {
                 Header: 'When',
                 accessor: 'timestamp',
-                Cell: cell => moment(new Date(cell.value*1000)).fromNow(),
+                Cell: cell => moment(new Date(cell.value * 1000)).fromNow(),
                 maxWidth: calcWidth(5),
                 className: 'right'
               }

@@ -1,7 +1,7 @@
 import React, {Component} from 'react'
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
-import { calcWidth, moment } from '../util/common'
+import {calcWidth, moment} from '../util/common'
 import UniqueOptions from '../util/UniqueOptions'
 import Dialog from '../util/Dialog'
 
@@ -47,7 +47,11 @@ export default class extends Component {
           {
             Header: 'Cotenants',
             accessor: 'cotenants',
-            Cell: cell => <div><Dialog title="Cotenants">{cell.value.split(/,/)}</Dialog></div>,
+            Cell: cell => (
+              <div>
+                <Dialog title="Cotenants">{cell.value.split(/,/)}</Dialog>
+              </div>
+            ),
             maxWidth: calcWidth(10),
             className: 'right'
           },
@@ -121,8 +125,8 @@ export default class extends Component {
             filterable: false,
             maxWidth: calcWidth(8),
             className: 'right',
-            Cell: cell => moment(new Date(cell.value*1000)).fromNow()
-          },
+            Cell: cell => moment(new Date(cell.value * 1000)).fromNow()
+          }
         ]}
       />
     )

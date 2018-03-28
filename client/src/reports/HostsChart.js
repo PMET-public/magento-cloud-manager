@@ -1,6 +1,6 @@
 import React, {Component} from 'react'
 import {Scatter, defaults} from 'react-chartjs-2'
-import { Parser } from 'html-to-react';
+
 defaults.global.animation = false
 //defaults.global.tooltips.backgroundColor = 'rgba(200,200,200,0.8)'
 
@@ -22,7 +22,7 @@ export default class extends Component {
         tooltips: {
           callbacks: {
             beforeLabel: (tooltipItem, data) => {
-              return `Host ${data.datasets[tooltipItem.datasetIndex].label}: `;
+              return `Host ${data.datasets[tooltipItem.datasetIndex].label}: `
             }
           }
         },
@@ -62,9 +62,9 @@ export default class extends Component {
   randomRange = (min, max) => Math.random() * (max - min) + min
   randomRangeInt = (min, max) => Math.floor(Math.random() * (max - min) + min)
   regionColors1 = () =>
-            `rgba(244,${this.randomRangeInt(100, 200)},${this.randomRangeInt(0, 100)},${this.randomRange(0.5, 1)}`
+    `rgba(244,${this.randomRangeInt(100, 200)},${this.randomRangeInt(0, 100)},${this.randomRange(0.5, 1)}`
   regionColors2 = () =>
-            `rgba(${this.randomRangeInt(0, 100)},${this.randomRangeInt(100, 200)},244,${this.randomRange(0.5, 1)}`
+    `rgba(${this.randomRangeInt(0, 100)},${this.randomRangeInt(100, 200)},244,${this.randomRange(0.5, 1)}`
   regions = {}
   titles = {}
   myChart = '<span>hi</span>'
@@ -88,7 +88,7 @@ export default class extends Component {
             }
             // convert timestamp into "days ago"
             // use Math.round(x * 100) / 100 for 2 decimal places
-            let x = Math.round((new Date(row.timestamp*1000) - new Date()) * 100 / this.msInDay) / 100
+            let x = Math.round((new Date(row.timestamp * 1000) - new Date()) * 100 / this.msInDay) / 100
             let y = Math.round(row.load_avg_15 * 100 / row.cpus) / 100
             minX = x < minX ? x : minX
             maxY = y > maxY ? y : maxY
@@ -160,7 +160,8 @@ export default class extends Component {
     return this.state.isLoaded ? (
       <div>
         <h2>Historic Utilization</h2>
-        Show usage for <select onChange={event => this.fetchData(event.target.value)}>
+        Show usage for
+        <select onChange={event => this.fetchData(event.target.value)}>
           <option value="1">1 day</option>
           <option value="7">1 wk</option>
           <option value="14">2 wk</option>

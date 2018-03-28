@@ -52,7 +52,7 @@ class SimpleDialogDemo extends React.Component {
     return (
       <div>
         <Button onClick={this.handleClickOpen}>
-        {this.props.children.length} <Icon color="secondary">format_align_left</Icon>
+          {this.props.children.length} <Icon color="secondary">format_align_left</Icon>
         </Button>
         <SimpleDialogWrapped open={this.state.open} onClose={this.handleClose} title={this.props.title}>
           {this.props.children}
