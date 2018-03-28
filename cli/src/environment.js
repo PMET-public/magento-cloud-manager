@@ -231,7 +231,7 @@ const getMachineNameAndRegion = async (project, environment) => {
 
 const getHostName = async (project, environment) => {
   const {machineName, region} = await getMachineNameAndRegion(project, environment)
-  return `ssh ${machineName}-${project}.${region}.magentosite.cloud`
+  return `${machineName}-${project}.${region}.magentosite.cloud`
 }
 
 // Using this method instead of the built in `magento-cloud ssh ...` prevents token timeouts for ssh cmds
