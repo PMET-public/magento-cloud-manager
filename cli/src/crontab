@@ -1,28 +1,27 @@
-PATH=~/magento-cloud-manager/cli/bin:/usr/local/bin:/usr/bin:/bin
+MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 
 # use perl sleep and rand functions to vary start times
 # 900 s = 15 min, 7200 s = 2hrs, 14000 s ~ 4 hrs
 
 # sample all envs' hosts for perf metrics 3x a wk
-0 0 * * 1,3,5 perl -le 'sleep rand 900' && mcm hu -qa
+0 0 * * 1,3,5 perl -le 'sleep rand 900' && $MCM_PATH hu -qa
 
-# every 4 hr, sample a subset of envs (1 per host)
-0 4,8,12,16,20 * * * perl -le 'sleep rand 14000' && mcm hu -qs
-59 * * * * perl -le 'sleep rand 5' && mcm hu -vs 2>&1 > /tmp/mycron.log
+# every hr, sample a subset of envs (1 per host)
+0 * * * * perl -le 'sleep rand 900' && $MCM_PATH hu -qs
 
 # in case of env migration, rematch env and hosts every day
-50 23 * * * perl -le 'sleep rand 14000' && mcm he -q
+50 23 * * * perl -le 'sleep rand 14000' && $MCM_PATH he -q
 
 # more daily off peak tests spread over time
-20 0 * * * perl -le 'sleep rand 900' && mcm pu -qa
-40 0 * * * perl -le 'sleep rand 900' && mcm eu -qa
+20 0 * * * perl -le 'sleep rand 900' && $MCM_PATH pu -qa
+40 0 * * * perl -le 'sleep rand 900' && $MCM_PATH eu -qa
 
 # check certs & redeploy expiring on Sat
-0 1 * * 6 perl -le 'sleep rand 900' && mcm ec -qa
-0 1 * * 6 perl -le 'sleep rand 900' && mcm er -qx
+0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH ec -qa
+0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH er -qx
 
 # delete inactive every day
-0 1 * * 6 perl -le 'sleep rand 900' && mcm ed -q
+0 1 * * * perl -le 'sleep rand 900' && $MCM_PATH ed -q
 
 # find failures every day
-40 1 * * * perl -le 'sleep rand 900' && mcm af -q
+40 1 * * * perl -le 'sleep rand 900' && $MCM_PATH af -q
