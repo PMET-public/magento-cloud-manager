@@ -74,7 +74,10 @@ exports.enableAllGitlabKeysForAllConfiguredProjects = async () => {
       }
     }
   }
-  logger.mylog('info', `All ${allCloudKeyIdsInGitlab.length} public cloud keys added to Gitlab enabled to access all ${gitlabProjectIds.length} configured Gitlab projects.`)
+  logger.mylog(
+    'info', `All ${allCloudKeyIdsInGitlab.length} public cloud keys added to` + 
+    `Gitlab enabled to access all ${gitlabProjectIds.length} configured Gitlab projects.`
+  )
 }
 
 exports.addCloudProjectKeyToGitlabKeys = async cloudProject => {

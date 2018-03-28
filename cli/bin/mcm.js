@@ -37,9 +37,9 @@ const coercer = x => {
 }
 
 const defaultAllOptions = {
-    alias: 'all',
-    type: 'boolean',
-    coerce: coercer
+  alias: 'all',
+  type: 'boolean',
+  coerce: coercer
 }
 
 const addSharedPidOpts = () => {
@@ -68,7 +68,7 @@ const addSharedPidEnvOpts = () => {
   })
 }
 
-const verifyOnlyArg = (argv) => {
+const verifyOnlyArg = argv => {
   if (argv._.length > 1) {
     yargs.showHelp()
     // invoked by command handler so must explicitly invoke console
@@ -79,7 +79,7 @@ const verifyOnlyArg = (argv) => {
 
 const handleListCmd = (handler, isPairedList, listArgs, ...remainingArgs) => {
   // logic error
-  if (typeof handler !== "function") {
+  if (typeof handler !== 'function') {
     throw 'Handler must be a function'
   }
   // user error
@@ -171,19 +171,14 @@ yargs.command(
   }
 )
 
-yargs.command(
-  ['project:update [pid...]', 'pu'],
-  'Query API about proj(s)',
-  addSharedPidOpts,
-  async argv => {
-    if (argv.all) {
-      await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
-      updateProjects()
-    } else {
-      handleListCmd(updateProject, false, argv['pid'])
-    }
+yargs.command(['project:update [pid...]', 'pu'], 'Query API about proj(s)', addSharedPidOpts, async argv => {
+  if (argv.all) {
+    await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
+    updateProjects()
+  } else {
+    handleListCmd(updateProject, false, argv['pid'])
   }
-)
+})
 
 yargs.command(
   ['project:grant-gitlab [pid...]', 'pg'],
@@ -198,19 +193,14 @@ yargs.command(
   }
 )
 
-yargs.command(
-  ['env:update [pid:env...]', 'eu'],
-  'Query API about env(s)',
-  addSharedPidEnvOpts,
-  async argv => {
-    if (argv.all) {
-      await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
-      updateAllCurrentProjectsEnvironmentsFromAPI()
-    } else {
-      handleListCmd(updateEnvironment, true, argv['pid:env'])
-    }
+yargs.command(['env:update [pid:env...]', 'eu'], 'Query API about env(s)', addSharedPidEnvOpts, async argv => {
+  if (argv.all) {
+    await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
+    updateAllCurrentProjectsEnvironmentsFromAPI()
+  } else {
+    handleListCmd(updateEnvironment, true, argv['pid:env'])
   }
-)
+})
 
 yargs.command(
   ['env:exec <file> [pid:env...]', 'ee'],
@@ -232,18 +222,13 @@ yargs.command(
   }
 )
 
-yargs.command(
-  ['env:check-cert [pid:env...]', 'ec'],
-  'Check the https cert of env(s)',
-  addSharedPidEnvOpts,
-  argv => {
-    if (argv.all) {
-      console.log('not implemented yet')
-    } else {
-      handleListCmd(checkCertificate, true, argv['pid:env'])
-    }
+yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, argv => {
+  if (argv.all) {
+    console.log('not implemented yet')
+  } else {
+    handleListCmd(checkCertificate, true, argv['pid:env'])
   }
-)
+})
 
 yargs.command(
   ['env:redeploy [pid:env...]', 'er'],
@@ -268,18 +253,13 @@ yargs.command(
   }
 )
 
-yargs.command(
-  ['env:smoke-test [pid:env...]', 'es'],
-  'Run smoke tests in env(s)',
-  addSharedPidEnvOpts,
-  argv => {
-    if (argv.all) {
-      smokeTestAllLiveApps()
-    } else {
-      handleListCmd(smokeTestApp, true, argv['pid:env'])
-    }
+yargs.command(['env:smoke-test [pid:env...]', 'es'], 'Run smoke tests in env(s)', addSharedPidEnvOpts, argv => {
+  if (argv.all) {
+    smokeTestAllLiveApps()
+  } else {
+    handleListCmd(smokeTestApp, true, argv['pid:env'])
   }
-)
+})
 
 yargs.command(
   ['env:delete-inactive', 'ed'],

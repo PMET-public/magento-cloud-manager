@@ -32,7 +32,7 @@ const getActivitiesFromApi = async (project, type) => {
         .slice(1)
     })
     .catch(error => {
-      if (/No activities found/.test(error.stderr)) { 
+      if (/No activities found/.test(error.stderr)) {
         // this should not be considered an error, but the CLI has a non-zero exit status
         // log the "error" for verbose mode and return an empty array
         logger.mylog('debug', error.stderr)
@@ -58,8 +58,8 @@ const mergeMostRecentActivityResultByEnv = (arr1, arr2) => {
 
 exports.searchActivitiesForFailures = async () => {
   const promises = []
-  let finalFailures = 0;
-  let finalSuccesses = 0;
+  let finalFailures = 0
+  let finalSuccesses = 0
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
       apiLimit(async () => {
@@ -70,8 +70,11 @@ exports.searchActivitiesForFailures = async () => {
         const combinedSuccesses = mergeMostRecentActivityResultByEnv(branchResults.successes, pushResults.successes)
         const combinedFailures = mergeMostRecentActivityResultByEnv(branchResults.failures, pushResults.failures)
         for (let environment in combinedFailures) {
-          const value = typeof combinedSuccesses[environment] === 'undefined' ||
-            combinedSuccesses[environment] < combinedFailures[environment] ? 1 : 0
+          const value =
+            typeof combinedSuccesses[environment] === 'undefined' ||
+            combinedSuccesses[environment] < combinedFailures[environment]
+              ? 1
+              : 0
           value ? finalFailures++ : finalSuccesses++
           setEnvironmentFailure(project, environment, value)
         }
@@ -79,6 +82,8 @@ exports.searchActivitiesForFailures = async () => {
     )
   })
   const result = await Promise.all(promises)
-  logger.mylog('info', `Found ${finalFailures} still failing and ${finalSuccesses} subsequently successful activities in ${promises.length} projects searched.`)
+  logger.mylog(
+    'info', `Found ${finalFailures} still failing and ${finalSuccesses}` + 
+    `subsequently successful activities in ${promises.length} projects searched.`)
   return result
 }

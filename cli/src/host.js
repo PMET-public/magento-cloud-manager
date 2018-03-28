@@ -66,7 +66,7 @@ exports.updateHostsUsingSampleEnvs = async () => {
 }
 
 // this method allows us to reduce the performance queries.
-// by occasionally querying all the envs and then mapping envs 
+// by occasionally querying all the envs and then mapping envs
 // to specific hosts based on the same boot time, # cpus, and ip address,
 // on subsequent queries, just query one representative env per host
 exports.updateEnvHostRelationships = () => {

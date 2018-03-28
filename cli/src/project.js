@@ -30,7 +30,8 @@ exports.updateProject = updateProject = async project => {
       const sql = `INSERT OR REPLACE INTO projects (id, title, region, project_url, git_url, created_at, plan_size,
         allowed_environments, storage, user_licenses, active, client_ssh_key) VALUES
         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      const result = db.prepare(sql)
+      const result = db
+        .prepare(sql)
         .run(
           project,
           title,

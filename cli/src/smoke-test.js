@@ -80,8 +80,7 @@ exports.smokeTestApp = smokeTestApp = async (project, environment = 'master') =>
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'smoke_tests', ['project_id', 'environment_id'], [project, environment])
       logger.mylog('info', `Smoke test of env: ${environment} of project: ${project} completed.`)
-    }
-    )
+    })
     .catch(error => {
       logger.mylog('error', error, project, environment)
       if (typeof error.stderr !== 'undefined') {

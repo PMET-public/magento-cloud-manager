@@ -41,10 +41,10 @@ validCommands.forEach(cmd => {
 
 describe('testing the CLI ...', () => {
   describe('valid cmds', () => {
-    it(`cmds and aliases are equal`, async () => {
+    it('cmds and aliases are equal', async () => {
       const help = await execCmd()
       validCommands.forEach(({cmd, alias}) => {
-          assert.match(help.stderr, new RegExp(`${cmd}.*aliases: ${alias}`))
+        assert.match(help.stderr, new RegExp(`${cmd}.*aliases: ${alias}`))
       })
     })
   })
@@ -96,10 +96,9 @@ describe('testing the CLI ...', () => {
         assert.match(result.stderr, /mutually exclusive/)
       })
     })
-    it(`er "-x" and "-a" opts are incompatible`, async () => {
+    it('er "-x" and "-a" opts are incompatible', async () => {
       const result = await execCmd(`er -xa ${dummyArgs}`)
       assert.match(result.stderr, /mutually exclusive/)
     })
   })
 })
-

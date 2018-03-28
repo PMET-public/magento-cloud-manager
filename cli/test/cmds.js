@@ -12,10 +12,10 @@ const invalidPidEnv = 'invalid-pid:master'
 const getCmdWithValidPid = cmd => `${cmd} -v ${validPid}`
 const getCmdWithInvalidPid = cmd => `${cmd} -v ${invalidPid}`
 
-const ms15sec = 15*1000
-const ms1min = 60*1000
-const ms5min = 60*1000
-const ms15min = 60*1000
+const ms15sec = 15 * 1000
+const ms1min = 60 * 1000
+const ms5min = 60 * 1000
+const ms15min = 60 * 1000
 
 const validTests = (fullCmd, timeout = ms15sec) => {
   describe(`valid tests: ${fullCmd}`, () => {
@@ -50,11 +50,17 @@ describe('test quick (< 5 min max) commands operating on a single project', () =
   const tmpSqlFile = `/tmp/${sEpoch}.sql`
 
   before(() => {
-    writeFileSync(tmpShFile,'#!/bin/bash\necho "hello world"')
-    writeFileSync(tmpSqlFile,'select 1 from dual')
- })
+    writeFileSync(tmpShFile, '#!/bin/bash\necho "hello world"')
+    writeFileSync(tmpSqlFile, 'select 1 from dual')
+  })
 
-  const shortSimpleCmdsToTest = ['host:update', 'project:update', 'project:grant-gitlab', 'env:update', 'env:check-cert']
+  const shortSimpleCmdsToTest = [
+    'host:update',
+    'project:update',
+    'project:grant-gitlab',
+    'env:update',
+    'env:check-cert'
+  ]
   shortSimpleCmdsToTest.forEach(cmd => {
     validTests(getCmdWithValidPid(cmd))
     invalidTests(getCmdWithInvalidPid(cmd))
@@ -68,18 +74,18 @@ describe('test quick (< 5 min max) commands operating on a single project', () =
   validTests(`env:smoke-test -v ${validPid}`, ms5min)
   invalidTests(`env:smoke-test -v ${invalidPid}`)
 
- after(() => {
+  after(() => {
     unlink(tmpShFile)
     unlink(tmpSqlFile)
- })
+  })
 })
 
 describe('test quink (< 5 min max) commands operating on multiple projects', () => {
-  validTests(`host:env-match -v`, ms1min)
-  validTests(`host:update -vs`, ms1min)
-  validTests(`host:update -va`, ms5min)
-  validTests(`env:delete-inactive -v`, ms5min)
-  validTests(`activity:find-failures -v`, ms5min)
+  validTests('host:env-match -v', ms1min)
+  validTests('host:update -vs', ms1min)
+  validTests('host:update -va', ms5min)
+  validTests('env:delete-inactive -v', ms5min)
+  validTests('activity:find-failures -v', ms5min)
 })
 
 describe('test long running commands (up to 15 min)', () => {

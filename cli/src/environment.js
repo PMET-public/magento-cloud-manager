@@ -1,6 +1,6 @@
 const https = require('https')
 const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
-const { localCloudSshKeyPath } = require('../config.json')
+const {localCloudSshKeyPath} = require('../config.json')
 const {getProjectsFromApi} = require('./project')
 
 exports.updateEnvironment = updateEnvironment = async (project, environment = 'master') => {
@@ -86,17 +86,19 @@ exports.redeployExpiringEnvs = async () => {
   let counter = 0
   // get live envs from db b/c if they are about to expire they are not new and we can use older data
   getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id, expiration}) => {
-    promises.push(sshLimit(async () => {
-      if (expiration < expirationInAWk) {
-        // redeploys are expensive compared to rechecking expiration, so update check to prevent unnecessary redeploys
-        let result = await checkCertificate(project_id, environment_id)
-        if (result.expiration < expirationInAWk) {
-          result = await redeployEnv(project_id, environment_id)
-          counter++
+    promises.push(
+      sshLimit(async () => {
+        if (expiration < expirationInAWk) {
+          // redeploys are expensive compared to rechecking expiration, so update check to prevent unnecessary redeploys
+          let result = await checkCertificate(project_id, environment_id)
+          if (result.expiration < expirationInAWk) {
+            result = await redeployEnv(project_id, environment_id)
+            counter++
+          }
+          return result
         }
-        return result
-      }
-    }))
+      })
+    )
   })
   const result = await Promise.all(promises)
   logger.mylog('info', `${counter} expiring projects redeployed`)
@@ -118,14 +120,14 @@ exports.checkCertificate = checkCertificate = async (project, environment = 'mas
       request.end()
     })
     logger.mylog('debug', result)
-    logger.mylog('info', `${result.host} expires on ${new Date(result.expiration*1000).toDateString()}`)
+    logger.mylog('info', `${result.host} expires on ${new Date(result.expiration * 1000).toDateString()}`)
     return result
   } catch (error) {
-    logger.mylog('error',error)
+    logger.mylog('error', error)
   }
 }
 
-exports.getEnvironmentsFromAPI = getEnvironmentsFromAPI = async (project) => {
+exports.getEnvironmentsFromAPI = getEnvironmentsFromAPI = async project => {
   const cmd = `${MC_CLI} environments -p ${project} --pipe`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -177,11 +179,11 @@ exports.deleteInactiveEnvironments = async () => {
   ;(await getProjectsFromApi()).forEach(project => {
     const cmd = `${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`
     promises.push(
-      apiLimit(() => 
+      apiLimit(() =>
         exec(cmd)
           .then(execOutputHandler)
           .catch(error => {
-            if (/No inactive environments found/.test(error.stderr)) { 
+            if (/No inactive environments found/.test(error.stderr)) {
               // this should not be considered an error, but the CLI has a non-zero exit status
               // log the "error" for verbose mode and return
               logger.mylog('debug', error.stderr)
@@ -225,7 +227,7 @@ const getMachineNameAndRegion = async (project, environment) => {
     logger.mylog('debug', result)
     return {machineName: result.machine_name, region: result.region}
   } catch (error) {
-    logger.mylog('error',error)
+    logger.mylog('error', error)
   }
 }
 
@@ -252,7 +254,12 @@ exports.sendFileToRemoteTmpDir = sendFileToRemoteTmpDir = async (project, enviro
     const cmd = `scp -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${filePath} ${project}-${machineName}--mymagento@${domain}:${file}`
     await exec(cmd)
       .then(execOutputHandler)
-      .then(() => logger.mylog('info', `File: ${filePath} transferred to: ${file} in remote env: ${environment} of project: ${project}.`))
+      .then(() =>
+        logger.mylog(
+          'info',
+          `File: ${filePath} transferred to: ${file} in remote env: ${environment} of project: ${project}.`
+        )
+      )
     return file
   } catch (error) {
     logger.mylog('error', error)
@@ -266,7 +273,8 @@ exports.getFileFromRemote = async (project, environment, filePath) => {
     scp -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${project}-${machineName}--mymagento@${domain}`
   const result = exec(cmd)
     .then(execOutputHandler)
-    .then(() => logger.mylog('info', `File: ${filePath} transferred to: ${file} in env: ${environment} of project: ${project}.`))
+    .then(() =>
+      logger.mylog('info', `File: ${filePath} transferred to: ${file} in env: ${environment} of project: ${project}.`)
+    )
   return result
 }
-

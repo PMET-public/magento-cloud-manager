@@ -6,10 +6,7 @@ const myFormat = winston.format.printf(info => `${info.timestamp} ${info.level}:
 
 // create 2 active file loggers, 1 for just errors, 1 for debugging
 const logger = winston.createLogger({
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    myFormat
-  ),
+  format: winston.format.combine(winston.format.timestamp(), myFormat),
   transports: [
     new winston.transports.File({filename: `${__dirname}/../error.log`, level: 'error'}),
     new winston.transports.File({filename: `${__dirname}/../debug.log`, level: 'debug'})
@@ -23,7 +20,9 @@ logger.simpleConsole = new winston.transports.Console({
     winston.format.printf(info => {
       const {level, message, stderr} = info
       // strip outer double quotes and escaping \" in  message for console output
-      return `${message ? message.replace(/^"|"$/g,'').replace(/\\"/g,'"') + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''}`
+      return `${message ? message.replace(/^"|"$/g, '').replace(/\\"/g, '"') + '\n' : ''}${
+        stderr ? 'STDERR:\n' + stderr : ''
+      }`
     })
   )
 })
@@ -92,10 +91,12 @@ exports.execOutputHandler = execOutputHandler = ({stdout, stderr}) => {
   if (stderr) {
     // an error hasn't been thrown yet, so just log the error output if it shouldn't be filtered
     // a subsequent handler may parse stderr and decide to throw one
-    const nonErrorRegexes = [ // non-error "errors"
+    const nonErrorRegexes = [
+      // non-error "errors"
     ]
     const result = nonErrorRegexes.filter(regex => regex.test(stderr))
-    if (result.length === 0) { // stderr did not match any filtering regex
+    if (result.length === 0) {
+      // stderr did not match any filtering regex
       logger.mylog('error', stderr)
     }
   }
@@ -137,7 +138,7 @@ exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], add
 // this method serves 2 purposes
 // 1) it shows in the debug log who the cmd is being run as
 // 2) more importantly though it can be used as a trivial cmd to renew a potentially expired cloud token
-// without it, an expired token will cause all parallel triggered cmds to fail 
+// without it, an expired token will cause all parallel triggered cmds to fail
 // until the first that triggers a renewal completes its renewal
 exports.showWhoAmI = async () => {
   const cmd = `${MC_CLI} auth:info --property mail`
