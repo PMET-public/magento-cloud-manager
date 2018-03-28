@@ -5,14 +5,13 @@ const {
   apiLimit,
   sshLimit,
   MC_CLI,
-  MC_CLI_SSH,
   logger,
   parseFormattedCmdOutputIntoDB
 } = require('./common')
-const {setEnvironmentInactive, getAllLiveEnvironmentsFromDB} = require('./environment.js')
+const {setEnvironmentInactive, getAllLiveEnvironmentsFromDB, getSshCmd} = require('./environment.js')
 
 exports.smokeTestApp = async (project, environment = 'master') => {
-  const cmd = `${MC_CLI_SSH} -p ${project} -e "${environment}" '
+  const cmd = `${getSshCmd(project, environment)} '
     # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
     echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
       sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")

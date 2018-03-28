@@ -140,12 +140,12 @@ yargs
 
 yargs.command(
   ['host:update [pid:env...]', 'hu'],
-  'Update DB with info about hosts for provided projects',
+  'Gather performance metrics of hosts via env(s)',
   yargs => {
     addSharedPidEnvOpts()
     yargs.option('s', {
       alias: 'sample',
-      description: 'Update DB with info about hosts using 1 sample env per host',
+      description: 'Only use 1 sample env per host to reduce load on servers',
       conflicts: ['pid:env', 'a'],
       coerce: coercer
     })
@@ -173,7 +173,7 @@ yargs.command(
 
 yargs.command(
   ['project:update [pid...]', 'pu'],
-  'Query API about projs',
+  'Query API about proj(s)',
   addSharedPidOpts,
   argv => {
     if (argv.all) {
@@ -298,5 +298,5 @@ yargs.command(
     searchActivitiesForFailures()
   }
 )
-logger.mylog('info','asdftest')
+
 yargs.argv

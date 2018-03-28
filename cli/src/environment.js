@@ -1,9 +1,11 @@
 const https = require('https')
-const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, MC_CLI_SSH, logger, getHostName, getSshUrl} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
+const { localCloudSshKeyPath } = require('../config.json')
 const {getProjectsFromApi} = require('./project')
 
-exports.updateEnvironment = async function(project, environment = 'master') {
-  return exec(`${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`)
+exports.updateEnvironment = async (project, environment = 'master') => {
+  const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
+  return exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       const title = stdout.replace(/[\s\S]*title\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
@@ -58,14 +60,14 @@ exports.setEnvironmentMissing = (project, environment) => {
 }
 
 exports.redeployEnv = async (project, environment = 'master') => {
-  return exec(`${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}"
+  const cmd = `${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}"
     cd "/tmp/${project}-${environment}"
     pwd
     git commit -m "redeploy" --allow-empty
     git push
     cd ..
-    rm -rf "/tmp/${project}-${environment}"
-  `)
+    rm -rf "/tmp/${project}-${environment}"`
+  return exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       if (/Failed to identify project/.test(stderr)) {
@@ -121,8 +123,9 @@ exports.checkCertificate = async (project, environment = 'master') => {
   }
 }
 
-exports.getEnvironmentsFromAPI = function(project) {
-  return exec(`${MC_CLI} environments -p ${project} --pipe`)
+exports.getEnvironmentsFromAPI = (project) => {
+  const cmd = `${MC_CLI} environments -p ${project} --pipe`
+  return exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       return stdout.trim().split('\n')
@@ -131,25 +134,21 @@ exports.getEnvironmentsFromAPI = function(project) {
 }
 
 exports.getAllLiveEnvironmentsFromDB = () => {
-  const result = db
-    .prepare(
-      `
-      SELECT e.id environment_id, e.project_id, c.expiration
-      FROM environments e 
-      LEFT JOIN projects p ON e.project_id = p.id 
-      LEFT JOIN cert_expirations c ON 
-        c.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
-      WHERE e.active = 1 AND (e.failure = 0 OR e.failure IS null)
-    `
-    )
-    .all()
+  const sql = `SELECT e.id environment_id, e.project_id, c.expiration
+    FROM environments e 
+    LEFT JOIN projects p ON e.project_id = p.id 
+    LEFT JOIN cert_expirations c ON 
+      c.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
+    WHERE e.active = 1 AND (e.failure = 0 OR e.failure IS null)`
+  const result = db.prepare(sql).all()
   logger.mylog('debug', result)
   return result
 }
 
-exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function() {
+exports.updateAllCurrentProjectsEnvironmentsFromAPI = async () => {
   // mark all envs inactive and missing; then only found, active ones will be updated
-  let result = db.prepare('UPDATE environments SET active = 0, missing = 1').run()
+  const sql = 'UPDATE environments SET active = 0, missing = 1'
+  let result = db.prepare(sql).run()
   logger.mylog('debug', result)
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
@@ -173,9 +172,10 @@ exports.updateAllCurrentProjectsEnvironmentsFromAPI = async function() {
 exports.deleteInactiveEnvironments = async () => {
   const promises = []
   ;(await getProjectsFromApi()).forEach(project => {
+    const cmd = `${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`
     promises.push(
       apiLimit(() => 
-        exec(`${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`)
+        exec(cmd)
           .then(execOutputHandler)
           .catch(error => {
             if (/No inactive environments found/.test(error.stderr)) { 
@@ -194,19 +194,67 @@ exports.deleteInactiveEnvironments = async () => {
   return result
 }
 
-exports.execInEnv = (project, environment, filePath) => {
-  // create a unique remote tmp file to run
-  // do not delete it to identify what's been run in an env
-  const file = '/tmp/' + Math.floor(new Date() / 1000) + '-' + filePath.replace(/.*\//, '')
-  const ssh = `${MC_CLI_SSH} -p "${project}" -e "${environment}"`
+exports.execInEnv = async (project, environment, filePath) => {
+  const file = await exports.sendFileToRemoteTmpDir(project, environment, filePath)
   const remoteCmd = /\.sql$/.test(file)
     ? `mysql main -h database.internal < "${file}"`
     : `chmod +x "${file}"; "${file}"`
-  return exec(`
-    scp "${filePath}" $(${ssh} --pipe):"${file}"
-    ${ssh} '${remoteCmd}'
-  `)
+  const cmd = `${exports.getSshCmd(project, environment)} '${remoteCmd}'`
+  return exec(cmd)
     .then(execOutputHandler)
-    .then(() => logger.mylog('info', `File: ${filePath} executed in remote env: ${environment} of project: ${project}.`))
+    .then(() => logger.mylog('info', `File: ${filePath} executed in env: ${environment} of project: ${project}.`))
     .catch(error => logger.mylog('error', error))
 }
+
+const getMachineNameAndRegion = (project, environment) => {
+  try {
+    const sql = `SELECT machine_name, region FROM environments e LEFT JOIN projects p ON p.id = e.project_id 
+      WHERE p.id = ? AND e.id = ?`
+    const result = db.prepare(sql).get(project, environment)
+    if (typeof result == 'undefined') {
+      throw 'Row not found.'
+    }
+    logger.mylog('debug', result)
+    return {machineName: result.machine_name, region: result.region}
+  } catch (error) {
+    logger.mylog('error',error)
+  }
+}
+
+const getHostName = (project, environment) => {
+  const {machineName, region} = getMachineNameAndRegion(project, environment)
+  return `ssh ${machineName}-${project}.${region}.magentosite.cloud`
+}
+
+exports.getSshCmd = (project, environment) => {
+  const {machineName, region} = getMachineNameAndRegion(project, environment)
+  const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
+  return `ssh ${project}-${machineName}--mymagento@${domain} -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes'`
+}
+
+exports.sendFileToRemoteTmpDir = async (project, environment, filePath) => {
+  try {
+    const {machineName, region} = getMachineNameAndRegion(project, environment)
+    // create a unique remote tmp file
+    const file = '/tmp/' + Math.floor(new Date() / 1000) + '-' + filePath.replace(/.*\//, '')
+    const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
+    const cmd = `scp -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${filePath} ${project}-${machineName}--mymagento@${domain}:${file}`
+    await exec(cmd)
+      .then(execOutputHandler)
+      .then(() => logger.mylog('info', `File: ${filePath} transferred to: ${file} in remote env: ${environment} of project: ${project}.`))
+    return file
+  } catch (error) {
+    logger.mylog('error', error)
+  }
+}
+
+exports.getFileFromRemote = async (project, environment, filePath) => {
+  const {machineName, region} = getMachineNameAndRegion(project, environment)
+  const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
+  const cmd = `mkdir -p "${project}-${environment}/${filePath}"
+    scp -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${project}-${machineName}--mymagento@${domain}`
+  return exec(cmd)
+  .then(execOutputHandler)
+  .then(() => logger.mylog('info', `File: ${filePath} transferred to: ${file} in env: ${environment} of project: ${project}.`))
+}
+

@@ -1,5 +1,3 @@
-const { localCloudSshKeyPath } = require('../config.json')
-
 // setup logging
 const winston = require('winston')
 
@@ -101,7 +99,9 @@ exports.execOutputHandler = ({stdout, stderr}) => {
       logger.mylog('error', stderr)
     }
   }
-  logger.mylog('debug', stdout)
+  if (stdout) {
+    logger.mylog('debug', stdout)
+  }
   return {stdout, stderr}
 }
 
@@ -132,32 +132,4 @@ exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], add
   const result = db.prepare(sql).run(...vals)
   logger.mylog('debug', result)
   return result
-}
-
-const getMachineNameAndRegion = (project, environment) => {
-  try {
-    const result = db.prepare(
-        `SELECT machine_name, region FROM environments e LEFT JOIN projects p ON p.id = e.project_id 
-        WHERE p.id = ? AND e.id = ?`
-      )
-      .get(project, environment)
-    if (typeof result == 'undefined') {
-      throw 'Row not found.'
-    }
-    logger.mylog('debug', result)
-    return {machineName: result.machine_name, region: result.region}
-  } catch (error) {
-    logger.mylog('error',error)
-  }
-}
-
-exports.getSshCmd = (project, environment) => {
-  const {machineName, region} = getMachineNameAndRegion(project, environment)
-  const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
-  return `ssh ${project}-${machineName}--mymagento@${domain} -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes'`
-}
-
-exports.getHostName = (project, environment) => {
-  const {machineName, region} = getMachineNameAndRegion(project, environment)
-  return `ssh ${machineName}-${project}.${region}.magentosite.cloud`
 }

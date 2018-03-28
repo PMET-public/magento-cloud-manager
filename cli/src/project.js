@@ -1,7 +1,8 @@
 const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
 
 exports.getProjectsFromApi = () => {
-  return exec(`${MC_CLI} projects --pipe`)
+  const cmd = `${MC_CLI} projects --pipe`
+  return exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       return stdout.trim().split('\n')
@@ -10,7 +11,8 @@ exports.getProjectsFromApi = () => {
 }
 
 exports.updateProject = async project => {
-  return exec(`${MC_CLI} project:info -p ${project} --format=tsv`)
+  const cmd = `${MC_CLI} project:info -p ${project} --format=tsv`
+  return exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       const projectInfo = stdout
@@ -24,12 +26,10 @@ exports.updateProject = async project => {
       const allowedEnvironments = projectInfo.replace(/[\s\S]*environments: ([^\n]*)[\s\S]*/, '$1')
       const storage = projectInfo.replace(/[\s\S]*storage: ([^\n]*)[\s\S]*/, '$1')
       const userLicenses = projectInfo.replace(/[\s\S]*user_licenses: ([^"]*)[\s\S]*/, '$1')
-      const result = db
-        .prepare(
-          `INSERT OR REPLACE INTO projects (id, title, region, project_url, git_url, created_at, plan_size,
-          allowed_environments, storage, user_licenses, active, client_ssh_key) VALUES
-          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        )
+      const sql = `INSERT OR REPLACE INTO projects (id, title, region, project_url, git_url, created_at, plan_size,
+        allowed_environments, storage, user_licenses, active, client_ssh_key) VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      const result = db.prepare(sql)
         .run(
           project,
           title,
@@ -52,7 +52,8 @@ exports.updateProject = async project => {
 }
 
 const recordUsers = async project => {
-  return exec(`${MC_CLI} user:list -p ${project} --format=tsv | sed '1d'`)
+  const cmd = `${MC_CLI} user:list -p ${project} --format=tsv | sed '1d'`
+  return exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       const insertValues = []
@@ -62,7 +63,7 @@ const recordUsers = async project => {
         .map(row => row.split('\t'))
         .forEach(row => insertValues.push(`("${project}", "${row[0]}", "${row[2]}")`))
       const sql = `DELETE FROM users WHERE project_id = "${project}";
-      INSERT INTO users (project_id, email, role) VALUES ${insertValues.join(',')}`
+        INSERT INTO users (project_id, email, role) VALUES ${insertValues.join(',')}`
       const result = db.exec(sql)
       logger.mylog('debug', result)
       return result
@@ -72,7 +73,8 @@ const recordUsers = async project => {
 
 exports.updateProjects = async () => {
   // mark all projects inactive; active ones will be updated to active
-  let result = db.exec('UPDATE projects SET active = 0')
+  const sql = 'UPDATE projects SET active = 0'
+  let result = db.exec(sql)
   logger.mylog('debug', result)
   const promises = []
   ;(await exports.getProjectsFromApi()).forEach(project => {

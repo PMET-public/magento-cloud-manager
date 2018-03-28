@@ -5,30 +5,28 @@ const {
   apiLimit,
   sshLimit,
   MC_CLI,
-  MC_CLI_SSH,
   logger,
-  parseFormattedCmdOutputIntoDB,
-  getSshCmd
+  parseFormattedCmdOutputIntoDB
 } = require('./common')
-const {getAllLiveEnvironmentsFromDB} = require('./environment')
+const {getAllLiveEnvironmentsFromDB, getSshCmd} = require('./environment')
 
 exports.updateHost = (project, environment = 'master') => {
-  return exec(`${getSshCmd(project, environment)} '
-      echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
-      # netstat not available on all containers
-      # echo ip $(netstat -r | perl -ne "s/default *([\\d\\.]*).*/\\1/ and print")
-      echo ip $(cat /proc/net/arp | sed -n "/eth0/ s/ .*//p")
-      echo total_memory $(cat /proc/meminfo | sed -n "s/ kB//;s/MemTotal: *//p")
-      echo cpus $(nproc)
-      read load_avg_1 load_avg_5 load_avg_15 running_processes total_processes last_process_id <<<$(cat /proc/loadavg |
-         tr "/" " ")
-      echo load_avg_1 $load_avg_1
-      echo load_avg_5 $load_avg_5
-      echo load_avg_15 $load_avg_15
-      echo running_processes $running_processes
-      echo total_processes $total_processes
-      echo last_process_id $last_process_id
-    '`)
+  const cmd = `${getSshCmd(project, environment)} '
+    echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
+    # netstat not available on all containers
+    # echo ip $(netstat -r | perl -ne "s/default *([\\d\\.]*).*/\\1/ and print")
+    echo ip $(cat /proc/net/arp | sed -n "/eth0/ s/ .*//p")
+    echo total_memory $(cat /proc/meminfo | sed -n "s/ kB//;s/MemTotal: *//p")
+    echo cpus $(nproc)
+    read load_avg_1 load_avg_5 load_avg_15 running_processes total_processes last_process_id <<<$(cat /proc/loadavg |
+      tr "/" " ")
+    echo load_avg_1 $load_avg_1
+    echo load_avg_5 $load_avg_5
+    echo load_avg_15 $load_avg_15
+    echo running_processes $running_processes
+    echo total_processes $total_processes
+    echo last_process_id $last_process_id'`
+  return exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', ['project_id', 'environment_id'], [project, environment])
@@ -51,12 +49,11 @@ exports.updateHostsUsingSampleEnvs = async () => {
   const promises = []
   // prefer master envs b/c masters can not be deleted and so can't be recreated on new host
   // can still be rebalanced/migrated if enabled by infrastructure
-  let result = db.prepare(`
-    SELECT * FROM 
-	    (SELECT proj_env_id, host_id, instr(proj_env_id, ':master') is_master 
-	    FROM matched_envs_hosts ORDER BY is_master ASC) 
-    GROUP BY host_id
-  `).all()
+  const sql = `SELECT * FROM 
+      (SELECT proj_env_id, host_id, instr(proj_env_id, ':master') is_master 
+      FROM matched_envs_hosts ORDER BY is_master ASC) 
+    GROUP BY host_id`
+  let result = db.prepare(sql).all()
   logger.mylog('debug', result)
   result.forEach(row => {
     const [project, environment] = row.proj_env_id.split(':')
@@ -143,11 +140,9 @@ exports.updateEnvHostRelationships = () => {
   })
   const insertValues = []
   Object.entries(envHosts).forEach(([projEnvId, hostId]) => insertValues.push(`("${projEnvId}", ${hostId})`))
-  const result = db.exec(
-    `DELETE FROM matched_envs_hosts; INSERT INTO matched_envs_hosts (proj_env_id, host_id) VALUES ${insertValues.join(
-      ','
-    )}`
-  )
+  const sql = `DELETE FROM matched_envs_hosts; 
+    INSERT INTO matched_envs_hosts (proj_env_id, host_id) VALUES ${insertValues.join(',')}`
+  const result = db.exec(sql)
   logger.mylog('info', `${Object.keys(envHosts).length} envs matched to ${hostsEnvs.length} hosts.`)
   logger.mylog('debug', result)
   return result
