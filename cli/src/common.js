@@ -91,12 +91,9 @@ exports.execOutputHandler = execOutputHandler = ({stdout, stderr}) => {
   if (stderr) {
     // an error hasn't been thrown yet, so just log the error output if it shouldn't be filtered
     // a subsequent handler may parse stderr and decide to throw one
-    const nonErrorRegexes = [
-      // non-error "errors"
-    ]
+    const nonErrorRegexes = [] // non-error "errors"
     const result = nonErrorRegexes.filter(regex => regex.test(stderr))
-    if (result.length === 0) {
-      // stderr did not match any filtering regex
+    if (result.length === 0) { // stderr did not match any filtering regex
       logger.mylog('error', stderr)
     }
   }

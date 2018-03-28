@@ -83,7 +83,9 @@ exports.searchActivitiesForFailures = async () => {
   })
   const result = await Promise.all(promises)
   logger.mylog(
-    'info', `Found ${finalFailures} still failing and ${finalSuccesses}` + 
-    `subsequently successful activities in ${promises.length} projects searched.`)
+    'info',
+    `Found ${finalFailures} still failing and ${finalSuccesses}` +
+      `subsequently successful activities in ${promises.length} projects searched.`
+  )
   return result
 }
