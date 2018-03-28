@@ -1,4 +1,4 @@
-const {exec, execOutputHandler, db, apiLimit, MC_CLI, logger, showWhoAmI} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, MC_CLI, logger} = require('./common')
 const {setEnvironmentFailure} = require('./environment')
 const {getProjectsFromApi} = require('./project')
 
@@ -21,9 +21,9 @@ const parseActivityList = activities => {
   return {successes: successes, failures: failures}
 }
 
-const getActivitiesFromApi = (project, type) => {
+const getActivitiesFromApi = async (project, type) => {
   const cmd = `${MC_CLI} activity:list -p ${project} -e master -a --type=environment.${type} --limit=9999 --format=tsv`
-  return exec(cmd)
+  const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       return stdout
@@ -41,6 +41,7 @@ const getActivitiesFromApi = (project, type) => {
       logger.mylog('error', error)
       return []
     })
+  return result
 }
 
 const mergeMostRecentActivityResultByEnv = (arr1, arr2) => {
@@ -59,7 +60,6 @@ exports.searchActivitiesForFailures = async () => {
   const promises = []
   let finalFailures = 0;
   let finalSuccesses = 0;
-  showWhoAmI()
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
       apiLimit(async () => {

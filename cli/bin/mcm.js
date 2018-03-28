@@ -2,7 +2,7 @@
 
 const yargs = require('yargs')
 const chalk = require('chalk')
-const {logger} = require('../src/common')
+const {logger, showWhoAmI} = require('../src/common')
 const {
   updateHost,
   updateHostsUsingAllLiveEnvs,
@@ -175,8 +175,9 @@ yargs.command(
   ['project:update [pid...]', 'pu'],
   'Query API about proj(s)',
   addSharedPidOpts,
-  argv => {
+  async argv => {
     if (argv.all) {
+      await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
       updateProjects()
     } else {
       handleListCmd(updateProject, false, argv['pid'])
@@ -201,8 +202,9 @@ yargs.command(
   ['env:update [pid:env...]', 'eu'],
   'Query API about env(s)',
   addSharedPidEnvOpts,
-  argv => {
+  async argv => {
     if (argv.all) {
+      await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
       updateAllCurrentProjectsEnvironmentsFromAPI()
     } else {
       handleListCmd(updateEnvironment, true, argv['pid:env'])
@@ -257,7 +259,7 @@ yargs.command(
   },
   argv => {
     if (argv.all) {
-      console.log('not implemented yet')
+      console.log('Are you crazy?!')
     } else if (argv.expiring) {
       redeployExpiringEnvs()
     } else {

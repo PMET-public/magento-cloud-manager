@@ -1,18 +1,19 @@
 const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
 
-exports.getProjectsFromApi = () => {
+exports.getProjectsFromApi = getProjectsFromApi = async () => {
   const cmd = `${MC_CLI} projects --pipe`
-  return exec(cmd)
+  const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       return stdout.trim().split('\n')
     })
     .catch(error => logger.mylog('error', error))
+  return result
 }
 
-exports.updateProject = async project => {
+exports.updateProject = updateProject = async project => {
   const cmd = `${MC_CLI} project:info -p ${project} --format=tsv`
-  return exec(cmd)
+  const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       const projectInfo = stdout
@@ -49,11 +50,12 @@ exports.updateProject = async project => {
       return result
     })
     .catch(error => logger.mylog('error', error))
+  return result
 }
 
 const recordUsers = async project => {
   const cmd = `${MC_CLI} user:list -p ${project} --format=tsv | sed '1d'`
-  return exec(cmd)
+  const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       const insertValues = []
@@ -69,6 +71,7 @@ const recordUsers = async project => {
       return result
     })
     .catch(error => logger.mylog('error', error))
+  return result
 }
 
 exports.updateProjects = async () => {
@@ -77,10 +80,10 @@ exports.updateProjects = async () => {
   let result = db.exec(sql)
   logger.mylog('debug', result)
   const promises = []
-  ;(await exports.getProjectsFromApi()).forEach(project => {
+  ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
       apiLimit(async () => {
-        await exports.updateProject(project)
+        await updateProject(project)
         await recordUsers(project)
       })
     )

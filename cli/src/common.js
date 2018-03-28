@@ -141,7 +141,8 @@ exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], add
 // until the first that triggers a renewal completes its renewal
 exports.showWhoAmI = async () => {
   const cmd = `${MC_CLI} auth:info --property mail`
-  return await exec(cmd)
+  const result = await exec(cmd)
     .then(execOutputHandler)
     .catch(error => logger.mylog('error', error))
+  return result
 }

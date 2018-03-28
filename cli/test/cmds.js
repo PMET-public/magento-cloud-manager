@@ -17,7 +17,6 @@ const ms1min = 60*1000
 const ms5min = 60*1000
 const ms15min = 60*1000
 
-
 const validTests = (fullCmd, timeout = ms15sec) => {
   describe(`valid tests: ${fullCmd}`, () => {
     it('has [debug], has [info], and has no [error]', async () => {
@@ -45,7 +44,7 @@ const invalidTests = fullCmd => {
 }
 
 describe('test quick (< 5 min max) commands operating on a single project', () => {
-  // create files for testing 'ee'
+  // create files for testing 'env:exec'
   const sEpoch = Math.floor(new Date() / 1000)
   const tmpShFile = `/tmp/${sEpoch}.sh`
   const tmpSqlFile = `/tmp/${sEpoch}.sql`
@@ -55,19 +54,19 @@ describe('test quick (< 5 min max) commands operating on a single project', () =
     writeFileSync(tmpSqlFile,'select 1 from dual')
  })
 
-  const shortSimpleCmdsToTest = ['hu', 'pu', 'pg', 'eu', 'ec']
+  const shortSimpleCmdsToTest = ['host:update', 'project:update', 'project:grant-gitlab', 'env:update', 'env:check-cert']
   shortSimpleCmdsToTest.forEach(cmd => {
     validTests(getCmdWithValidPid(cmd))
     invalidTests(getCmdWithInvalidPid(cmd))
   })
 
-  validTests(`ee -v ${tmpShFile} ${validPid}`, ms1min)
-  validTests(`ee -v ${tmpSqlFile} ${validPid}`, ms1min)
-  invalidTests(`ee -v ${tmpShFile} ${invalidPid}`)
-  invalidTests(`ee -v ${tmpSqlFile} ${invalidPid}`)
+  validTests(`env:exec -v ${tmpShFile} ${validPid}`, ms1min)
+  validTests(`env:exec -v ${tmpSqlFile} ${validPid}`, ms1min)
+  invalidTests(`env:exec -v ${tmpShFile} ${invalidPid}`)
+  invalidTests(`env:exec -v ${tmpSqlFile} ${invalidPid}`)
 
-  validTests(`es -v ${validPid}`, ms5min)
-  invalidTests(`es -v ${invalidPid}`)
+  validTests(`env:smoke-test -v ${validPid}`, ms5min)
+  invalidTests(`env:smoke-test -v ${invalidPid}`)
 
  after(() => {
     unlink(tmpShFile)
@@ -75,12 +74,15 @@ describe('test quick (< 5 min max) commands operating on a single project', () =
  })
 })
 
-describe('test batch commands', () => {
-  validTests(`af -v`, ms5min)
-  validTests(`ed -v`, ms5min)
+describe('test quink (< 5 min max) commands operating on multiple projects', () => {
+  validTests(`host:env-match -v`, ms1min)
+  validTests(`host:update -vs`, ms1min)
+  validTests(`host:update -va`, ms5min)
+  validTests(`env:delete-inactive -v`, ms5min)
+  validTests(`activity:find-failures -v`, ms5min)
 })
 
-describe('long running commands (up to 15 min)', () => {
-  validTests(`er -v ${validPid}`, ms15min)
-  invalidTests(`er -v ${invalidPid}`)
+describe('test long running commands (up to 15 min)', () => {
+  validTests(`env:redeploy -v ${validPid}`, ms15min)
+  invalidTests(`env:redeploy -v ${invalidPid}`)
 })

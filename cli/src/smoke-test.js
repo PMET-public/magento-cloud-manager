@@ -10,8 +10,8 @@ const {
 } = require('./common')
 const {setEnvironmentInactive, getAllLiveEnvironmentsFromDB, getSshCmd} = require('./environment.js')
 
-exports.smokeTestApp = async (project, environment = 'master') => {
-  const cmd = `${getSshCmd(project, environment)} '
+exports.smokeTestApp = smokeTestApp = async (project, environment = 'master') => {
+  const cmd = `${await getSshCmd(project, environment)} '
     # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
     echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
       sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")
@@ -75,7 +75,7 @@ exports.smokeTestApp = async (project, environment = 'master') => {
     echo utilization_end $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
       sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")
 '`
-  return exec(cmd)
+  const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'smoke_tests', ['project_id', 'environment_id'], [project, environment])
@@ -92,12 +92,13 @@ exports.smokeTestApp = async (project, environment = 'master') => {
         }
       }
     })
+  return result
 }
 
 exports.smokeTestAllLiveApps = async () => {
   const promises = []
   getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id}) => {
-    promises.push(sshLimit(() => exports.smokeTestApp(project_id, environment_id)))
+    promises.push(sshLimit(() => smokeTestApp(project_id, environment_id)))
   })
   // possible issue if one promise fails?
   // https://stackoverflow.com/questions/30362733/handling-errors-in-promise-all

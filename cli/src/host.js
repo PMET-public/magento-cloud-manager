@@ -6,13 +6,12 @@ const {
   sshLimit,
   MC_CLI,
   logger,
-  parseFormattedCmdOutputIntoDB,
-  showWhoAmI
+  parseFormattedCmdOutputIntoDB
 } = require('./common')
 const {getAllLiveEnvironmentsFromDB, getSshCmd} = require('./environment')
 
-exports.updateHost = async (project, environment = 'master') => {
-  const cmd = `${getSshCmd(project, environment)} '
+exports.updateHost = updateHost = async (project, environment = 'master') => {
+  const cmd = `${await getSshCmd(project, environment)} '
     echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
     # netstat not available on all containers
     # echo ip $(netstat -r | perl -ne "s/default *([\\d\\.]*).*/\\1/ and print")
@@ -27,19 +26,20 @@ exports.updateHost = async (project, environment = 'master') => {
     echo running_processes $running_processes
     echo total_processes $total_processes
     echo last_process_id $last_process_id'`
-  return exec(cmd)
+  const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', ['project_id', 'environment_id'], [project, environment])
       logger.mylog('info', `Host of env: ${environment} of project: ${project} updated.`)
     })
     .catch(error => logger.mylog('error', error))
+  return result
 }
 
 exports.updateHostsUsingAllLiveEnvs = async () => {
   const promises = []
   getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id}) => {
-    promises.push(sshLimit(() => exports.updateHost(project_id, environment_id)))
+    promises.push(sshLimit(() => updateHost(project_id, environment_id)))
   })
   const result = await Promise.all(promises)
   logger.mylog('info', `All ${promises.length} envs\' hosts updated.`)
@@ -58,7 +58,7 @@ exports.updateHostsUsingSampleEnvs = async () => {
   logger.mylog('debug', result)
   result.forEach(row => {
     const [project, environment] = row.proj_env_id.split(':')
-    promises.push(sshLimit(() => exports.updateHost(project, environment)))
+    promises.push(sshLimit(() => updateHost(project, environment)))
   })
   result = await Promise.all(promises)
   logger.mylog('info', `${promises.length} sample envs\' hosts updated.`)
