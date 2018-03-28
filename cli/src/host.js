@@ -6,11 +6,12 @@ const {
   sshLimit,
   MC_CLI,
   logger,
-  parseFormattedCmdOutputIntoDB
+  parseFormattedCmdOutputIntoDB,
+  showWhoAmI
 } = require('./common')
 const {getAllLiveEnvironmentsFromDB, getSshCmd} = require('./environment')
 
-exports.updateHost = (project, environment = 'master') => {
+exports.updateHost = async (project, environment = 'master') => {
   const cmd = `${getSshCmd(project, environment)} '
     echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
     # netstat not available on all containers

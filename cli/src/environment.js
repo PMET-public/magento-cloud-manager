@@ -226,6 +226,9 @@ const getHostName = (project, environment) => {
   return `ssh ${machineName}-${project}.${region}.magentosite.cloud`
 }
 
+// Using this method instead of the built in `magento-cloud ssh ...` prevents token timeouts for ssh cmds
+// When running cmds in parallel, if a cmd happens to execute when a token expires, all subsequent cmds
+// will fail until the one that triggered a token renewal receives a new token
 exports.getSshCmd = (project, environment) => {
   const {machineName, region} = getMachineNameAndRegion(project, environment)
   const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`

@@ -88,7 +88,7 @@ exports.exec = function() {
   return exec.apply(this, arguments)
 }
 
-exports.execOutputHandler = ({stdout, stderr}) => {
+exports.execOutputHandler = execOutputHandler = ({stdout, stderr}) => {
   if (stderr) {
     // an error hasn't been thrown yet, so just log the error output if it shouldn't be filtered
     // a subsequent handler may parse stderr and decide to throw one
@@ -111,7 +111,7 @@ const pLimit = require('p-limit')
 exports.apiLimit = pLimit(6)
 exports.sshLimit = pLimit(4)
 
-exports.MC_CLI = '~/.magento-cloud/bin/magento-cloud'
+exports.MC_CLI = MC_CLI = '~/.magento-cloud/bin/magento-cloud'
 
 const fetch = require('node-fetch')
 exports.fetch = function() {
@@ -132,4 +132,16 @@ exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], add
   const result = db.prepare(sql).run(...vals)
   logger.mylog('debug', result)
   return result
+}
+
+// this method serves 2 purposes
+// 1) it shows in the debug log who the cmd is being run as
+// 2) more importantly though it can be used as a trivial cmd to renew a potentially expired cloud token
+// without it, an expired token will cause all parallel triggered cmds to fail 
+// until the first that triggers a renewal completes its renewal
+exports.showWhoAmI = async () => {
+  const cmd = `${MC_CLI} auth:info --property mail`
+  return await exec(cmd)
+    .then(execOutputHandler)
+    .catch(error => logger.mylog('error', error))
 }

@@ -1,4 +1,4 @@
-const {exec, execOutputHandler, db, apiLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, apiLimit, MC_CLI, logger, showWhoAmI} = require('./common')
 const {setEnvironmentFailure} = require('./environment')
 const {getProjectsFromApi} = require('./project')
 
@@ -57,6 +57,9 @@ const mergeMostRecentActivityResultByEnv = (arr1, arr2) => {
 
 exports.searchActivitiesForFailures = async () => {
   const promises = []
+  let finalFailures = 0;
+  let finalSuccesses = 0;
+  showWhoAmI()
   ;(await getProjectsFromApi()).forEach(project => {
     promises.push(
       apiLimit(async () => {
@@ -69,12 +72,13 @@ exports.searchActivitiesForFailures = async () => {
         for (let environment in combinedFailures) {
           const value = typeof combinedSuccesses[environment] === 'undefined' ||
             combinedSuccesses[environment] < combinedFailures[environment] ? 1 : 0
+          value ? finalFailures++ : finalSuccesses++
           setEnvironmentFailure(project, environment, value)
         }
       })
     )
   })
   const result = await Promise.all(promises)
-  logger.mylog('info', `Activities in ${promises.length} projects searched for failures.`)
+  logger.mylog('info', `Found ${finalFailures} still failing and ${finalSuccesses} subsequently successful activities in ${promises.length} projects searched.`)
   return result
 }
