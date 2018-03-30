@@ -9,18 +9,6 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static('client/build'))
 }
 
-app.get('/api/projects', (req, res) => {
-  const param = req.query.q
-  if (!param) {
-    res.json({
-      error: 'Missing required parameter `q`'
-    })
-    return
-  }
-  //const rows = db.prepare('SELECT id, title FROM projects WHERE id like ?').all('%' + param + '%')
-  res.json(rows)
-})
-
 // map each "/" request to its corresponding src file
 const fs = require('fs')
 fs.readdir('./src', (err, files) => {

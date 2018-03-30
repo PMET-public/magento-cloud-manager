@@ -2,10 +2,10 @@ import React, {Component} from 'react'
 import {Route} from 'react-router-dom'
 import {withStyles} from 'material-ui/styles'
 import styles from './style/mui-styles'
-import EnvironmentsTable from './reports/EnvironmentsTable'
-import SmokeTestTable from './reports/SmokeTestTable'
 import HostsTable from './reports/HostsTable'
 import HostsChart from './reports/HostsChart'
+import ResponseTimesChart from './reports/ResponseTimesChart'
+import SmokeTestTable from './reports/SmokeTestTable'
 
 class Main extends Component {
   render() {
@@ -16,7 +16,7 @@ class Main extends Component {
         <div className={classes.toolbar} />
         <Route path={'/hosts-table'} component={HostsTable} />
         <Route path={'/hosts-chart'} component={HostsChart} />
-        <Route path={'/environments-table'} component={EnvironmentsTable} />
+        <Route path={'/response-times-chart'} component={ResponseTimesChart} />
         <Route path={'/smoke-test-table'} component={SmokeTestTable} />
       </main>
     )

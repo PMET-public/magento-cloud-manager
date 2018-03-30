@@ -18,7 +18,7 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 
 # check certs & redeploy expiring on Sat
 0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH ec -qa
-0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH er -qx
+0 2 * * 6 perl -le 'sleep rand 900' && $MCM_PATH er -qx
 
 # delete inactive every day
 0 1 * * * perl -le 'sleep rand 900' && $MCM_PATH ed -q

@@ -67,24 +67,23 @@ export default class extends Component {
     `rgba(${this.randomRangeInt(0, 100)},${this.randomRangeInt(100, 200)},244,${this.randomRange(0.5, 1)}`
   regions = {}
   titles = {}
-  myChart = '<span>hi</span>'
 
   fetchData = days => {
     fetch('/hosts-states-historic?days=' + days)
       .then(res => res.json())
       .then(
         res => {
-          const projData = {}
+          const hostData = {}
           const data = {
             labels: ['Historic Host 15 min load avg'],
             datasets: []
           }
           let minX = 0
           let maxY = 0
-          // group rows by project
+          // group rows by host
           res.forEach(row => {
-            if (typeof projData[row.host_id] === 'undefined') {
-              projData[row.host_id] = []
+            if (typeof hostData[row.host_id] === 'undefined') {
+              hostData[row.host_id] = []
             }
             // convert timestamp into "days ago"
             // use Math.round(x * 100) / 100 for 2 decimal places
@@ -92,12 +91,12 @@ export default class extends Component {
             let y = Math.round(row.load_avg_15 * 100 / row.cpus) / 100
             minX = x < minX ? x : minX
             maxY = y > maxY ? y : maxY
-            projData[row.host_id].push({x: x, y: y})
+            hostData[row.host_id].push({x: x, y: y})
             this.regions[row.host_id] = row.region
             this.titles[row.host_id] = row.host_id
           })
 
-          Object.entries(projData).forEach(([key, val]) => {
+          Object.entries(hostData).forEach(([key, val]) => {
             const c = this.regions[key] === 'us-3' ? this.regionColors1() : this.regionColors2()
             data.datasets.push({
               label: `${this.titles[key]}`,

@@ -4,9 +4,7 @@ const {db} = require('../util/common')
 // perl -ne 's/^\s+`(.*)`.*/\1/ and print "$myvar.$1,\n"; /CREATE[^"]*"(..)/ and $myvar=$1' cloud.sql
 
 module.exports = (req, res) => {
-  const rows = db
-    .prepare(
-      `SELECT
+  const sql = `SELECT
       sm.id, sm.project_id, sm.environment_id, sm.app_yaml_md5, sm.ee_composer_version, sm.composer_lock_md5, 
       sm.composer_lock_mtime, sm.cumulative_cpu_percent, sm.not_valid_index_count, sm.catalog_product_entity_count, 
       sm.catalog_category_product_count, sm.admin_user_count, sm.store_count, sm.order_count, sm.cms_block_count, 
@@ -21,7 +19,6 @@ module.exports = (req, res) => {
     LEFT JOIN projects pr ON sm.project_id = pr.id
     LEFT JOIN environments en ON sm.environment_id = en.id AND sm.project_id = en.project_id 
     LEFT JOIN cert_expirations ce ON ce.host_name = en.machine_name || '-' || sm.project_id || '.' || pr.region || '.magentosite.cloud'`
-    )
-    .all()
+  const rows = db.prepare(sql).all()
   res.json(rows)
 }

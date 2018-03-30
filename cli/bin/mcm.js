@@ -2,26 +2,24 @@
 
 const yargs = require('yargs')
 const chalk = require('chalk')
-const {logger, showWhoAmI} = require('../src/common')
-const {
-  updateHost,
-  updateHostsUsingAllLiveEnvs,
-  updateHostsUsingSampleEnvs,
-  updateEnvHostRelationships
-} = require('../src/host')
-const {updateProject, updateProjects} = require('../src/project')
+const {logger, showWhoAmI, pLimitForEachHandler} = require('../src/common')
+const {updateHost, getSampleEnvs, updateEnvHostRelationships} = require('../src/host')
+const {updateProject, getProjectsFromApi} = require('../src/project')
+const {smokeTestApp} = require('../src/smoke-test')
+const {searchActivitiesForFailures} = require('../src/activity')
+const {addCloudProjectKeyToGitlabKeys} = require('../src/gitlab')
 const {
   updateEnvironment,
-  updateAllCurrentProjectsEnvironmentsFromAPI,
-  deleteInactiveEnvironments,
+  deleteInactiveEnvs,
   execInEnv,
   redeployEnv,
-  redeployExpiringEnvs,
-  checkCertificate
+  checkCertificate,
+  getPathFromRemote,
+  sendPathToRemoteTmpDir,
+  getLiveEnvsAsPidEnvArr,
+  deployEnvFromTar,
+  getExpiringPidEnvs
 } = require('../src/environment')
-const {smokeTestApp, smokeTestAllLiveApps} = require('../src/smoke-test')
-const {searchActivitiesForFailures} = require('../src/activity')
-const {enableAllGitlabKeysForAllConfiguredProjects, addCloudProjectKeyToGitlabKeys} = require('../src/gitlab')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
 const headerTxt = txt => chalk.yellow(txt)
@@ -42,23 +40,11 @@ const defaultAllOptions = {
   coerce: coercer
 }
 
-const addSharedPidOpts = () => {
-  yargs.positional('pid', {
-    type: 'string',
-    describe: 'List of project IDs',
-    coerce: coercer
-  })
-  yargs.option('a', {
-    description: 'Apply to all projects',
-    conflicts: 'pid',
-    ...defaultAllOptions
-  })
-}
-
 const addSharedPidEnvOpts = () => {
   yargs.positional('pid:env', {
+    alias: 'pid',
     type: 'string',
-    describe: 'A list of proj:env pairs. If not specified, env defaults to "master".',
+    describe: 'A list of proj:env pairs. Omit ":env" if unneeded or to default to "master".',
     coerce: coercer
   })
   yargs.option('a', {
@@ -77,35 +63,13 @@ const verifyOnlyArg = argv => {
   }
 }
 
-const handleListCmd = (handler, isPairedList, listArgs, ...remainingArgs) => {
-  // logic error
-  if (typeof handler !== 'function') {
-    throw 'Handler must be a function'
-  }
-  // user error
-  if (!listArgs || listArgs.length === 0) {
-    yargs.showHelp()
-    // invoked by command handler so must explicitly invoke console
-    console.error(errorTxt('At least 1 additional arg is required.'))
-    return false
-  }
-  listArgs.forEach(arg => {
-    if (isPairedList) {
-      const [pid, env] = arg.split(':')
-      handler(pid, env ? env : 'master', ...remainingArgs)
-    } else {
-      handler(arg, ...remainingArgs)
-    }
-  })
-}
-
 yargs
   .usage(cmdTxt('$0 <cmd> [args]'))
   .wrap(yargs.terminalWidth())
   .strict()
   .updateStrings({
     'Commands:': headerTxt('Commands:'),
-    'Options:': headerTxt('Global Options:     ** Commands may have additional options. See <cmd> -h. **'),
+    'Options:': headerTxt('Options:     ** Commands may have additional options. See <cmd> -h. **'),
     'Positionals:': headerTxt('Positionals:'),
     'Not enough non-option arguments: got %s, need at least %s': errorTxt(
       'Not enough non-option arguments: got %s, need at least %s'
@@ -113,6 +77,9 @@ yargs
   })
   .alias('h', 'help')
   .check(arg => {
+    if (!arg._.length) {
+      yargs.showHelp()
+    }
     if (arg.verbose) {
       logger.remove(logger.simpleConsole).add(logger.verboseConsole)
     } else if (arg.quiet) {
@@ -120,6 +87,7 @@ yargs
     }
     return true
   }, true)
+  .version(false)
   .option('v', {
     alias: 'verbose',
     description: 'Display debugging information',
@@ -136,7 +104,126 @@ yargs
     coerce: coercer,
     conflicts: 'v'
   })
-  .demandCommand(1)
+
+yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, argv =>
+  pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], checkCertificate)
+)
+
+yargs.command(
+  ['env:delete [pid:env...]'],
+  'Delete environment(s)',
+  yargs => {
+    addSharedPidEnvOpts()
+    yargs.option('i', {
+      alias: 'inactive',
+      description: 'Delete all inactive envs across all projs',
+      conflicts: ['pid:env', 'a'],
+      coerce: coercer
+    })
+  },
+  async argv =>{
+    if (argv.all) {
+      console.log('Are you crazy?!')
+    } else if (argv.inactive) {
+      pLimitForEachHandler(8, (await getProjectsFromApi()), deleteInactiveEnvs)
+    }
+  }
+)
+
+yargs.command(
+  ['env:deploy [tar-file] [pid:env...]'],
+  'Deploy env(s) using the provided tar file as the new git head',
+  yargs => {
+    addSharedPidEnvOpts()
+    yargs.option('x', {
+      alias: 'expiring',
+      description: 'Redeploy expiring envs without changes',
+      conflicts: ['pid:env', 'a', 'tar-file'],
+      coerce: coercer
+    })
+    yargs.positional('tar-file', {
+      type: 'string',
+      describe: `A tar of the git HEAD to push. E.g.,\n${cmdTxt('\tgit archive --format=tar HEAD > head.tar')}` +
+      '\nDon\'t forget any files needed that are not tracked in git. E.g.,\n  ' +
+      cmdTxt('\ttar -rf head.tar auth.json'),
+      normalize: true
+    })
+  },
+  argv => {
+    argv.all ?
+      console.log('Are you crazy?!') :
+      argv.expiring ?
+        pLimitForEachHandler(8, getExpiringPidEnvs, redeployEnv):
+        pLimitForEachHandler(8, argv['pid:env'], deployEnvFromTar, [argv['tar-file']])
+  }
+)
+
+
+yargs.command(
+  ['env:exec <file> [pid:env...]', 'ee'],
+  'Execute a file in env(s)',
+  yargs => {
+    yargs.positional('file', {
+      type: 'string',
+      describe: 'The full file path to copy to the remote env',
+      normalize: true
+    })
+    addSharedPidEnvOpts()
+  },
+  argv =>
+    pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], execInEnv, [argv.file])
+)
+
+yargs.command(
+  ['env:get <remote-path> [pid:env...]', 'eg'],
+  'Get a remote path (file or directory) in env(s)',
+  yargs => {
+    yargs.positional('remote-path', {
+      type: 'string',
+      describe: 'The path to recursively copy from the remote env',
+      normalize: true
+    })
+    addSharedPidEnvOpts()
+  },
+  argv =>
+    pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], getPathFromRemote, [argv['remote-path']])
+)
+
+yargs.command(
+  ['env:put <local-path> [pid:env...]', 'ep'],
+  'Put a local path (file or directory) file in env(s) /tmp dir',
+  yargs => {
+    addSharedPidEnvOpts()
+    yargs.positional('local-path', {
+      type: 'string',
+      describe: 'The path to send to the remote env /tmp dir',
+      normalize: true
+    })
+  },
+  argv => 
+    pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], sendPathToRemoteTmpDir, [argv['local-path']])
+)
+
+yargs.command(['env:smoke-test [pid:env...]', 'es'], 'Run smoke tests in env(s)', addSharedPidEnvOpts, 
+  argv => pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], smokeTestApp)
+)
+
+yargs.command(['env:update [pid:env...]', 'eu'], 'Query API about env(s)', addSharedPidEnvOpts, async argv => {
+  if (argv.all) {
+    await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
+  }
+  pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], updateEnvironment)
+})
+
+yargs.command(
+  ['host:env-match', 'he'],
+  'Match envs to hosts based on shared system attributes',
+  () => {},
+  argv => {
+    verifyOnlyArg(argv)
+    updateEnvHostRelationships()
+  }
+)
 
 yargs.command(
   ['host:update [pid:env...]', 'hu'],
@@ -151,134 +238,35 @@ yargs.command(
     })
   },
   argv => {
-    if (argv.all) {
-      updateHostsUsingAllLiveEnvs()
-    } else if (argv.sample) {
-      updateHostsUsingSampleEnvs()
-    } else {
-      handleListCmd(updateHost, true, argv['pid:env'])
-    }
+    const pidEnvs = argv.all ?
+      getLiveEnvsAsPidEnvArr() :
+      argv.sample ?
+        getSampleEnvs() :
+        argv['pid:env']
+    pLimitForEachHandler(8, pidEnvs, updateHost)
   }
 )
 
 yargs.command(
-  ['host:env-match', 'he'],
-  'Match hosts and envs',
-  () => {},
-  argv => {
-    verifyOnlyArg(argv)
-    updateEnvHostRelationships()
-  }
+  ['project:find-failures [pid:env...]', 'pf'],
+  'Query activity API by proj(s) to find envs that failed to deploy',
+  addSharedPidEnvOpts,
+  argv => pLimitForEachHandler(8, argv.all ? getProjectsFromApi() : argv['pid:env'], searchActivitiesForFailures)
 )
 
-yargs.command(['project:update [pid...]', 'pu'], 'Query API about proj(s)', addSharedPidOpts, async argv => {
+yargs.command(
+  ['project:grant-gitlab [pid:env...]', 'pg'],
+  'Grant access to proj(s) to all configured gitlab projects in config.json',
+  addSharedPidEnvOpts,
+  argv => 
+    pLimitForEachHandler(8, argv.all ? getProjectsFromApi() : argv['pid:env'], addCloudProjectKeyToGitlabKeys)
+)
+
+yargs.command(['project:update [pid:env...]', 'pu'], 'Query API about proj(s)', addSharedPidEnvOpts, async argv => {
   if (argv.all) {
     await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
-    updateProjects()
-  } else {
-    handleListCmd(updateProject, false, argv['pid'])
   }
+  pLimitForEachHandler(8, argv.all ? getProjectsFromApi() : argv['pid:env'], updateProject)
 })
-
-yargs.command(
-  ['project:grant-gitlab [pid...]', 'pg'],
-  'Grant access to projs to all configured gitlab projects in config.json',
-  addSharedPidOpts,
-  argv => {
-    if (argv.all) {
-      enableAllGitlabKeysForAllConfiguredProjects()
-    } else {
-      handleListCmd(addCloudProjectKeyToGitlabKeys, false, argv['pid'])
-    }
-  }
-)
-
-yargs.command(['env:update [pid:env...]', 'eu'], 'Query API about env(s)', addSharedPidEnvOpts, async argv => {
-  if (argv.all) {
-    await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
-    updateAllCurrentProjectsEnvironmentsFromAPI()
-  } else {
-    handleListCmd(updateEnvironment, true, argv['pid:env'])
-  }
-})
-
-yargs.command(
-  ['env:exec <file> [pid:env...]', 'ee'],
-  'Execute a file in env(s)',
-  yargs => {
-    yargs.positional('file', {
-      type: 'string',
-      describe: 'The full file path to copy to the remote env',
-      normalize: true
-    })
-    addSharedPidEnvOpts()
-  },
-  argv => {
-    if (argv.all) {
-      console.log('not implemented yet')
-    } else {
-      handleListCmd(execInEnv, true, argv['pid:env'], argv.file)
-    }
-  }
-)
-
-yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, argv => {
-  if (argv.all) {
-    console.log('not implemented yet')
-  } else {
-    handleListCmd(checkCertificate, true, argv['pid:env'])
-  }
-})
-
-yargs.command(
-  ['env:redeploy [pid:env...]', 'er'],
-  'Redeploy env(s) without changes',
-  yargs => {
-    addSharedPidEnvOpts()
-    yargs.option('x', {
-      alias: 'expiring',
-      description: 'Redeploy expiring envs',
-      conflicts: ['pid:env', 'a'],
-      coerce: coercer
-    })
-  },
-  argv => {
-    if (argv.all) {
-      console.log('Are you crazy?!')
-    } else if (argv.expiring) {
-      redeployExpiringEnvs()
-    } else {
-      handleListCmd(redeployEnv, true, argv['pid:env'])
-    }
-  }
-)
-
-yargs.command(['env:smoke-test [pid:env...]', 'es'], 'Run smoke tests in env(s)', addSharedPidEnvOpts, argv => {
-  if (argv.all) {
-    smokeTestAllLiveApps()
-  } else {
-    handleListCmd(smokeTestApp, true, argv['pid:env'])
-  }
-})
-
-yargs.command(
-  ['env:delete-inactive', 'ed'],
-  'Delete ALL inactive environments across all projs',
-  () => {},
-  argv => {
-    verifyOnlyArg(argv)
-    deleteInactiveEnvironments()
-  }
-)
-
-yargs.command(
-  ['activity:find-failures', 'af'],
-  'Query activity API to find envs that failed to deploy',
-  () => {},
-  argv => {
-    verifyOnlyArg(argv)
-    searchActivitiesForFailures()
-  }
-)
 
 yargs.argv

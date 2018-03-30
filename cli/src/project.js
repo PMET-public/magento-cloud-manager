@@ -1,6 +1,6 @@
-const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
 
-exports.getProjectsFromApi = getProjectsFromApi = async () => {
+exports.getProjectsFromApi = async () => {
   const cmd = `${MC_CLI} projects --pipe`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -11,7 +11,12 @@ exports.getProjectsFromApi = getProjectsFromApi = async () => {
   return result
 }
 
-exports.updateProject = updateProject = async project => {
+exports.updateProject = async project => {
+  await getProjectInfoFromApi(project)
+  await recordUsers(project)
+}
+
+const getProjectInfoFromApi = async project => {
   const cmd = `${MC_CLI} project:info -p ${project} --format=tsv`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -24,7 +29,7 @@ exports.updateProject = updateProject = async project => {
       const createdAt = Date.parse(projectInfo.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/, '$1')) / 1000
       const clientSshKey = projectInfo.replace(/[\s\S]*client_ssh_key: '([^']*)[\s\S]*/, '$1')
       const planSize = projectInfo.replace(/[\s\S]*plan: ([^\s]*)[\s\S]*/, '$1')
-      const allowedEnvironments = projectInfo.replace(/[\s\S]*environments: ([^\n]*)[\s\S]*/, '$1')
+      const allowedEnvs = projectInfo.replace(/[\s\S]*environments: ([^\n]*)[\s\S]*/, '$1')
       const storage = projectInfo.replace(/[\s\S]*storage: ([^\n]*)[\s\S]*/, '$1')
       const userLicenses = projectInfo.replace(/[\s\S]*user_licenses: ([^"]*)[\s\S]*/, '$1')
       const sql = `INSERT OR REPLACE INTO projects (id, title, region, project_url, git_url, created_at, plan_size,
@@ -40,7 +45,7 @@ exports.updateProject = updateProject = async project => {
           gitUrl,
           createdAt,
           planSize,
-          allowedEnvironments,
+          allowedEnvs,
           storage,
           userLicenses,
           1,
@@ -60,7 +65,7 @@ const recordUsers = async project => {
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       const insertValues = []
-      const rows = stdout
+      stdout
         .trim()
         .split('\n')
         .map(row => row.split('\t'))
@@ -72,24 +77,5 @@ const recordUsers = async project => {
       return result
     })
     .catch(error => logger.mylog('error', error))
-  return result
-}
-
-exports.updateProjects = async () => {
-  // mark all projects inactive; active ones will be updated to active
-  const sql = 'UPDATE projects SET active = 0'
-  let result = db.exec(sql)
-  logger.mylog('debug', result)
-  const promises = []
-  ;(await getProjectsFromApi()).forEach(project => {
-    promises.push(
-      apiLimit(async () => {
-        await updateProject(project)
-        await recordUsers(project)
-      })
-    )
-  })
-  result = await Promise.all(promises)
-  logger.mylog('info', `All ${promises.length} projects updated.`)
   return result
 }

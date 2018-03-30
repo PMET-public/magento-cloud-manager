@@ -1,16 +1,7 @@
-const {
-  exec,
-  execOutputHandler,
-  db,
-  apiLimit,
-  sshLimit,
-  MC_CLI,
-  logger,
-  parseFormattedCmdOutputIntoDB
-} = require('./common')
-const {setEnvironmentInactive, getAllLiveEnvironmentsFromDB, getSshCmd} = require('./environment.js')
+const { exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB } = require('./common')
+const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd} = require('./environment.js')
 
-exports.smokeTestApp = smokeTestApp = async (project, environment = 'master') => {
+const smokeTestApp = async (project, environment = 'master') => {
   const cmd = `${await getSshCmd(project, environment)} '
     # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
     echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
@@ -24,6 +15,7 @@ exports.smokeTestApp = smokeTestApp = async (project, environment = 'master') =>
     echo composer_lock_md5 $(md5sum composer.lock | sed "s/ .*//")
     echo composer_lock_mtime $(stat -t composer.lock | awk "{print \\$12}")
     echo cumulative_cpu_percent $(ps -p 1 -o %cpu --cumulative --no-header)
+    echo cpus $(nproc)
 
     # sort based on the 3 field to rev output to keep most recent occurrence of error only
     # do a final sort and remove benign errors
@@ -55,6 +47,8 @@ exports.smokeTestApp = smokeTestApp = async (project, environment = 'master') =>
     test $http_status -eq 302 || exit 0
     store_url=$(curl -sI localhost | sed -n "s/Location: \\(.*\\)?.*/\\1/p")
     cat_url=$(curl -s $store_url | perl -ne "s/.*?class.*?nav-1.*?href=.([^ ]+.html).*/\\1/ and print")
+    # if no category url, skip the rest of the tests
+    test "$cat_url" = "" && exit 0
     echo cat_url $cat_url
     echo cat_url_product_count $(curl -s $cat_url | grep "img.*class.*product-image-photo" | wc -l)
     echo cat_url_cached $(curl $cat_url -o /dev/null -s -w "%{time_total}")
@@ -82,7 +76,8 @@ exports.smokeTestApp = smokeTestApp = async (project, environment = 'master') =>
       logger.mylog('info', `Smoke test of env: ${environment} of project: ${project} completed.`)
     })
     .catch(error => {
-      logger.mylog('error', error, project, environment)
+      logger.mylog('error', `Env: ${environment} of project: ${project} failed.`)
+      logger.mylog('error', error)
       if (typeof error.stderr !== 'undefined') {
         if (/Specified environment not found/.test(error.stderr)) {
           setEnvironmentMissing(project, environment)
@@ -93,15 +88,4 @@ exports.smokeTestApp = smokeTestApp = async (project, environment = 'master') =>
     })
   return result
 }
-
-exports.smokeTestAllLiveApps = async () => {
-  const promises = []
-  getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id}) => {
-    promises.push(sshLimit(() => smokeTestApp(project_id, environment_id)))
-  })
-  // possible issue if one promise fails?
-  // https://stackoverflow.com/questions/30362733/handling-errors-in-promise-all
-  const result = await Promise.all(promises)
-  logger.mylog('info', `All ${promises.length} live apps (1 per live project:environmnet) smoke tested`)
-  return result
-}
+exports.smokeTestApp = smokeTestApp

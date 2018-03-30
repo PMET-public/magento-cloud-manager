@@ -1,16 +1,7 @@
-const {
-  exec,
-  execOutputHandler,
-  db,
-  apiLimit,
-  sshLimit,
-  MC_CLI,
-  logger,
-  parseFormattedCmdOutputIntoDB
-} = require('./common')
-const {getAllLiveEnvironmentsFromDB, getSshCmd} = require('./environment')
+const {exec, execOutputHandler, db, logger, parseFormattedCmdOutputIntoDB } = require('./common')
+const {getSshCmd} = require('./environment')
 
-exports.updateHost = updateHost = async (project, environment = 'master') => {
+exports.updateHost = async (project, environment = 'master') => {
   const cmd = `${await getSshCmd(project, environment)} '
     echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
     # netstat not available on all containers
@@ -36,32 +27,15 @@ exports.updateHost = updateHost = async (project, environment = 'master') => {
   return result
 }
 
-exports.updateHostsUsingAllLiveEnvs = async () => {
-  const promises = []
-  getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id}) => {
-    promises.push(sshLimit(() => updateHost(project_id, environment_id)))
-  })
-  const result = await Promise.all(promises)
-  logger.mylog('info', `All ${promises.length} envs\' hosts updated.`)
-  return result
-}
-
-exports.updateHostsUsingSampleEnvs = async () => {
-  const promises = []
+exports.getSampleEnvs = async () => {
   // prefer master envs b/c masters can not be deleted and so can't be recreated on new host
   // can still be rebalanced/migrated if enabled by infrastructure
-  const sql = `SELECT * FROM 
+  const sql = `SELECT proj_env_id FROM 
       (SELECT proj_env_id, host_id, instr(proj_env_id, ':master') is_master 
       FROM matched_envs_hosts ORDER BY is_master ASC) 
     GROUP BY host_id`
-  let result = db.prepare(sql).all()
+  const result = db.prepare(sql).all().map(row => row.proj_env_id)
   logger.mylog('debug', result)
-  result.forEach(row => {
-    const [project, environment] = row.proj_env_id.split(':')
-    promises.push(sshLimit(() => updateHost(project, environment)))
-  })
-  result = await Promise.all(promises)
-  logger.mylog('info', `${promises.length} sample envs\' hosts updated.`)
   return result
 }
 

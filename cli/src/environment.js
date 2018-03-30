@@ -1,9 +1,8 @@
 const https = require('https')
-const {exec, execOutputHandler, db, apiLimit, sshLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
 const {localCloudSshKeyPath} = require('../config.json')
-const {getProjectsFromApi} = require('./project')
 
-exports.updateEnvironment = updateEnvironment = async (project, environment = 'master') => {
+const updateEnvironment = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -35,6 +34,7 @@ exports.updateEnvironment = updateEnvironment = async (project, environment = 'm
     })
   return result
 }
+exports.updateEnvironment = updateEnvironment
 
 exports.setEnvironmentInactive = (project, environment) => {
   const result = db
@@ -52,22 +52,45 @@ exports.setEnvironmentFailure = (project, environment, value) => {
   return result
 }
 
-exports.setEnvironmentMissing = setEnvironmentMissing = (project, environment) => {
+const setEnvironmentMissing = (project, environment) => {
   const result = db
     .prepare('UPDATE environments SET missing = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
   logger.mylog('debug', result)
   return result
 }
+exports.setEnvironmentMissing = setEnvironmentMissing
 
-exports.redeployEnv = redeployEnv = async (project, environment = 'master') => {
-  const cmd = `${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}"
+const deployEnvFromTar = async (project, environment, tarFile) => {
+  // clone to nested tmp dir, discard all but the git dir, mv git dir and tar file to parent dir
+  // extract tar, commit, and push
+  const cmd = `mkdir -p "/tmp/${project}-${environment}/tmp"
+    ${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}/tmp"
+    mv "/tmp/${project}-${environment}/tmp/.git" "${tarFile}" "/tmp/${project}-${environment}/"
+    rm -rf "/tmp/${project}-${environment}/tmp"
     cd "/tmp/${project}-${environment}"
-    pwd
-    git commit -m "redeploy" --allow-empty
+    tar -xf "${tarFile}"
+    git add -u
+    git add .
+    git commit -m "commit from tar file"
     git push
     cd ..
     rm -rf "/tmp/${project}-${environment}"`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .then(({stdout, stderr}) => {
+      if (/Failed to identify project/.test(stderr)) {
+        throw 'Project not found.'
+      }
+      logger.mylog('info', `Env: ${environment} of project: ${project} deployed using ${tarFile}.`)
+    })
+    .catch(error => logger.mylog('error', error))
+  return result
+}
+exports.deployEnvFromTar = deployEnvFromTar
+
+const redeployEnv = async (project, environment) => {
+  const cmd = `${MC_CLI} redeploy -p ${project} -e ${environment} -y --no-wait`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -79,33 +102,21 @@ exports.redeployEnv = redeployEnv = async (project, environment = 'master') => {
     .catch(error => logger.mylog('error', error))
   return result
 }
+exports.redeployEnv = redeployEnv
 
-exports.redeployExpiringEnvs = async () => {
-  const promises = []
-  const expirationInAWk = new Date() / 1000 + 24 * 60 * 60 * 7
-  let counter = 0
-  // get live envs from db b/c if they are about to expire they are not new and we can use older data
-  getAllLiveEnvironmentsFromDB().forEach(({project_id, environment_id, expiration}) => {
-    promises.push(
-      sshLimit(async () => {
-        if (expiration < expirationInAWk) {
-          // redeploys are expensive compared to rechecking expiration, so update check to prevent unnecessary redeploys
-          let result = await checkCertificate(project_id, environment_id)
-          if (result.expiration < expirationInAWk) {
-            result = await redeployEnv(project_id, environment_id)
-            counter++
-          }
-          return result
-        }
-      })
-    )
+const getExpiringPidEnvs = () => {
+  const expirationIn2Wks = new Date() / 1000 + 24 * 60 * 60 * 7 * 2
+  const expiringPidEnvs = []
+  getAllLiveEnvsFromDB().forEach(({project_id, environment_id, expiration}) => {
+    if (expiration < expirationIn2Wks) {
+      expiringPidEnvs.push(`${project_id}:${environment_id}`)
+    }
   })
-  const result = await Promise.all(promises)
-  logger.mylog('info', `${counter} expiring projects redeployed`)
-  return result
+  return expiringPidEnvs
 }
+exports.getExpiringPidEnvs = getExpiringPidEnvs
 
-exports.checkCertificate = checkCertificate = async (project, environment = 'master') => {
+const checkCertificate = async (project, environment = 'master') => {
   try {
     const hostName = await getHostName(project, environment)
     const result = await new Promise((resolve, reject) => {
@@ -126,8 +137,9 @@ exports.checkCertificate = checkCertificate = async (project, environment = 'mas
     logger.mylog('error', error)
   }
 }
+exports.checkCertificate = checkCertificate
 
-exports.getEnvironmentsFromAPI = getEnvironmentsFromAPI = async project => {
+const getEnvsFromApi = async project => {
   const cmd = `${MC_CLI} environments -p ${project} --pipe`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -137,8 +149,9 @@ exports.getEnvironmentsFromAPI = getEnvironmentsFromAPI = async project => {
     .catch(error => logger.mylog('error', error))
   return result
 }
+exports.getEnvsFromApi = getEnvsFromApi
 
-exports.getAllLiveEnvironmentsFromDB = getAllLiveEnvironmentsFromDB = () => {
+const getAllLiveEnvsFromDB = () => {
   const sql = `SELECT e.id environment_id, e.project_id, c.expiration
     FROM environments e 
     LEFT JOIN projects p ON e.project_id = p.id 
@@ -149,68 +162,46 @@ exports.getAllLiveEnvironmentsFromDB = getAllLiveEnvironmentsFromDB = () => {
   logger.mylog('debug', result)
   return result
 }
+exports.getAllLiveEnvsFromDB = getAllLiveEnvsFromDB
 
-exports.updateAllCurrentProjectsEnvironmentsFromAPI = async () => {
-  // mark all envs inactive and missing; then only found, active ones will be updated
-  const sql = 'UPDATE environments SET active = 0, missing = 1'
-  let result = db.prepare(sql).run()
-  logger.mylog('debug', result)
-  const promises = []
-  ;(await getProjectsFromApi()).forEach(project => {
-    promises.push(
-      apiLimit(async () => {
-        const environments = await getEnvironmentsFromAPI(project)
-        // use for loop instead of forEach w/ lambda to respect apiLimit
-        for (let i = 0; i < environments.length; i++) {
-          await updateEnvironment(project, environments[i])
-        }
-      })
-    )
-  })
-  result = await Promise.all(promises)
-  logger.mylog('info', `All ${promises.length} environments updated in DB with API data.`)
-  return result
+const getLiveEnvsAsPidEnvArr = () => {
+  return getAllLiveEnvsFromDB().map( ({project_id, environment_id}) => `${project_id}:${environment_id}`)
 }
+exports.getLiveEnvsAsPidEnvArr = getLiveEnvsAsPidEnvArr
 
 // need to delete from child first
 // or how to warn if inactive parent & active child?
-exports.deleteInactiveEnvironments = async () => {
-  const promises = []
-  ;(await getProjectsFromApi()).forEach(project => {
-    const cmd = `${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`
-    promises.push(
-      apiLimit(() =>
-        exec(cmd)
-          .then(execOutputHandler)
-          .catch(error => {
-            if (/No inactive environments found/.test(error.stderr)) {
-              // this should not be considered an error, but the CLI has a non-zero exit status
-              // log the "error" for verbose mode and return
-              logger.mylog('debug', error.stderr)
-              return
-            }
-            logger.mylog('error', error)
-          })
-      )
-    )
-  })
-  const result = await Promise.all(promises)
-  logger.mylog('info', `All inactive environments in ${promises.length} projects scheduled for deletion.`)
-  return result
+exports.deleteInactiveEnvs = async (project) => {
+  const cmd = `${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`
+  exec(cmd)
+    .then(execOutputHandler)
+    .catch(error => {
+      if (/No inactive environments found/.test(error.stderr)) {
+        // this should not be considered an error, but the CLI has a non-zero exit status
+        // log the "error" for verbose mode and return
+        logger.mylog('debug', error.stderr)
+        return
+      }
+      logger.mylog('error', error)
+    })
 }
 
-exports.execInEnv = async (project, environment, filePath) => {
-  const file = await sendFileToRemoteTmpDir(project, environment, filePath)
+const execInEnv = async (project, environment, filePath) => {
+  const file = await sendPathToRemoteTmpDir(project, environment, filePath)
   const remoteCmd = /\.sql$/.test(file)
     ? `mysql main -h database.internal < "${file}"`
     : `chmod +x "${file}"; "${file}"`
   const cmd = `${await getSshCmd(project, environment)} '${remoteCmd}'`
   const result = exec(cmd)
     .then(execOutputHandler)
-    .then(() => logger.mylog('info', `File: ${filePath} executed in env: ${environment} of project: ${project}.`))
+    .then(() => {
+      logger.mylog('info', `File: ${filePath} executed in env: ${environment} of project: ${project}.`)
+      return true
+    })
     .catch(error => logger.mylog('error', error))
   return result
 }
+exports.execInEnv = execInEnv
 
 const getMachineNameAndRegion = async (project, environment) => {
   try {
@@ -222,6 +213,8 @@ const getMachineNameAndRegion = async (project, environment) => {
       const result = await updateEnvironment(project, environment)
       if (result) {
         return await getMachineNameAndRegion(project, environment)
+      } else {
+        throw `Project: ${project}, env: ${environment} not found.`
       }
     }
     logger.mylog('debug', result)
@@ -239,25 +232,26 @@ const getHostName = async (project, environment) => {
 // Using this method instead of the built in `magento-cloud ssh ...` prevents token timeouts for ssh cmds
 // When running cmds in parallel, if a cmd happens to execute when a token expires, all subsequent cmds
 // will fail until the one that triggered a token renewal receives a new token
-exports.getSshCmd = getSshCmd = async (project, environment) => {
+const getSshCmd = async (project, environment) => {
   const {machineName, region} = await getMachineNameAndRegion(project, environment)
   const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
   return `ssh ${project}-${machineName}--mymagento@${domain} -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes'`
 }
+exports.getSshCmd = getSshCmd
 
-exports.sendFileToRemoteTmpDir = sendFileToRemoteTmpDir = async (project, environment, filePath) => {
+const sendPathToRemoteTmpDir = async (project, environment, path) => {
   try {
     const {machineName, region} = await getMachineNameAndRegion(project, environment)
     // create a unique remote tmp file
-    const file = '/tmp/' + Math.floor(new Date() / 1000) + '-' + filePath.replace(/.*\//, '')
+    const file = '/tmp/' + Math.floor(new Date() / 1000) + '-' + path.replace(/.*\//, '')
     const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
-    const cmd = `scp -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${filePath} ${project}-${machineName}--mymagento@${domain}:${file}`
+    const cmd = `scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${path} ${project}-${machineName}--mymagento@${domain}:${file}`
     await exec(cmd)
       .then(execOutputHandler)
       .then(() =>
         logger.mylog(
           'info',
-          `File: ${filePath} transferred to: ${file} in remote env: ${environment} of project: ${project}.`
+          `File: ${path} transferred to: ${file} in remote env: ${environment} of project: ${project}.`
         )
       )
     return file
@@ -265,16 +259,29 @@ exports.sendFileToRemoteTmpDir = sendFileToRemoteTmpDir = async (project, enviro
     logger.mylog('error', error)
   }
 }
+exports.sendPathToRemoteTmpDir = sendPathToRemoteTmpDir
 
-exports.getFileFromRemote = async (project, environment, filePath) => {
+const getPathFromRemote = async (project, environment, remotePath) => {
+  remotePath = remotePath
+    .replace(/^[~\.]/,'/app') // ~/ or ./ -> /app/
+    .replace(/^\.\.\//,'/') // ../ -> /
+    .replace(/^([^\/])/,'\/app\/$1') // anything-else -> /app/anything-else
+    .replace(/\/$/, '')  // some-dir/ -> some-dir
+  if (!remotePath) {
+    throw `Invalid normalized path: "${remotePath}".`
+  }
   const {machineName, region} = await getMachineNameAndRegion(project, environment)
   const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
-  const cmd = `mkdir -p "${project}-${environment}/${filePath}"
-    scp -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${project}-${machineName}--mymagento@${domain}`
+  const localDest = `./tmp/${project}-${environment}${remotePath.replace(/(.*\/)[^\/]*/,'$1')}`
+  const cmd = `mkdir -p "${localDest}"
+    scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${project}-${machineName}--mymagento@${domain}:${remotePath} ${localDest}`
   const result = exec(cmd)
     .then(execOutputHandler)
-    .then(() =>
-      logger.mylog('info', `File: ${filePath} transferred to: ${file} in env: ${environment} of project: ${project}.`)
-    )
+    .then(() => {
+      logger.mylog('info', `Path: ${remotePath} of env: ${environment} of project: ${project} transferred to: ${localDest}.`)
+      return true
+    })
+    .catch(error => logger.mylog('error', error))
   return result
 }
+exports.getPathFromRemote = getPathFromRemote

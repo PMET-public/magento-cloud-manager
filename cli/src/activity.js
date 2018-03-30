@@ -1,6 +1,5 @@
-const {exec, execOutputHandler, db, apiLimit, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, MC_CLI, logger} = require('./common')
 const {setEnvironmentFailure} = require('./environment')
-const {getProjectsFromApi} = require('./project')
 
 const parseActivityList = activities => {
   const successes = {}
@@ -56,36 +55,24 @@ const mergeMostRecentActivityResultByEnv = (arr1, arr2) => {
   return combinedResults
 }
 
-exports.searchActivitiesForFailures = async () => {
-  const promises = []
-  let finalFailures = 0
-  let finalSuccesses = 0
-  ;(await getProjectsFromApi()).forEach(project => {
-    promises.push(
-      apiLimit(async () => {
-        const branchActivities = await getActivitiesFromApi(project, 'branch')
-        const pushActivities = await getActivitiesFromApi(project, 'push')
-        const branchResults = parseActivityList(branchActivities)
-        const pushResults = parseActivityList(pushActivities)
-        const combinedSuccesses = mergeMostRecentActivityResultByEnv(branchResults.successes, pushResults.successes)
-        const combinedFailures = mergeMostRecentActivityResultByEnv(branchResults.failures, pushResults.failures)
-        for (let environment in combinedFailures) {
-          const value =
-            typeof combinedSuccesses[environment] === 'undefined' ||
-            combinedSuccesses[environment] < combinedFailures[environment]
-              ? 1
-              : 0
-          value ? finalFailures++ : finalSuccesses++
-          setEnvironmentFailure(project, environment, value)
-        }
-      })
-    )
-  })
-  const result = await Promise.all(promises)
-  logger.mylog(
-    'info',
-    `Found ${finalFailures} still failing and ${finalSuccesses}` +
-      `subsequently successful activities in ${promises.length} projects searched.`
-  )
-  return result
+exports.searchActivitiesForFailures = async (project) => {
+  let fails = 0
+  let successes = 0
+  const branchActivities = await getActivitiesFromApi(project, 'branch')
+  const pushActivities = await getActivitiesFromApi(project, 'push')
+  const branchResults = parseActivityList(branchActivities)
+  const pushResults = parseActivityList(pushActivities)
+  const combinedSuccesses = mergeMostRecentActivityResultByEnv(branchResults.successes, pushResults.successes)
+  const combinedFailures = mergeMostRecentActivityResultByEnv(branchResults.failures, pushResults.failures)
+  for (let environment in combinedFailures) {
+    const value =
+      typeof combinedSuccesses[environment] === 'undefined' ||
+      combinedSuccesses[environment] < combinedFailures[environment]
+        ? 1
+        : 0
+    value ? fails++ : successes++
+    setEnvironmentFailure(project, environment, value)
+  }
+  logger.mylog('info', `Found ${fails} failing and ${successes} now successful envs in project ${project}.`)
+  return true
 }

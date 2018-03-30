@@ -1,4 +1,4 @@
-const {exec, db, apiLimit, MC_CLI, logger, fetch} = require('./common')
+const {db, logger, fetch} = require('./common')
 
 const {gitlabToken} = require('../.secrets.json')
 const {gitlabDomain, gitlabProjectIds} = require('../config.json')
@@ -59,27 +59,29 @@ const enableDeployKey = (gitlabProjectId, keyId) => {
   return apiPost(`projects/${gitlabProjectId}/deploy_keys/${keyId}/enable`)
 }
 
-exports.enableAllGitlabKeysForAllConfiguredProjects = async () => {
-  // use awaits to run requests sequentially and reduce load on gitlab
-  // this function should complete in < 1 min regardless and is only run infrequently
-  const allCloudKeyIdsInGitlab = (await getAllDeployKeysFromGitlab())
-    .filter(key => /@platform|@magento/.test(key.key))
-    .map(key => key.id)
-  for (let gitlabProjectId of gitlabProjectIds) {
-    let gitlabProjectDeployKeyIds = (await getGitlabProjectDeployKeys(gitlabProjectId)).map(key => key.id)
-    for (let keyId of allCloudKeyIdsInGitlab) {
-      if (gitlabProjectDeployKeyIds.indexOf(keyId) === -1) {
-        let result = await enableDeployKey(gitlabProjectId, keyId)
-        logger.mylog('debug', result)
-      }
-    }
-  }
-  logger.mylog(
-    'info',
-    `All ${allCloudKeyIdsInGitlab.length} public cloud keys added to` +
-      `Gitlab enabled to access all ${gitlabProjectIds.length} configured Gitlab projects.`
-  )
-}
+// exports.enableAllGitlabKeysForAllConfiguredProjects = async () => {
+//   // use awaits to run requests sequentially and reduce load on gitlab
+//   // this function should complete in < 1 min regardless and is only run infrequently
+//   const allCloudKeyIdsInGitlab = (await getAllDeployKeysFromGitlab())
+//     .filter(key => /@platform|@magento/.test(key.key))
+//     .map(key => key.id)
+//   for (let gitlabProjectId of gitlabProjectIds) {
+//     let gitlabProjectDeployKeyIds = (await getGitlabProjectDeployKeys(gitlabProjectId)).map(key => key.id)
+//     for (let keyId of allCloudKeyIdsInGitlab) {
+//       if (gitlabProjectDeployKeyIds.indexOf(keyId) === -1) {
+//         let result = await enableDeployKey(gitlabProjectId, keyId)
+//         logger.mylog('debug', result)
+//       }
+//     }
+//   }
+//   logger.mylog(
+//     'info',
+//     `All ${allCloudKeyIdsInGitlab.length} public cloud keys added to` +
+//       `Gitlab enabled to access all ${gitlabProjectIds.length} configured Gitlab projects.`
+//   )
+// }
+
+// catch error where already added and then just try to enable?
 
 exports.addCloudProjectKeyToGitlabKeys = async cloudProject => {
   try {

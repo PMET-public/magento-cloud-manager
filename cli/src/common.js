@@ -18,7 +18,7 @@ logger.simpleConsole = new winston.transports.Console({
   level: 'info',
   format: winston.format.combine(
     winston.format.printf(info => {
-      const {level, message, stderr} = info
+      const {message, stderr} = info
       // strip outer double quotes and escaping \" in  message for console output
       return `${message ? message.replace(/^"|"$/g, '').replace(/\\"/g, '"') + '\n' : ''}${
         stderr ? 'STDERR:\n' + stderr : ''
@@ -52,7 +52,7 @@ logger.quietConsole = new winston.transports.Console({
   level: 'error',
   format: winston.format.combine(
     winston.format.printf(info => {
-      const {level, message, stderr} = info
+      const {message, stderr} = info
       return `${message ? message + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''}`
     })
   )
@@ -61,7 +61,13 @@ logger.quietConsole = new winston.transports.Console({
 // attempt to stringify objects and detect some objects that will return {} when stringified (e.g. some errors)
 // https://github.com/winstonjs/winston/issues/1217
 logger.mylog = (level, msg, ...rest) => {
-  msg = typeof msg === 'String' ? msg : typeof msg.message !== 'undefined' ? msg.message : JSON.stringify(msg)
+  msg = typeof msg === 'undefined' ?
+    'why are you logging undefined msgs?!' :
+    typeof msg === 'string' ?
+      msg :
+      typeof msg.message !== 'undefined' ?
+        msg.message :
+        JSON.stringify(msg)
   logger.log(level, msg, ...rest)
 }
 
@@ -87,7 +93,7 @@ exports.exec = function() {
   return exec.apply(this, arguments)
 }
 
-exports.execOutputHandler = execOutputHandler = ({stdout, stderr}) => {
+const execOutputHandler = ({stdout, stderr}) => {
   if (stderr) {
     // an error hasn't been thrown yet, so just log the error output if it shouldn't be filtered
     // a subsequent handler may parse stderr and decide to throw one
@@ -102,14 +108,16 @@ exports.execOutputHandler = execOutputHandler = ({stdout, stderr}) => {
   }
   return {stdout, stderr}
 }
+exports.execOutputHandler = execOutputHandler
 
 // be kind with our requests and don't abuse the API or servers
 // remember p-limit expects an async function or a function that returns a promise
 const pLimit = require('p-limit')
-exports.apiLimit = pLimit(6)
-exports.sshLimit = pLimit(4)
+exports.apiLimit = pLimit(8)
+exports.sshLimit = pLimit(8)
 
-exports.MC_CLI = MC_CLI = '~/.magento-cloud/bin/magento-cloud'
+const MC_CLI = '~/.magento-cloud/bin/magento-cloud'
+exports.MC_CLI = MC_CLI
 
 const fetch = require('node-fetch')
 exports.fetch = function() {
@@ -142,5 +150,31 @@ exports.showWhoAmI = async () => {
   const result = await exec(cmd)
     .then(execOutputHandler)
     .catch(error => logger.mylog('error', error))
+  return result
+}
+
+// apply a function to a list of ids (pid or pid:env) 
+exports.pLimitForEachHandler = async (limit, arrOfIds, func, arrOfAdditionalArgs) => {
+  const curLimit = pLimit(limit)
+  const promises = []
+  arrOfIds.forEach( id => {
+    const args = id.split(':')
+    if (args.length === 1 ) {
+      args.push('master')
+    } 
+    if (arrOfAdditionalArgs && arrOfAdditionalArgs.length) {
+      args.push(...arrOfAdditionalArgs)
+    } 
+    promises.push(
+      curLimit(async () => {
+        const result = func(...args)
+        return result
+      })
+    )
+  })
+  const result = await Promise.all(promises)
+  if (arrOfIds.length > 1) {
+    logger.mylog('info', `${result.filter(val => val).length} successful operations.`)
+  }
   return result
 }
