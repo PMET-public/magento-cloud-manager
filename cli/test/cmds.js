@@ -1,5 +1,5 @@
 const {assert} = require('chai')
-const {execCmd} = require('./common')
+const {execCmd, validCommands} = require('./common')
 const {writeFileSync, unlink} = require('fs')
 
 require('./options')
@@ -21,7 +21,6 @@ const validTests = (fullCmd, timeout = ms15sec) => {
   describe(`valid tests: ${fullCmd}`, () => {
     it('has [debug], has [info], and has no [error]', async () => {
       const result = await execCmd(fullCmd)
-      // console.log('[info]', result.stdout.replace(/[\s\S]+(info.*)[\s\S]*/g,'$1'))
       // accout for possible color codes in [loglevel]
       assert.match(result.stdout, /\[[^ ]*debug[^ ]*\]:/)
       // log level [info] is used for the final success msg
@@ -55,11 +54,16 @@ describe('test quick (< 5 min max) commands operating on a single project', () =
   })
 
   const shortSimpleCmdsToTest = [
-    'host:update',
-    'project:update',
-    'project:grant-gitlab',
+    'env:check-cert',
+    'env:exec',
+    'env:get',
+    'env:put',
+    'env:smoke-test',
     'env:update',
-    'env:check-cert'
+    'host:update',
+    'project:find-failures',
+    'project:grant-gitlab',
+    'project:update',
   ]
   shortSimpleCmdsToTest.forEach(cmd => {
     validTests(getCmdWithValidPid(cmd))
