@@ -132,7 +132,6 @@ yargs
     global: true,
     type: 'boolean',
     coerce: coercer,
-    conflicts: 'q'
   })
   .option('q', {
     alias: 'quiet',
@@ -155,7 +154,7 @@ yargs.command(
     yargs.option('i', {
       alias: 'inactive',
       description: 'Delete all inactive envs across all projs',
-      conflicts: ['pid:env...', 'a'],
+      conflicts: 'pid:env',
       coerce: coercer
     })
   },

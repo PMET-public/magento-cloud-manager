@@ -173,17 +173,18 @@ exports.getLiveEnvsAsPidEnvArr = getLiveEnvsAsPidEnvArr
 // or how to warn if inactive parent & active child?
 exports.deleteInactiveEnvs = async (project) => {
   const cmd = `${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`
-  exec(cmd)
+  const result = exec(cmd)
     .then(execOutputHandler)
     .catch(error => {
       if (/No inactive environments found/.test(error.stderr)) {
         // this should not be considered an error, but the CLI has a non-zero exit status
         // log the "error" for verbose mode and return
         logger.mylog('debug', error.stderr)
-        return
+        return true
       }
       logger.mylog('error', error)
     })
+  return result
 }
 
 const execInEnv = async (project, environment, filePath) => {
