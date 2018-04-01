@@ -137,9 +137,9 @@ yargs
     alias: 'quiet',
     description: 'Suppress normal output. Only display errors.',
     global: true,
+    conflicts: 'v',
     type: 'boolean',
-    coerce: coercer,
-    conflicts: 'v'
+    coerce: coercer
   })
 
 yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, argv =>
@@ -150,11 +150,22 @@ yargs.command(
   ['env:delete [pid:env...]'],
   'Delete environment(s)',
   yargs => {
-    addSharedPidEnvOpts()
+    yargs.positional('pid:env', {
+      alias: 'pid',
+      type: 'string',
+      describe: 'A list of proj:env pairs. Omit ":env" if unneeded or to default to "master".',
+      coerce: coercer
+    })
+    yargs.option('a', {
+      description: 'Apply to all active envs',
+      conflicts: 'pid:env',
+      ...defaultAllOptions
+    })
     yargs.option('i', {
       alias: 'inactive',
       description: 'Delete all inactive envs across all projs',
-      conflicts: 'pid:env',
+      conflicts: ['pid:env', 'a'],
+      type: 'boolean',
       coerce: coercer
     })
   },
@@ -168,14 +179,14 @@ yargs.command(
 )
 
 yargs.command(
-  ['env:deploy [tar-file] [pid:env...]'],
+  ['env:deploy <tar-file> [pid:env...]'],
   'Deploy env(s) using the provided tar file as the new git head',
   yargs => {
-    addSharedPidEnvOpts()
     yargs.option('x', {
       alias: 'expiring',
       description: 'Redeploy expiring envs without changes',
-      conflicts: ['pid:env', 'a', 'tar-file'],
+      conflicts: ['pid:env', 'a'],
+      type: 'boolean',
       coerce: coercer
     })
     yargs.positional('tar-file', {
@@ -185,6 +196,7 @@ yargs.command(
       cmdTxt('\ttar -rf head.tar auth.json'),
       normalize: true
     })
+    addSharedPidEnvOpts()
   },
   argv => {
     argv.all ?
@@ -271,6 +283,7 @@ yargs.command(
       alias: 'sample',
       description: 'Only use 1 sample env per host to reduce load on servers',
       conflicts: ['pid:env', 'a'],
+      type: 'boolean',
       coerce: coercer
     })
   },

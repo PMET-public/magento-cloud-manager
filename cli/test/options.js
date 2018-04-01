@@ -1,5 +1,5 @@
 const {assert} = require('chai')
-const {execOutputHandler, logger} = require('../src/common')
+const {execOutputHandler} = require('../src/common')
 const {execCmd, choose2} = require('./common')
 
 const verboseOpt = {opt: 'verbose', alias: 'v'}
@@ -16,14 +16,15 @@ const validCommands = [
   },
   {cmd: 'env:deploy', 
     validOpts: [{opt: 'expiring', alias: 'x'}],
-    listOfConflicts: [['x','a','pid:env']]
+    listOfConflicts: [['x','a','pid:env']],
+    expectsAtLeast1: true
   },
-  {cmd: 'env:exec', alias: 'ee'},
-  {cmd: 'env:get', alias: 'eg'},
-  {cmd: 'env:put', alias: 'ep'},
+  {cmd: 'env:exec', alias: 'ee', expectsAtLeast1: true},
+  {cmd: 'env:get', alias: 'eg', expectsAtLeast1: true},
+  {cmd: 'env:put', alias: 'ep', expectsAtLeast1: true},
   {cmd: 'env:smoke-test', alias: 'es'},
   {cmd: 'env:update', alias: 'eu'},
-  {cmd: 'host:env-match', alias: 'he'},
+  {cmd: 'host:env-match', alias: 'he', expectsNoArgs: true},
   {cmd: 'host:update', alias: 'hu', 
     validOpts: [{opt: 'sample', alias: 's'}],
     listOfConflicts: [['s','a','pid:env']]
@@ -133,7 +134,6 @@ validCommands.forEach(cmd => {
 
     it('help matches all declared valid opts and opt aliases', () => {
       return execCmd(`${cmd.cmd} -h`)
-        .then(execOutputHandler)
         .then(({stderr, stdout}) => {
           const opts = []
           const optsAliases = []
@@ -151,6 +151,25 @@ validCommands.forEach(cmd => {
         })
     })
 
+    if (cmd.expectsNoArgs) {
+      it('expects no args', () => {
+        const strCmd = `${cmd.cmd} dummy-arg`
+        return execCmd(strCmd)
+          .then(({stderr, stdout}) => {
+            assert.match(stderr, /expects no/)
+          })
+      })
+    } else if (cmd.expectsAtLeast1) {
+      it('expects at least 1', () => {
+        const strCmd = `${cmd.cmd}`
+        return execCmd(strCmd)
+          .then(({stderr, stdout}) => {
+            assert.match(stderr, /at least 1/)
+          })
+      })
+    }
+
+
     const conflictToArg = (conflict) => {
       return conflict.length == 1 ? '-' + conflict : conflict
     }
@@ -158,10 +177,8 @@ validCommands.forEach(cmd => {
       const pairsOfConflicts = choose2(conflicts)
       pairsOfConflicts.forEach(pair => {
         it(`${pair[0]} and ${pair[1]} are mutually exclusive`, () => {
-          const strCmd = `${cmd.cmd} ${conflictToArg(pair[0])} ${conflictToArg(pair[1])}`
-          console.log(strCmd)
+          const strCmd = `${cmd.cmd} ${cmd.expectsAtLeast1 ? 'dummy-arg' : ''} ${conflictToArg(pair[0])} ${conflictToArg(pair[1])}`
           return execCmd(strCmd)
-            .then(execOutputHandler)
             .then(({stderr, stdout}) => {
               assert.match(stderr, /mutually exclusive/)
             })
