@@ -91,15 +91,24 @@ exports.addCloudProjectKeyToGitlabKeys = async cloudProject => {
       throw 'Row not found.'
     }
     const clientSshKey = result.client_ssh_key
-    logger.mylog('debug', result)
+    const keyId = (await getAllDeployKeysFromGitlab())
+      .filter(key => new RegExp(cloudProject).test(key.key))
+      .map(key => key.id)
+    let status = 'added to'
     for (let gitlabProjectId of gitlabProjectIds) {
-      result = await apiPost(`projects/${gitlabProjectId}/deploy_keys`, {
-        title: 'MECE',
-        key: clientSshKey
-      })
+      if (keyId.length) { // just enable
+        result = await enableDeployKey(gitlabProjectId, keyId)
+        status = 'enabled on'
+      } else { // add
+        result = await apiPost(`projects/${gitlabProjectId}/deploy_keys`, {
+          title: 'MECE',
+          key: clientSshKey
+        })
+      }
       logger.mylog('debug', result)
     }
-    logger.mylog('info', `Public key of project: ${cloudProject} added to Gitlab projects.`)
+    logger.mylog('info', `Public key of project: ${cloudProject} ${status} Gitlab projects.`)
+    return true
   } catch (error) {
     logger.mylog('error', error)
   }

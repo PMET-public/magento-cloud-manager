@@ -23,6 +23,10 @@ const choose2 = function r(arr) {
 }
 exports.choose2 = choose2
 
+const ms1min = 1 * 60 * 1000
+const ms5min = 5 * 60 * 1000
+const ms15min = 15 * 60 * 1000
+
 const verboseOpt = {opt: 'verbose', alias: 'v'}
 const quietOpt = {opt: 'quiet', alias: 'q'}
 const helpOpt = {opt: 'help', alias: 'h'}
@@ -60,6 +64,7 @@ validCommands.forEach(cmd => {
   cmd.validOpts = commonValidOpts
     .concat(cmd.validOpts ? cmd.validOpts : [], cmd.cmd !== 'host:env-match' ? [allOpt] : [])
   cmd.listOfConflicts = listOfConflicts.concat(cmd.listOfConflicts ? cmd.listOfConflicts : [])
+  cmd.timeout = ['env:smoke-test', 'env:deploy'].includes(cmd.cmd) ? ms5min : ms1min
 })
 
 exports.validCommands = validCommands

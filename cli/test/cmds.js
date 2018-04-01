@@ -2,97 +2,139 @@ const {assert} = require('chai')
 const {execCmd, validCommands} = require('./common')
 const {writeFileSync, unlink} = require('fs')
 
-require('./options')
+// require('./options')
 
-const validPid = 'xpwgonshm6qm2'
-const validPidEnv = 'xpwgonshm6qm2:master'
+const validPid = 'ugwphl3msex5e'
+const validPidEnv = 'dx7mnl3a22cou:master'
 const invalidPid = 'invalid-pid'
 const invalidPidEnv = 'invalid-pid:master'
 
-const getCmdWithValidPid = cmd => `${cmd} -v ${validPid}`
-const getCmdWithInvalidPid = cmd => `${cmd} -v ${invalidPid}`
-
-const ms15sec = 15 * 1000
-const ms1min = 60 * 1000
-const ms5min = 60 * 1000
-const ms15min = 60 * 1000
-
-const validTests = (fullCmd, timeout = ms15sec) => {
-  describe(`valid tests: ${fullCmd}`, () => {
-    it('has [debug], has [info], and has no [error]', async () => {
-      const result = await execCmd(fullCmd)
-      // accout for possible color codes in [loglevel]
-      assert.match(result.stdout, /\[[^ ]*debug[^ ]*\]:/)
-      // log level [info] is used for the final success msg
-      assert.match(result.stdout, /\[[^ ]*info[^ ]*\]:/)
-      assert.notMatch(result.stdout, /\[[^ ]*error[^ ]*\]:/)
-    }).timeout(timeout)
-  })
+const getCmdWithInvalidPid = (cmd, extraArgs = []) => {
+  return `${cmd} -v ${extraArgs.join(' ')} ${invalidPidEnv}`
 }
 
-const invalidTests = fullCmd => {
-  describe(`invalid tests: ${fullCmd}`, () => {
-    it('has [debug], has no [info], and has [error]', async () => {
-      const result = await execCmd(fullCmd)
-      // accout for possible color codes in [loglevel]
-      assert.match(result.stdout, /\[[^ ]*debug[^ ]*\]:/)
-      assert.notMatch(result.stdout, /\[[^ ]*info[^ ]*\]:/)
-      assert.match(result.stderr, /\[[^ ]*error[^ ]*\]:/)
-    })
-  })
+const getCmdWithValidPid = (cmd, extraArgs = []) => {
+  return `${cmd} -v ${extraArgs.join(' ')} ${validPid}`
 }
 
-describe('test quick (< 5 min max) commands operating on a single project', () => {
-  // create files for testing 'env:exec'
-  const sEpoch = Math.floor(new Date() / 1000)
-  const tmpShFile = `/tmp/${sEpoch}.sh`
-  const tmpSqlFile = `/tmp/${sEpoch}.sql`
+const getCmdWithMultipleValidPids = (cmd, extraArgs = []) => {
+  return `${cmd} -v ${extraArgs.join(' ')} ${validPid} ${validPidEnv}`
+}
+
+const getCmdWithMixedPids = (cmd, extraArgs = []) => {
+  return `${cmd} -v ${extraArgs.join(' ')} ${validPid} ${validPidEnv} ${invalidPid}`
+}
+
+const getCmdWithAllOpt = (cmd, extraArgs = []) => {
+  return `${cmd} -va ${extraArgs.join(' ')}`
+}
+
+const infoRegex = /(\[[^ ]*info[^ ]*\]:.*)/g
+const debugRegex = /(\[[^ ]*debug[^ ]*\]:.*)/g
+const errorRegex = /(\[[^ ]*error[^ ]*\]:.*)/g
+
+
+const sEpoch = Math.floor(new Date() / 1000)
+const tmpShFile = `/tmp/${sEpoch}.sh`
+const tmpSqlFile = `/tmp/${sEpoch}.sql`
+const validRemoteFile = '/var/log/deploy.log'
+
+const testCmd = (cmdStr, resultTester, AssertionMsg,  timeout) => {
+  it(cmdStr, async () => {
+    const result = await execCmd(cmdStr)
+    assert(resultTester(result), AssertionMsg)
+  }).timeout(timeout)
+}
+
+describe('invalid tests', () => {
+
+  const invalidTester = result => {
+    const {stdout, stderr} = result
+    result = stdout.match(debugRegex) && !stdout.match(infoRegex) && stderr.match(errorRegex)
+    return result
+  }
+  const invalidTestMsg = 'should have [debug] and [error] but no [info] output'
+
+  validCommands.forEach(cmd => {
+    if (['env:delete', 'env:deploy', 'host:env-match'].includes(cmd.cmd)) {
+      return
+    }
+    if (cmd.expectsAtLeast1) {
+      testCmd(getCmdWithInvalidPid(cmd.cmd, ['dummy-arg']), invalidTester, invalidTestMsg, cmd.timeout)
+    } else {
+      testCmd(getCmdWithInvalidPid(cmd.cmd), invalidTester, invalidTestMsg, cmd.timeout)
+    }
+  })
+
+})
+
+describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid pids', () => {
 
   before(() => {
     writeFileSync(tmpShFile, '#!/bin/bash\necho "hello world"')
     writeFileSync(tmpSqlFile, 'select 1 from dual')
   })
 
-  const shortSimpleCmdsToTest = [
-    'env:check-cert',
-    'env:exec',
-    'env:get',
-    'env:put',
-    'env:smoke-test',
-    'env:update',
-    'host:update',
-    'project:find-failures',
-    'project:grant-gitlab',
-    'project:update',
-  ]
-  shortSimpleCmdsToTest.forEach(cmd => {
-    validTests(getCmdWithValidPid(cmd))
-    invalidTests(getCmdWithInvalidPid(cmd))
+  const simpleValidTester = result => {
+    const {stdout, stderr} = result
+    const matchesExpectedOutcome = stdout.match(debugRegex) && stdout.match(infoRegex) && !stderr.match(errorRegex)
+    return matchesExpectedOutcome
+  }
+  const validTestMsg = 'should have [debug] and [info] but no [error] output'
+
+  const multipleValidTester = result => {
+    const {stdout} = result
+    const matchesExpectedOutcome = stdout.match(/All 2 operations successful./)
+    return matchesExpectedOutcome && simpleValidTester(result)
+  }
+
+  const mixedValidTester = result => {
+    const {stdout} = result
+    const matchesExpectedOutcome = stdout.match(/1 operation.*failed.* 2 succeeded/)
+    return matchesExpectedOutcome
+  }
+  const mixedTestMsg = 'expect 1 failure and 2 successes'
+
+  validCommands.forEach(cmd => {
+    if (['env:delete', 'env:deploy'].includes(cmd.cmd)) {
+      return
+    }
+    if (cmd.expectsNoArgs) {
+      testCmd(`${cmd.cmd} -v`, simpleValidTester, validTestMsg, cmd.timeout)
+      return
+    }
+    switch (cmd.cmd) {
+    case 'env:exec':
+      testCmd(getCmdWithValidPid(cmd.cmd, [tmpShFile]), simpleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithValidPid(cmd.cmd, [tmpSqlFile]), simpleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(cmd.cmd, [tmpShFile]), multipleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(cmd.cmd, [tmpSqlFile]), multipleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithMixedPids(cmd.cmd, [tmpShFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
+      testCmd(getCmdWithMixedPids(cmd.cmd, [tmpSqlFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
+      break;
+    case 'env:get':
+      testCmd(getCmdWithValidPid(cmd.cmd, [validRemoteFile]), simpleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(cmd.cmd, [validRemoteFile]), multipleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithMixedPids(cmd.cmd, [validRemoteFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
+      break;
+    case 'env:put':
+      testCmd(getCmdWithValidPid(cmd.cmd, [tmpSqlFile]), simpleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(cmd.cmd, [tmpSqlFile]), multipleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithMixedPids(cmd.cmd, [tmpSqlFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
+      break;
+    // comment out this case to include env:smoke-test (will add ~5 min)
+    case 'env:smoke-test':
+      break;
+    default: 
+      testCmd(getCmdWithValidPid(cmd.cmd), simpleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(cmd.cmd), multipleValidTester, validTestMsg, cmd.timeout)
+      testCmd(getCmdWithMixedPids(cmd.cmd), mixedValidTester, mixedTestMsg, cmd.timeout)
+    }
   })
-
-  validTests(`env:exec -v ${tmpShFile} ${validPid}`, ms1min)
-  validTests(`env:exec -v ${tmpSqlFile} ${validPid}`, ms1min)
-  invalidTests(`env:exec -v ${tmpShFile} ${invalidPid}`)
-  invalidTests(`env:exec -v ${tmpSqlFile} ${invalidPid}`)
-
-  validTests(`env:smoke-test -v ${validPid}`, ms5min)
-  invalidTests(`env:smoke-test -v ${invalidPid}`)
 
   after(() => {
     unlink(tmpShFile)
     unlink(tmpSqlFile)
   })
-})
 
-describe('test quink (< 5 min max) commands operating on multiple projects', () => {
-  validTests('host:env-match -v', ms1min)
-  validTests('host:update -vs', ms1min)
-  validTests('host:update -va', ms5min)
-  validTests('env:delete-inactive -v', ms5min)
-  validTests('activity:find-failures -v', ms5min)
-})
-
-describe('test long running commands (up to 15 min)', () => {
-  validTests(`env:redeploy -v ${validPid}`, ms15min)
-  invalidTests(`env:redeploy -v ${invalidPid}`)
 })

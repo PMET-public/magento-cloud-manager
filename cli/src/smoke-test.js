@@ -74,6 +74,7 @@ const smokeTestApp = async (project, environment = 'master') => {
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'smoke_tests', ['project_id', 'environment_id'], [project, environment])
       logger.mylog('info', `Smoke test of env: ${environment} of project: ${project} completed.`)
+      return true
     })
     .catch(error => {
       logger.mylog('error', `Env: ${environment} of project: ${project} failed.`)

@@ -195,7 +195,7 @@ const execInEnv = async (project, environment, filePath) => {
   const cmd = `${await getSshCmd(project, environment)} '${remoteCmd}'`
   const result = exec(cmd)
     .then(execOutputHandler)
-    .then(() => {
+    .then(({stdout, stderr}) => {
       logger.mylog('info', `File: ${filePath} executed in env: ${environment} of project: ${project}.`)
       return true
     })
@@ -267,26 +267,29 @@ const sendPathToRemoteTmpDir = async (project, environment, path) => {
 exports.sendPathToRemoteTmpDir = sendPathToRemoteTmpDir
 
 const getPathFromRemote = async (project, environment, remotePath) => {
-  remotePath = remotePath
-    .replace(/^[~\.]/,'/app') // ~/ or ./ -> /app/
-    .replace(/^\.\.\//,'/') // ../ -> /
-    .replace(/^([^\/])/,'\/app\/$1') // anything-else -> /app/anything-else
-    .replace(/\/$/, '')  // some-dir/ -> some-dir
-  if (!remotePath) {
-    throw `Invalid normalized path: "${remotePath}".`
+  try {
+    remotePath = remotePath
+      .replace(/^[~\.]/,'/app') // ~/ or ./ -> /app/
+      .replace(/^\.\.\//,'/') // ../ -> /
+      .replace(/^([^\/])/,'\/app\/$1') // anything-else -> /app/anything-else
+      .replace(/\/$/, '')  // some-dir/ -> some-dir
+    if (!remotePath) {
+      throw `Invalid normalized path: "${remotePath}".`
+    }
+    const {machineName, region} = await getMachineNameAndRegion(project, environment)
+    const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
+    const localDest = `./tmp/${project}-${environment}${remotePath.replace(/(.*\/)[^\/]*/,'$1')}`
+    const cmd = `mkdir -p "${localDest}"
+      scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${project}-${machineName}--mymagento@${domain}:${remotePath} ${localDest}`
+    const result = exec(cmd)
+      .then(execOutputHandler)
+      .then(() => {
+        logger.mylog('info', `Path: ${remotePath} of env: ${environment} of project: ${project} transferred to: ${localDest}.`)
+        return true
+      })
+    return result
+  } catch (error) {
+    logger.mylog('error', error)
   }
-  const {machineName, region} = await getMachineNameAndRegion(project, environment)
-  const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
-  const localDest = `./tmp/${project}-${environment}${remotePath.replace(/(.*\/)[^\/]*/,'$1')}`
-  const cmd = `mkdir -p "${localDest}"
-    scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${project}-${machineName}--mymagento@${domain}:${remotePath} ${localDest}`
-  const result = exec(cmd)
-    .then(execOutputHandler)
-    .then(() => {
-      logger.mylog('info', `Path: ${remotePath} of env: ${environment} of project: ${project} transferred to: ${localDest}.`)
-      return true
-    })
-    .catch(error => logger.mylog('error', error))
-  return result
 }
 exports.getPathFromRemote = getPathFromRemote

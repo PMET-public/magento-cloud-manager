@@ -37,8 +37,7 @@ const getActivitiesFromApi = async (project, type) => {
         logger.mylog('debug', error.stderr)
         return []
       }
-      logger.mylog('error', error)
-      return []
+      throw error
     })
   return result
 }
@@ -56,23 +55,27 @@ const mergeMostRecentActivityResultByEnv = (arr1, arr2) => {
 }
 
 exports.searchActivitiesForFailures = async (project) => {
-  let fails = 0
-  let successes = 0
-  const branchActivities = await getActivitiesFromApi(project, 'branch')
-  const pushActivities = await getActivitiesFromApi(project, 'push')
-  const branchResults = parseActivityList(branchActivities)
-  const pushResults = parseActivityList(pushActivities)
-  const combinedSuccesses = mergeMostRecentActivityResultByEnv(branchResults.successes, pushResults.successes)
-  const combinedFailures = mergeMostRecentActivityResultByEnv(branchResults.failures, pushResults.failures)
-  for (let environment in combinedFailures) {
-    const value =
-      typeof combinedSuccesses[environment] === 'undefined' ||
-      combinedSuccesses[environment] < combinedFailures[environment]
-        ? 1
-        : 0
-    value ? fails++ : successes++
-    setEnvironmentFailure(project, environment, value)
+  try {
+    let fails = 0
+    let successes = 0
+    const branchActivities = await getActivitiesFromApi(project, 'branch')
+    const pushActivities = await getActivitiesFromApi(project, 'push')
+    const branchResults = parseActivityList(branchActivities)
+    const pushResults = parseActivityList(pushActivities)
+    const combinedSuccesses = mergeMostRecentActivityResultByEnv(branchResults.successes, pushResults.successes)
+    const combinedFailures = mergeMostRecentActivityResultByEnv(branchResults.failures, pushResults.failures)
+    for (let environment in combinedFailures) {
+      const value =
+        typeof combinedSuccesses[environment] === 'undefined' ||
+        combinedSuccesses[environment] < combinedFailures[environment]
+          ? 1
+          : 0
+      value ? fails++ : successes++
+      setEnvironmentFailure(project, environment, value)
+    }
+    logger.mylog('info', `Found ${fails} failing and ${successes} now successful envs in project ${project}.`)
+    return true
+  } catch (error) {
+    logger.mylog('error', error)
   }
-  logger.mylog('info', `Found ${fails} failing and ${successes} now successful envs in project ${project}.`)
-  return true
 }

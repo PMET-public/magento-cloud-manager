@@ -119,7 +119,7 @@ exports.updateEnvHostRelationships = () => {
   const sql = `DELETE FROM matched_envs_hosts; 
     INSERT INTO matched_envs_hosts (proj_env_id, host_id) VALUES ${insertValues.join(',')}`
   const result = db.exec(sql)
-  logger.mylog('info', `${Object.keys(envHosts).length} envs matched to ${hostsEnvs.length} hosts.`)
   logger.mylog('debug', result)
+  logger.mylog('info', `${Object.keys(envHosts).length} envs matched to ${hostsEnvs.length} hosts.`)
   return result
 }
