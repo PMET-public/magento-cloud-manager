@@ -122,9 +122,9 @@ describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid 
       testCmd(getCmdWithMultipleValidPids(cmd.cmd, [tmpSqlFile]), multipleValidTester, validTestMsg, cmd.timeout)
       testCmd(getCmdWithMixedPids(cmd.cmd, [tmpSqlFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
       break;
-    // comment out this case to include env:smoke-test (will add ~5 min)
-    case 'env:smoke-test':
-      break;
+    // comment OUT this case to INCLUDE env:smoke-test (will add ~5 min)
+    // case 'env:smoke-test':
+    //   break;
     default: 
       testCmd(getCmdWithValidPid(cmd.cmd), simpleValidTester, validTestMsg, cmd.timeout)
       testCmd(getCmdWithMultipleValidPids(cmd.cmd), multipleValidTester, validTestMsg, cmd.timeout)

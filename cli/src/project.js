@@ -12,8 +12,14 @@ exports.getProjectsFromApi = async () => {
 }
 
 exports.updateProject = async project => {
-  await getProjectInfoFromApi(project)
-  await recordUsers(project)
+  try {
+    await getProjectInfoFromApi(project)
+    await recordUsers(project)
+    logger.mylog('info', `Project: ${project} updated and users recorded.`)
+    return true
+  } catch (error) {
+    logger.mylog('error', error)
+  }
 }
 
 const getProjectInfoFromApi = async project => {
@@ -52,10 +58,8 @@ const getProjectInfoFromApi = async project => {
           clientSshKey
         )
       logger.mylog('debug', result)
-      logger.mylog('info', `Project: ${project} updated.`)
-      return result
+      return true
     })
-    .catch(error => logger.mylog('error', error))
   return result
 }
 
@@ -74,8 +78,7 @@ const recordUsers = async project => {
         INSERT INTO users (project_id, email, role) VALUES ${insertValues.join(',')}`
       const result = db.exec(sql)
       logger.mylog('debug', result)
-      return result
+      return true
     })
-    .catch(error => logger.mylog('error', error))
   return result
 }
