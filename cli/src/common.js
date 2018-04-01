@@ -110,12 +110,6 @@ const execOutputHandler = ({stdout, stderr}) => {
 }
 exports.execOutputHandler = execOutputHandler
 
-// be kind with our requests and don't abuse the API or servers
-// remember p-limit expects an async function or a function that returns a promise
-const pLimit = require('p-limit')
-exports.apiLimit = pLimit(8)
-exports.sshLimit = pLimit(8)
-
 const MC_CLI = '~/.magento-cloud/bin/magento-cloud'
 exports.MC_CLI = MC_CLI
 
@@ -150,31 +144,5 @@ exports.showWhoAmI = async () => {
   const result = await exec(cmd)
     .then(execOutputHandler)
     .catch(error => logger.mylog('error', error))
-  return result
-}
-
-// apply a function to a list of ids (pid or pid:env) 
-exports.pLimitForEachHandler = async (limit, arrOfIds, func, arrOfAdditionalArgs) => {
-  const curLimit = pLimit(limit)
-  const promises = []
-  arrOfIds.forEach( id => {
-    const args = id.split(':')
-    if (args.length === 1 ) {
-      args.push('master')
-    } 
-    if (arrOfAdditionalArgs && arrOfAdditionalArgs.length) {
-      args.push(...arrOfAdditionalArgs)
-    } 
-    promises.push(
-      curLimit(async () => {
-        const result = func(...args)
-        return result
-      })
-    )
-  })
-  const result = await Promise.all(promises)
-  if (arrOfIds.length > 1) {
-    logger.mylog('info', `${result.filter(val => val).length} successful operations.`)
-  }
   return result
 }

@@ -22,12 +22,13 @@ exports.updateHost = async (project, environment = 'master') => {
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', ['project_id', 'environment_id'], [project, environment])
       logger.mylog('info', `Host of env: ${environment} of project: ${project} updated.`)
+      return true
     })
     .catch(error => logger.mylog('error', error))
   return result
 }
 
-exports.getSampleEnvs = async () => {
+exports.getSampleEnvs = () => {
   // prefer master envs b/c masters can not be deleted and so can't be recreated on new host
   // can still be rebalanced/migrated if enabled by infrastructure
   const sql = `SELECT proj_env_id FROM 

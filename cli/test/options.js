@@ -1,21 +1,22 @@
 const {assert} = require('chai')
-const {execCmd} = require('./common')
+const {execOutputHandler, logger} = require('../src/common')
+const {execCmd, choose2} = require('./common')
 
 const verboseOpt = {opt: 'verbose', alias: 'v'}
 const quietOpt = {opt: 'quiet', alias: 'q'}
 const helpOpt = {opt: 'help', alias: 'h'}
 const allOpt = {opt: 'all', alias: 'a'}
 const commonValidOpts = [verboseOpt, quietOpt, helpOpt]
-const inCompatibleOpts = [verboseOpt, quietOpt]
+const listOfConflicts = [[verboseOpt.alias, quietOpt.alias]]
 const validCommands = [
   {cmd: 'env:check-cert', alias: 'ec'},
   {cmd: 'env:delete', 
     validOpts: [{opt: 'inactive', alias: 'i'}],
-    inCompatibleOpts: ['i','a','pid:env']
+    listOfConflicts: [['i','a','pid:env']]
   },
   {cmd: 'env:deploy', 
     validOpts: [{opt: 'expiring', alias: 'x'}],
-    inCompatibleOpts: ['x','a','pid:env']
+    listOfConflicts: [['x','a','pid:env']]
   },
   {cmd: 'env:exec', alias: 'ee'},
   {cmd: 'env:get', alias: 'eg'},
@@ -25,7 +26,7 @@ const validCommands = [
   {cmd: 'host:env-match', alias: 'he'},
   {cmd: 'host:update', alias: 'hu', 
     validOpts: [{opt: 'sample', alias: 's'}],
-    inCompatibleOpts: ['s','a','pid:env']
+    listOfConflicts: [['s','a','pid:env']]
   },
   {cmd: 'project:find-failures', alias: 'pf'},
   {cmd: 'project:grant-gitlab', alias: 'pg'},
@@ -34,83 +35,141 @@ const validCommands = [
 
 // add common opts
 validCommands.forEach(cmd => {
-  cmd.validOpts = commonValidOpts.concat(cmd.validOpts, cmd.cmd !== 'host:env-match' ? [allOpt] : [])
-  cmd.inCompatibleOpts = inCompatibleOpts.concat(cmd.inCompatibleOpts)
+  cmd.validOpts = commonValidOpts
+    .concat(cmd.validOpts ? cmd.validOpts : [], cmd.cmd !== 'host:env-match' ? [allOpt] : [])
+  cmd.listOfConflicts = listOfConflicts.concat(cmd.listOfConflicts ? cmd.listOfConflicts : [])
 })
 
-const invalidCmd = 'asdfasdfasdf'
 const dummyArgs = 'dummy-arg1 dummy-arg2 dummy-arg3 dummy-arg4'
+let help = ''
+const helpCmds = []
+const helpAliases = []
 
-// add all opt for relevant
-const cmdsWithAllOpt = ['hu', 'pu', 'pg', 'eu', 'ee', 'ec', 'er', 'es']
-const cmdsWithoutAllOpt = ['he', 'ed', 'af']
-const combinedCmdsWrtAllOpt = new Set(cmdsWithAllOpt.concat(cmdsWithoutAllOpt))
+describe('testing the help', () => {
+
+  before(() => {
+    return execCmd()
+      .then(({stderr, stdout}) => {
+        help = stderr
+        help.split('\n').forEach(line => {
+          const matches = line.match(/.*mcm (\w+:[-\w]+).*/)
+          if (matches) {
+            helpCmds.push(matches[1])
+            const aliasMatch = matches[0].match(/\[aliases: (.*)]/)
+            if (aliasMatch) {
+              helpAliases.push(aliasMatch[1])
+            }
+          }
+        })
+      })
+  })
+
+  it('default cmd is help', async () => {
+    const result = await execCmd('-h')
+    assert.equal(help, result.stdout)
+    assert.match(help, /-h, --help/)
+  })
+
+  it('help cmds are in alpha order', () =>{
+    const alpha = helpCmds.slice().sort()
+    assert.equal(JSON.stringify(alpha), JSON.stringify(helpCmds))
+  })
+
+  it('help cmds match valid cmds', () =>{
+    const validCmds = validCommands.map(c => c.cmd)
+    assert.equal(JSON.stringify(helpCmds), JSON.stringify(validCmds))
+  })
+
+  it('help aliases match valid aliaes', () =>{
+    const validAliases = validCommands.filter(c => c.alias).map(c => c.alias)
+    assert.equal(JSON.stringify(helpAliases), JSON.stringify(validAliases))
+  })
+
+  it('aliases are 2 letter combination of 1st and 2nd part of cmd', () =>{
+    const validAliases = validCommands.filter(c => c.alias).map(c => c.alias)
+    assert.equal(JSON.stringify(helpAliases), JSON.stringify(validAliases))
+  })
+
+/*
+  // describe('the all option', () => {
+  //   it('either cmd has "--all" opt or not', () => {
+  //     assert.equal(combinedCmdsWrtAllOpt.size, cmdsWithAllOpt.length + cmdsWithoutAllOpt.length)
+  //   })
+  //   it('every cmd accounted for WRT "--all" opt', () => {
+  //     assert.equal(combinedCmdsWrtAllOpt.size, validCommands.length)
+  //   })
+  //   cmdsWithAllOpt.forEach(cmd => {
+  //     it(`${cmd} "--all" opt exists and is equal to "-a"`, async () => {
+  //       const result = await execCmd(`${cmd} -h`)
+  //       assert.match(result.stdout, /-a, --all/)
+  //     })
+  //     it(`${cmd} "-a" can not take additional arguments`, async () => {
+  //       const result = await execCmd(`${cmd} -a ${dummyArgs}`)
+  //       assert.match(result.stderr, /mutually exclusive/)
+  //     })
+  //     it(`${cmd} without "-a" requires additional arguments`, async () => {
+  //       const result = await execCmd(`${cmd}`)
+  //       assert.match(result.stderr, /additional arg|Not enough non-option arguments/)
+  //     })
+  //   })
+  //   cmdsWithoutAllOpt.forEach(cmd => {
+  //     it(`${cmd} has no "-a" opt`, async () => {
+  //       const result = await execCmd(`${cmd} -a`)
+  //       assert.match(result.stderr, /Unknown argument.*a/)
+  //     })
+  //     it(`${cmd} takes no args`, async () => {
+  //       const result = await execCmd(`${cmd} ${dummyArgs}`)
+  //       assert.match(result.stderr, /command expects no/)
+  //     })
+  //   })
+  // })
+*/
+
+})
+
 validCommands.forEach(cmd => {
-  if (cmdsWithAllOpt.indexOf(cmd.alias) !== -1) {
-    cmd.validOpts.push(allOpt)
-  }
+
+  describe(`testing ${cmd.cmd}`, () => {
+
+    it('help matches all declared valid opts and opt aliases', () => {
+      return execCmd(`${cmd.cmd} -h`)
+        .then(execOutputHandler)
+        .then(({stderr, stdout}) => {
+          const opts = []
+          const optsAliases = []
+          stdout.split('\n').forEach(line => {
+            const optMatches = line.match(/^ {2}-(\w), --(\w+)/)
+            if (optMatches) {
+              opts.push(optMatches[2])
+              optsAliases.push(optMatches[1])
+            }
+          })
+          const validOpts = cmd.validOpts.map(opt => opt.opt).sort()
+          const validOptAliases = cmd.validOpts.map(opt => opt.alias).sort()
+          assert.equal(JSON.stringify(validOpts), JSON.stringify(opts.sort()))
+          assert.equal(JSON.stringify(validOptAliases), JSON.stringify(optsAliases.sort()))
+        })
+    })
+
+    const conflictToArg = (conflict) => {
+      return conflict.length == 1 ? '-' + conflict : conflict
+    }
+    cmd.listOfConflicts.forEach(conflicts => {
+      const pairsOfConflicts = choose2(conflicts)
+      pairsOfConflicts.forEach(pair => {
+        it(`${pair[0]} and ${pair[1]} are mutually exclusive`, () => {
+          const strCmd = `${cmd.cmd} ${conflictToArg(pair[0])} ${conflictToArg(pair[1])}`
+          console.log(strCmd)
+          return execCmd(strCmd)
+            .then(execOutputHandler)
+            .then(({stderr, stdout}) => {
+              assert.match(stderr, /mutually exclusive/)
+            })
+        })
+      })
+    })
+
+  })
+
 })
 
-describe('testing the CLI ...', () => {
-  describe('valid cmds', () => {
-    it('cmds and aliases are equal', async () => {
-      const help = await execCmd()
-      validCommands.forEach(({cmd, alias}) => {
-        assert.match(help.stderr, new RegExp(`${cmd}.*aliases: ${alias}`))
-      })
-    })
-  })
-
-  describe('invalid cmd', () => {
-    it(`cmd "${invalidCmd}" should not exist`, async () => {
-      const result = await execCmd(invalidCmd)
-      assert.match(result.stderr, new RegExp(`Unknown argument.*${invalidCmd}`))
-    })
-  })
-
-  describe('the all option', () => {
-    it('either cmd has "--all" opt or not', () => {
-      assert.equal(combinedCmdsWrtAllOpt.size, cmdsWithAllOpt.length + cmdsWithoutAllOpt.length)
-    })
-    it('every cmd accounted for WRT "--all" opt', () => {
-      assert.equal(combinedCmdsWrtAllOpt.size, validCommands.length)
-    })
-    cmdsWithAllOpt.forEach(cmd => {
-      it(`${cmd} "--all" opt exists and is equal to "-a"`, async () => {
-        const result = await execCmd(`${cmd} -h`)
-        assert.match(result.stdout, /-a, --all/)
-      })
-      it(`${cmd} "-a" can not take additional arguments`, async () => {
-        const result = await execCmd(`${cmd} -a ${dummyArgs}`)
-        assert.match(result.stderr, /mutually exclusive/)
-      })
-      it(`${cmd} without "-a" requires additional arguments`, async () => {
-        const result = await execCmd(`${cmd}`)
-        assert.match(result.stderr, /additional arg|Not enough non-option arguments/)
-      })
-    })
-    cmdsWithoutAllOpt.forEach(cmd => {
-      it(`${cmd} has no "-a" opt`, async () => {
-        const result = await execCmd(`${cmd} -a`)
-        assert.match(result.stderr, /Unknown argument.*a/)
-      })
-      it(`${cmd} takes no args`, async () => {
-        const result = await execCmd(`${cmd} ${dummyArgs}`)
-        assert.match(result.stderr, /command expects no/)
-      })
-    })
-  })
-
-  describe('incompatible opts', () => {
-    validCommands.forEach(cmd => {
-      it(`${cmd.alias} "-v" and "-q" opts are incompatible`, async () => {
-        const result = await execCmd(`${cmd.alias} -vq ${dummyArgs}`)
-        assert.match(result.stderr, /mutually exclusive/)
-      })
-    })
-    it('er "-x" and "-a" opts are incompatible', async () => {
-      const result = await execCmd(`er -xa ${dummyArgs}`)
-      assert.match(result.stderr, /mutually exclusive/)
-    })
-  })
-})

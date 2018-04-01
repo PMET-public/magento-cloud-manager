@@ -62,11 +62,11 @@ const setEnvironmentMissing = (project, environment) => {
 exports.setEnvironmentMissing = setEnvironmentMissing
 
 const deployEnvFromTar = async (project, environment, tarFile) => {
-  // clone to nested tmp dir, discard all but the git dir, mv git dir and tar file to parent dir
+  // clone to nested tmp dir, discard all but the git dir and auth.json, mv git dir and tar file to parent dir
   // extract tar, commit, and push
   const cmd = `mkdir -p "/tmp/${project}-${environment}/tmp"
     ${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}/tmp"
-    mv "/tmp/${project}-${environment}/tmp/.git" "${tarFile}" "/tmp/${project}-${environment}/"
+    mv "/tmp/${project}-${environment}/tmp/{.git,auth.json}" "${tarFile}" "/tmp/${project}-${environment}/"
     rm -rf "/tmp/${project}-${environment}/tmp"
     cd "/tmp/${project}-${environment}"
     tar -xf "${tarFile}"
@@ -233,9 +233,13 @@ const getHostName = async (project, environment) => {
 // When running cmds in parallel, if a cmd happens to execute when a token expires, all subsequent cmds
 // will fail until the one that triggered a token renewal receives a new token
 const getSshCmd = async (project, environment) => {
-  const {machineName, region} = await getMachineNameAndRegion(project, environment)
-  const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
-  return `ssh ${project}-${machineName}--mymagento@${domain} -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes'`
+  try {
+    const {machineName, region} = await getMachineNameAndRegion(project, environment)
+    const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
+    return `ssh ${project}-${machineName}--mymagento@${domain} -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes'`
+  } catch (error) {
+    logger.mylog('error', error)
+  }
 }
 exports.getSshCmd = getSshCmd
 

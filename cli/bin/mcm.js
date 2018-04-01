@@ -2,7 +2,12 @@
 
 const yargs = require('yargs')
 const chalk = require('chalk')
-const {logger, showWhoAmI, pLimitForEachHandler} = require('../src/common')
+
+// be kind with our requests and don't abuse the API or servers
+// remember p-limit expects an async function or a function that returns a promise
+const pLimit = require('p-limit')
+
+const {logger, showWhoAmI} = require('../src/common')
 const {updateHost, getSampleEnvs, updateEnvHostRelationships} = require('../src/host')
 const {updateProject, getProjectsFromApi} = require('../src/project')
 const {smokeTestApp} = require('../src/smoke-test')
@@ -63,6 +68,39 @@ const verifyOnlyArg = argv => {
   }
 }
 
+// apply a function to a list of ids (pid or pid:env) 
+const pLimitForEachHandler = async (limit, arrOfIds, func, arrOfAdditionalArgs) => {
+  const curLimit = pLimit(limit)
+  const promises = []
+  arrOfIds.forEach( id => {
+    const args = id.split(':')
+    if (args.length === 1 ) {
+      args.push('master')
+    } 
+    if (arrOfAdditionalArgs && arrOfAdditionalArgs.length) {
+      args.push(...arrOfAdditionalArgs)
+    } 
+    promises.push(
+      curLimit(async () => {
+        const result = func(...args)
+        return result
+      })
+    )
+  })
+  const result = await Promise.all(promises)
+  if (arrOfIds.length > 1) {
+    const successful = result.filter(val => val).length
+    const total = result.length
+    if (successful === total) {
+      logger.mylog('info', chalk.green(`All ${total} operations successful.`))
+    } else {
+      logger.mylog('info', errorTxt(total - successful + ' operation(s) failed.') + chalk.green(` ${successful} succeeded.`))
+    }
+  }
+  return result
+}
+
+
 yargs
   .usage(cmdTxt('$0 <cmd> [args]'))
   .wrap(yargs.terminalWidth())
@@ -117,7 +155,7 @@ yargs.command(
     yargs.option('i', {
       alias: 'inactive',
       description: 'Delete all inactive envs across all projs',
-      conflicts: ['pid:env', 'a'],
+      conflicts: ['pid:env...', 'a'],
       coerce: coercer
     })
   },
@@ -237,12 +275,13 @@ yargs.command(
       coerce: coercer
     })
   },
-  argv => {
+  async argv => {
     const pidEnvs = argv.all ?
       getLiveEnvsAsPidEnvArr() :
       argv.sample ?
         getSampleEnvs() :
         argv['pid:env']
+    await showWhoAmI()
     pLimitForEachHandler(8, pidEnvs, updateHost)
   }
 )
