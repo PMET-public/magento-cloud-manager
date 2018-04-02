@@ -7,7 +7,7 @@ const chalk = require('chalk')
 // remember p-limit expects an async function or a function that returns a promise
 const pLimit = require('p-limit')
 
-const {logger, showWhoAmI} = require('../src/common')
+const {logger, showWhoAmI, disallowedCmdTxt, allOpsSuccessTemplate, mixedSuccessTemplate} = require('../src/common')
 const {updateHost, getSampleEnvs, updateEnvHostRelationships} = require('../src/host')
 const {updateProject, getProjectsFromApi} = require('../src/project')
 const {smokeTestApp} = require('../src/smoke-test')
@@ -16,6 +16,7 @@ const {addCloudProjectKeyToGitlabKeys} = require('../src/gitlab')
 const {
   updateEnvironment,
   deleteInactiveEnvs,
+  deleteEnv,
   execInEnv,
   redeployEnv,
   checkCertificate,
@@ -92,9 +93,9 @@ const pLimitForEachHandler = async (limit, arrOfIds, func, arrOfAdditionalArgs) 
     const successful = result.filter(val => val).length
     const total = result.length
     if (successful === total) {
-      logger.mylog('info', chalk.green(`All ${total} operations successful.`))
+      logger.mylog('info', chalk.green(allOpsSuccessTemplate(total)))
     } else {
-      logger.mylog('info', errorTxt(total - successful + ' operation(s) failed.') + chalk.green(` ${successful} succeeded.`))
+      logger.mylog('info', errorTxt(mixedSuccessTemplate(total, successful)))
     }
   }
   return result
@@ -171,9 +172,11 @@ yargs.command(
   },
   async argv =>{
     if (argv.all) {
-      console.log('Are you crazy?!')
+      console.log(errorTxt(disallowedCmdTxt))
     } else if (argv.inactive) {
       pLimitForEachHandler(8, (await getProjectsFromApi()), deleteInactiveEnvs)
+    } else {
+      pLimitForEachHandler(8, argv['pid:env'], deleteEnv)
     }
   }
 )
@@ -199,11 +202,13 @@ yargs.command(
     addSharedPidEnvOpts()
   },
   argv => {
-    argv.all ?
-      console.log('Are you crazy?!') :
-      argv.expiring ?
-        pLimitForEachHandler(8, getExpiringPidEnvs, redeployEnv):
-        pLimitForEachHandler(8, argv['pid:env'], deployEnvFromTar, [argv['tar-file']])
+    if (argv.all) {
+      console.log(errorTxt(disallowedCmdTxt))
+    } else if (argv.expiring) {
+      pLimitForEachHandler(8, getExpiringPidEnvs, redeployEnv)
+    } else {
+      pLimitForEachHandler(8, argv['pid:env'], deployEnvFromTar, [argv['tar-file']])
+    }
   }
 )
 
@@ -302,22 +307,25 @@ yargs.command(
   ['project:find-failures [pid:env...]', 'pf'],
   'Query activity API by proj(s) to find envs that failed to deploy',
   addSharedPidEnvOpts,
-  argv => pLimitForEachHandler(8, argv.all ? getProjectsFromApi() : argv['pid:env'], searchActivitiesForFailures)
+  async argv => {
+    await showWhoAmI() 
+    pLimitForEachHandler(8, argv.all ? await getProjectsFromApi() : argv['pid:env'], searchActivitiesForFailures)
+  }
 )
 
 yargs.command(
   ['project:grant-gitlab [pid:env...]', 'pg'],
   'Grant access to proj(s) to all configured gitlab projects in config.json',
   addSharedPidEnvOpts,
-  argv => 
-    pLimitForEachHandler(8, argv.all ? getProjectsFromApi() : argv['pid:env'], addCloudProjectKeyToGitlabKeys)
+  async argv => {
+    await showWhoAmI()
+    pLimitForEachHandler(8, argv.all ? await getProjectsFromApi() : argv['pid:env'], addCloudProjectKeyToGitlabKeys)
+  }
 )
 
 yargs.command(['project:update [pid:env...]', 'pu'], 'Query API about proj(s)', addSharedPidEnvOpts, async argv => {
-  if (argv.all) {
-    await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
-  }
-  pLimitForEachHandler(8, argv.all ? getProjectsFromApi() : argv['pid:env'], updateProject)
+  await showWhoAmI()
+  pLimitForEachHandler(8, argv.all ? await getProjectsFromApi() : argv['pid:env'], updateProject)
 })
 
 yargs.argv

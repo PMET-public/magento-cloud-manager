@@ -146,3 +146,11 @@ exports.showWhoAmI = async () => {
     .catch(error => logger.mylog('error', error))
   return result
 }
+
+exports.disallowedCmdTxt = 'Are you crazy?!'
+exports.regexToMatchDisallowed = /Are you crazy/
+exports.allOpsSuccessTemplate = (total) => `All ${total} operations successful.`
+exports.regexToMatchAllOpsSuccess = /All.*operations successful./
+exports.mixedSuccessTemplate = (total, successful) => 
+  (total - successful) + ` operation(s) failed. ${successful} succeeded.`
+exports.regexToMatchMixedSuccess = /\d+ operation.*failed.* \d+ succeeded/

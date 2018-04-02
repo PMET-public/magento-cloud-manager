@@ -26,11 +26,11 @@ const updateEnvironment = async (project, environment = 'master') => {
       return result
     })
     .catch(error => {
-      logger.mylog('error', error)
       if (/Specified environment not found/.test(error.message)) {
         const [prefix, project, environment] = error.cmd.match(/.* -p\s+"([^ ]+)"\s+-e\s"([^"]+)"/)
-        setEnvironmentMissing(project, environment)
+        return setEnvironmentMissing(project, environment)
       }
+      logger.mylog('error', error)
     })
   return result
 }
@@ -41,6 +41,7 @@ exports.setEnvironmentInactive = (project, environment) => {
     .prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
   logger.mylog('debug', result)
+  logger.mylog('info', `Env: ${environment} of project: ${project} set to inactive.`)
   return result
 }
 
@@ -49,6 +50,7 @@ exports.setEnvironmentFailure = (project, environment, value) => {
     .prepare('UPDATE environments SET failure = ?, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(value, project, environment)
   logger.mylog('debug', result)
+  logger.mylog('info', `Env: ${environment} of project: ${project} set to failed.`)
   return result
 }
 
@@ -57,6 +59,7 @@ const setEnvironmentMissing = (project, environment) => {
     .prepare('UPDATE environments SET missing = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
   logger.mylog('debug', result)
+  logger.mylog('info', `Env: ${environment} of project: ${project} set to missing.`)
   return result
 }
 exports.setEnvironmentMissing = setEnvironmentMissing
@@ -186,6 +189,27 @@ exports.deleteInactiveEnvs = async (project) => {
     })
   return result
 }
+
+exports.deleteEnv = async (project, environment) => {
+  if (environment === 'master') {
+    logger.mylog('error', `Can not delete master env of project: ${project}`)
+    return
+  }
+  const cmd = `${MC_CLI} environment:delete -p ${project} --no-wait -y`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .catch(error => {
+      if (/No inactive environments found/.test(error.stderr)) {
+        // this should not be considered an error, but the CLI has a non-zero exit status
+        // log the "error" for verbose mode and return
+        logger.mylog('debug', error.stderr)
+        return true
+      }
+      logger.mylog('error', error)
+    })
+  return result
+}
+
 
 const execInEnv = async (project, environment, filePath) => {
   const file = await sendPathToRemoteTmpDir(project, environment, filePath)

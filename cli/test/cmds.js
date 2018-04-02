@@ -1,4 +1,5 @@
 const {assert} = require('chai')
+const {regexToMatchAllOpsSuccess, regexToMatchMixedSuccess, regexToMatchDisallowed} = require('../src/common')
 const {execCmd, validCommands} = require('./common')
 const {writeFileSync, unlink} = require('fs')
 
@@ -25,15 +26,6 @@ const getCmdWithMixedPids = (cmd, extraArgs = []) => {
   return `${cmd} -v ${extraArgs.join(' ')} ${validPid} ${validPidEnv} ${invalidPid}`
 }
 
-const getCmdWithAllOpt = (cmd, extraArgs = []) => {
-  return `${cmd} -va ${extraArgs.join(' ')}`
-}
-
-const infoRegex = /(\[[^ ]*info[^ ]*\]:.*)/g
-const debugRegex = /(\[[^ ]*debug[^ ]*\]:.*)/g
-const errorRegex = /(\[[^ ]*error[^ ]*\]:.*)/g
-
-
 const sEpoch = Math.floor(new Date() / 1000)
 const tmpShFile = `/tmp/${sEpoch}.sh`
 const tmpSqlFile = `/tmp/${sEpoch}.sql`
@@ -46,14 +38,41 @@ const testCmd = (cmdStr, resultTester, AssertionMsg,  timeout) => {
   }).timeout(timeout)
 }
 
-describe('invalid tests', () => {
+const infoRegex = /(\[[^ ]*info[^ ]*\]:.*)/g
+const debugRegex = /(\[[^ ]*debug[^ ]*\]:.*)/g
+const errorRegex = /(\[[^ ]*error[^ ]*\]:.*)/g
 
-  const invalidTester = result => {
-    const {stdout, stderr} = result
-    result = stdout.match(debugRegex) && !stdout.match(infoRegex) && stderr.match(errorRegex)
-    return result
-  }
-  const invalidTestMsg = 'should have [debug] and [error] but no [info] output'
+const invalidTester = result => {
+  const {stdout, stderr} = result
+  result = stdout.match(debugRegex) && !stdout.match(infoRegex) && stderr.match(errorRegex)
+  return result
+}
+const invalidTestMsg = 'should have [debug] and [error] but no [info] output'
+
+const simpleValidTester = result => {
+  const {stdout, stderr} = result
+  return stdout.match(debugRegex) && stdout.match(infoRegex) && !stderr.match(errorRegex)
+}
+const validTestMsg = 'should have [debug] and [info] but no [error] output'
+
+const multipleValidTester = result => {
+  const {stdout} = result
+  return stdout.match(regexToMatchAllOpsSuccess)
+}
+
+const mixedValidTester = result => {
+  const {stdout} = result
+  return stdout.match(regexToMatchMixedSuccess)
+}
+const mixedTestMsg = 'expect 1 failure and 2 successes'
+
+const disallowedTester = result => {
+  const {stdout} = result
+  return stdout.match(regexToMatchDisallowed)
+}
+const disallowedTestMsg = 'disallow all for this cmd'
+
+describe('invalid tests', () => {
 
   validCommands.forEach(cmd => {
     if (['env:delete', 'env:deploy', 'host:env-match'].includes(cmd.cmd)) {
@@ -67,7 +86,7 @@ describe('invalid tests', () => {
   })
 
 })
-
+/*
 describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid pids', () => {
 
   before(() => {
@@ -75,27 +94,8 @@ describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid 
     writeFileSync(tmpSqlFile, 'select 1 from dual')
   })
 
-  const simpleValidTester = result => {
-    const {stdout, stderr} = result
-    const matchesExpectedOutcome = stdout.match(debugRegex) && stdout.match(infoRegex) && !stderr.match(errorRegex)
-    return matchesExpectedOutcome
-  }
-  const validTestMsg = 'should have [debug] and [info] but no [error] output'
-
-  const multipleValidTester = result => {
-    const {stdout} = result
-    const matchesExpectedOutcome = stdout.match(/All 2 operations successful./)
-    return matchesExpectedOutcome && simpleValidTester(result)
-  }
-
-  const mixedValidTester = result => {
-    const {stdout} = result
-    const matchesExpectedOutcome = stdout.match(/1 operation.*failed.* 2 succeeded/)
-    return matchesExpectedOutcome
-  }
-  const mixedTestMsg = 'expect 1 failure and 2 successes'
-
-  validCommands.forEach(cmd => {
+  validCommands.reverse().forEach(cmd => {
+    // test delete & deploy separately later
     if (['env:delete', 'env:deploy'].includes(cmd.cmd)) {
       return
     }
@@ -122,13 +122,52 @@ describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid 
       testCmd(getCmdWithMultipleValidPids(cmd.cmd, [tmpSqlFile]), multipleValidTester, validTestMsg, cmd.timeout)
       testCmd(getCmdWithMixedPids(cmd.cmd, [tmpSqlFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
       break;
-    // comment OUT this case to INCLUDE env:smoke-test (will add ~5 min)
-    // case 'env:smoke-test':
-    //   break;
     default: 
       testCmd(getCmdWithValidPid(cmd.cmd), simpleValidTester, validTestMsg, cmd.timeout)
       testCmd(getCmdWithMultipleValidPids(cmd.cmd), multipleValidTester, validTestMsg, cmd.timeout)
       testCmd(getCmdWithMixedPids(cmd.cmd), mixedValidTester, mixedTestMsg, cmd.timeout)
+    }
+  })
+
+  after(() => {
+    unlink(tmpShFile)
+    unlink(tmpSqlFile)
+  })
+
+})
+*/
+describe('test various batch and "--all" options', () => {
+
+  before(() => {
+    writeFileSync(tmpShFile, '#!/bin/bash\necho "hello world"')
+    writeFileSync(tmpSqlFile, 'select 1 from dual')
+  })
+
+  // with many -a operations, the -v will exceed the stdout buffer, so drop it
+  validCommands.reverse().forEach(cmd => {
+    if (cmd.cmd === 'host:env-match') { // no "--all" option
+      return
+    }
+    switch (cmd.cmd) {
+    case 'env:delete':
+    case 'env:deploy':
+      testCmd(`${cmd.cmd} -a`, disallowedTester, disallowedTestMsg, cmd.allTimeout)
+      break;
+    case 'env:exec':
+      // testCmd(`${cmd.cmd} -a ${tmpShFile}`, multipleValidTester, validTestMsg, cmd.allTimeout)
+      // testCmd(`${cmd.cmd} -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, cmd.allTimeout)
+      break;
+    case 'env:get':
+      // testCmd(`${cmd.cmd} -a ${validRemoteFile}`, multipleValidTester, validTestMsg, cmd.allTimeout)
+      break;
+    case 'env:put':
+      // testCmd(`${cmd.cmd} -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, cmd.allTimeout)
+      break;
+    case 'host:upate':
+      testCmd(`${cmd.cmd} -s`, multipleValidTester, validTestMsg, cmd.allTimeout)
+      // falls through
+    default:
+      // testCmd(`${cmd.cmd} -a`, multipleValidTester, validTestMsg, cmd.allTimeout)
     }
   })
 
