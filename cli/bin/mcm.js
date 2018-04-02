@@ -2,6 +2,7 @@
 
 const yargs = require('yargs')
 const chalk = require('chalk')
+const readline = require('readline');
 
 // be kind with our requests and don't abuse the API or servers
 // remember p-limit expects an async function or a function that returns a promise
@@ -143,8 +144,8 @@ yargs
     coerce: coercer
   })
 
-yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, argv =>
-  pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], checkCertificate)
+yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, 
+  argv => pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], checkCertificate)
 )
 
 yargs.command(
@@ -169,20 +170,34 @@ yargs.command(
       type: 'boolean',
       coerce: coercer
     })
+    yargs.option('yes', {
+      description: 'Answer "yes" to prompt',
+      type: 'boolean',
+      coerce: coercer
+    })
   },
   async argv =>{
     if (argv.all) {
       console.log(errorTxt(disallowedCmdTxt))
     } else if (argv.inactive) {
       pLimitForEachHandler(8, (await getProjectsFromApi()), deleteInactiveEnvs)
-    } else {
+    } else if (argv.yes) {
       pLimitForEachHandler(8, argv['pid:env'], deleteEnv)
+    } else {
+      const rl = readline.createInterface({input: process.stdin, output: process.stdout });
+      rl.question(`${errorTxt('Are you sure you want to delete these envs:')} 
+      ${argv['pid:env'].join(' ')} ?\nTo continues, type 'yes': `, (answer) => {
+        if (answer === 'yes') {
+          pLimitForEachHandler(8, argv['pid:env'], deleteEnv)
+        }
+        rl.close();
+      });
     }
   }
 )
 
 yargs.command(
-  ['env:deploy <tar-file> [pid:env...]'],
+  ['env:deploy [tar-file] [pid:env...]'],
   'Deploy env(s) using the provided tar file as the new git head',
   yargs => {
     yargs.option('x', {
@@ -205,13 +220,12 @@ yargs.command(
     if (argv.all) {
       console.log(errorTxt(disallowedCmdTxt))
     } else if (argv.expiring) {
-      pLimitForEachHandler(8, getExpiringPidEnvs, redeployEnv)
+      pLimitForEachHandler(8, getExpiringPidEnvs(), redeployEnv)
     } else {
       pLimitForEachHandler(8, argv['pid:env'], deployEnvFromTar, [argv['tar-file']])
     }
   }
 )
-
 
 yargs.command(
   ['env:exec <file> [pid:env...]', 'ee'],
@@ -224,8 +238,7 @@ yargs.command(
     })
     addSharedPidEnvOpts()
   },
-  argv =>
-    pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], execInEnv, [argv.file])
+  argv => pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], execInEnv, [argv.file])
 )
 
 yargs.command(
@@ -262,12 +275,9 @@ yargs.command(['env:smoke-test [pid:env...]', 'es'], 'Run smoke tests in env(s)'
   argv => pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], smokeTestApp)
 )
 
-yargs.command(['env:update [pid:env...]', 'eu'], 'Query API about env(s)', addSharedPidEnvOpts, async argv => {
-  if (argv.all) {
-    await showWhoAmI() // if cloud token has expired, use this to renew before running parallel api queries
-  }
-  pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], updateEnvironment)
-})
+yargs.command(['env:update [pid:env...]', 'eu'], 'Query API about env(s)', addSharedPidEnvOpts, 
+  argv => pLimitForEachHandler(8, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], updateEnvironment)
+)
 
 yargs.command(
   ['host:env-match', 'he'],
@@ -292,13 +302,12 @@ yargs.command(
       coerce: coercer
     })
   },
-  async argv => {
+  argv => {
     const pidEnvs = argv.all ?
       getLiveEnvsAsPidEnvArr() :
       argv.sample ?
         getSampleEnvs() :
         argv['pid:env']
-    await showWhoAmI()
     pLimitForEachHandler(8, pidEnvs, updateHost)
   }
 )
@@ -307,25 +316,24 @@ yargs.command(
   ['project:find-failures [pid:env...]', 'pf'],
   'Query activity API by proj(s) to find envs that failed to deploy',
   addSharedPidEnvOpts,
-  async argv => {
-    await showWhoAmI() 
+  async argv =>
     pLimitForEachHandler(8, argv.all ? await getProjectsFromApi() : argv['pid:env'], searchActivitiesForFailures)
-  }
 )
 
 yargs.command(
   ['project:grant-gitlab [pid:env...]', 'pg'],
   'Grant access to proj(s) to all configured gitlab projects in config.json',
   addSharedPidEnvOpts,
-  async argv => {
-    await showWhoAmI()
+  async argv =>
     pLimitForEachHandler(8, argv.all ? await getProjectsFromApi() : argv['pid:env'], addCloudProjectKeyToGitlabKeys)
-  }
 )
 
-yargs.command(['project:update [pid:env...]', 'pu'], 'Query API about proj(s)', addSharedPidEnvOpts, async argv => {
-  await showWhoAmI()
+yargs.command(['project:update [pid:env...]', 'pu'], 'Query API about proj(s)', addSharedPidEnvOpts, async argv =>
   pLimitForEachHandler(8, argv.all ? await getProjectsFromApi() : argv['pid:env'], updateProject)
-})
+)
 
-yargs.argv
+;(async() => {
+  await showWhoAmI() // force token refresh before parsing arg; should be < 1 sec
+  yargs.argv
+})()
+

@@ -67,12 +67,14 @@ exports.setEnvironmentMissing = setEnvironmentMissing
 const deployEnvFromTar = async (project, environment, tarFile) => {
   // clone to nested tmp dir, discard all but the git dir and auth.json, mv git dir and tar file to parent dir
   // extract tar, commit, and push
-  const cmd = `mkdir -p "/tmp/${project}-${environment}/tmp"
+  const cmd = `mkdir -p "/tmp/${project}-${environment}"
     ${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}/tmp"
-    mv "/tmp/${project}-${environment}/tmp/{.git,auth.json}" "${tarFile}" "/tmp/${project}-${environment}/"
+    mv /tmp/${project}-${environment}/tmp/{.git,auth.json} /tmp/${project}-${environment}/
+    cp "${tarFile}" /tmp/${project}-${environment}/
     rm -rf "/tmp/${project}-${environment}/tmp"
     cd "/tmp/${project}-${environment}"
     tar -xf "${tarFile}"
+    rm "${tarFile}"
     git add -u
     git add .
     git commit -m "commit from tar file"
@@ -101,6 +103,7 @@ const redeployEnv = async (project, environment) => {
         throw 'Project not found.'
       }
       logger.mylog('info', `Env: ${environment} of project: ${project} redeployed.`)
+      return true
     })
     .catch(error => logger.mylog('error', error))
   return result
@@ -195,7 +198,7 @@ exports.deleteEnv = async (project, environment) => {
     logger.mylog('error', `Can not delete master env of project: ${project}`)
     return
   }
-  const cmd = `${MC_CLI} environment:delete -p ${project} --no-wait -y`
+  const cmd = `${MC_CLI} environment:delete -p ${project} -e ${environment} -q -y --delete-branch`
   const result = exec(cmd)
     .then(execOutputHandler)
     .catch(error => {
@@ -209,6 +212,20 @@ exports.deleteEnv = async (project, environment) => {
     })
   return result
 }
+
+const branchEnvFromMaster = async (project, environment) => {
+  const cmd = `${MC_CLI} branch -p ${project} -e master ${environment} --force`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .then(({stdout, stderr}) => {
+      return environment
+    })
+    .catch(error => {
+      logger.mylog('error', error)
+    })
+  return result
+}
+exports.branchEnvFromMaster = branchEnvFromMaster
 
 
 const execInEnv = async (project, environment, filePath) => {
@@ -232,10 +249,10 @@ const getMachineNameAndRegion = async (project, environment) => {
   try {
     const sql = `SELECT machine_name, region FROM environments e LEFT JOIN projects p ON p.id = e.project_id 
       WHERE p.id = ? AND e.id = ?`
-    const result = db.prepare(sql).get(project, environment)
-    if (typeof result == 'undefined') {
+    let result = db.prepare(sql).get(project, environment)
+    if (typeof result === 'undefined') {
       // possibly requesting an environment that hasn't been queried yet, so attempt to update and then return
-      const result = await updateEnvironment(project, environment)
+      result = await updateEnvironment(project, environment)
       if (result) {
         return await getMachineNameAndRegion(project, environment)
       } else {

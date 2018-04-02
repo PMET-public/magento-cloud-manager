@@ -66,7 +66,6 @@ validCommands.forEach(cmd => {
     .concat(cmd.validOpts ? cmd.validOpts : [], cmd.cmd !== 'host:env-match' ? [allOpt] : [])
   cmd.listOfConflicts = listOfConflicts.concat(cmd.listOfConflicts ? cmd.listOfConflicts : [])
   cmd.timeout = ['env:smoke-test', 'env:deploy'].includes(cmd.cmd) ? ms5min : ms1min
-  cmd.allTimeout = cmd.timeout = ['env:smoke-test', 'env:deploy'].includes(cmd.cmd) ? ms2hrs : ms30min
 })
 
 exports.validCommands = validCommands

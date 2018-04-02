@@ -1,7 +1,8 @@
 const {assert} = require('chai')
 const {regexToMatchAllOpsSuccess, regexToMatchMixedSuccess, regexToMatchDisallowed} = require('../src/common')
+const {branchEnvFromMaster} = require('../src/environment')
 const {execCmd, validCommands} = require('./common')
-const {writeFileSync, unlink} = require('fs')
+const {writeFileSync, unlinkSync} = require('fs')
 
 // require('./options')
 
@@ -31,7 +32,7 @@ const tmpShFile = `/tmp/${sEpoch}.sh`
 const tmpSqlFile = `/tmp/${sEpoch}.sql`
 const validRemoteFile = '/var/log/deploy.log'
 
-const testCmd = (cmdStr, resultTester, AssertionMsg,  timeout) => {
+const testCmd = (cmdStr, resultTester, AssertionMsg,  timeout = 15000) => {
   it(cmdStr, async () => {
     const result = await execCmd(cmdStr)
     assert(resultTester(result), AssertionMsg)
@@ -86,6 +87,7 @@ describe('invalid tests', () => {
   })
 
 })
+
 /*
 describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid pids', () => {
 
@@ -130,12 +132,14 @@ describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid 
   })
 
   after(() => {
-    unlink(tmpShFile)
-    unlink(tmpSqlFile)
+    unlinkSync(tmpShFile)
+    unlinkSync(tmpSqlFile)
   })
 
 })
 */
+
+
 describe('test various batch and "--all" options', () => {
 
   before(() => {
@@ -143,37 +147,49 @@ describe('test various batch and "--all" options', () => {
     writeFileSync(tmpSqlFile, 'select 1 from dual')
   })
 
+  // list test individually to ease enabling/disabling them via commenting b/c they can be time consuming
   // with many -a operations, the -v will exceed the stdout buffer, so drop it
-  validCommands.reverse().forEach(cmd => {
-    if (cmd.cmd === 'host:env-match') { // no "--all" option
-      return
-    }
-    switch (cmd.cmd) {
-    case 'env:delete':
-    case 'env:deploy':
-      testCmd(`${cmd.cmd} -a`, disallowedTester, disallowedTestMsg, cmd.allTimeout)
-      break;
-    case 'env:exec':
-      // testCmd(`${cmd.cmd} -a ${tmpShFile}`, multipleValidTester, validTestMsg, cmd.allTimeout)
-      // testCmd(`${cmd.cmd} -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, cmd.allTimeout)
-      break;
-    case 'env:get':
-      // testCmd(`${cmd.cmd} -a ${validRemoteFile}`, multipleValidTester, validTestMsg, cmd.allTimeout)
-      break;
-    case 'env:put':
-      // testCmd(`${cmd.cmd} -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, cmd.allTimeout)
-      break;
-    case 'host:upate':
-      testCmd(`${cmd.cmd} -s`, multipleValidTester, validTestMsg, cmd.allTimeout)
-      // falls through
-    default:
-      // testCmd(`${cmd.cmd} -a`, multipleValidTester, validTestMsg, cmd.allTimeout)
-    }
-  })
+
+  // testCmd('env:check-cert -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
+  
+  // testCmd('env:delete -a', disallowedTester, disallowedTestMsg)
+  // testCmd('env:delete -i', multipleValidTester, validTestMsg, 1000 * 60 * 2)
+  // testCmd('env:deploy -a dummy-tar-file', disallowedTester)
+  // testCmd('env:deploy -x', )
+  
+  // testCmd(`env:exec -a ${tmpShFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
+  // testCmd(`env:exec -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
+  // testCmd(`env:get -a ${validRemoteFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
+  // testCmd(`env:put -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
+  // testCmd('env:smoke-test -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
+  
+  // testCmd('env:update -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
+  // testCmd('host:upate -s', multipleValidTester, validTestMsg, 1000 * 60 * 2)
+
+  // testCmd('host:upate -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
+  // testCmd('project:find-failures -a', multipleValidTester, validTestMsg, 1000 * 60 * 30)
+
+  // testCmd('project:grant-gitlab -a', multipleValidTester, validTestMsg, 1000 * 60 * 5)
+  // testCmd('project:update -a', multipleValidTester, validTestMsg, 1000 * 60 * 5)
 
   after(() => {
-    unlink(tmpShFile)
-    unlink(tmpSqlFile)
+    unlinkSync(tmpShFile)
+    unlinkSync(tmpSqlFile)
   })
+
+})
+
+// https://stackoverflow.com/questions/41949895/how-to-set-timeout-on-before-hook-in-mocha
+describe('branch sample env, deploy to it, then delete it', function () {
+  this.timeout(1000 * 60 * 15);
+
+  const envName = Math.floor(new Date() / 1000)
+
+  before(() => {
+    return branchEnvFromMaster('xpwgonshm6qm2', envName)
+  })
+
+  testCmd(`env:deploy ref.tar xpwgonshm6qm2:${envName}`, multipleValidTester, validTestMsg, 1000 * 60 * 2)
+  testCmd(`env:delete --yes xpwgonshm6qm2:${envName}`, multipleValidTester, validTestMsg, 1000 * 60 * 2)
 
 })
