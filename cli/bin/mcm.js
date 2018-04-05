@@ -70,6 +70,15 @@ const verifyOnlyArg = argv => {
   }
 }
 
+const verifyOneOf = (argv, args) => {
+  if (!args.filter(x => argv[x]).length) {
+    yargs.showHelp()
+    // invoked by command handler so must explicitly invoke console
+    console.error(errorTxt(`The "${argv._[0]}" command requires additional args.`))
+    process.exit(1)
+  }
+}
+
 // apply a function to a list of ids (pid or pid:env) 
 const pLimitForEachHandler = async (limit, arrOfIds, func, arrOfAdditionalArgs) => {
   const curLimit = pLimit(limit)
@@ -187,10 +196,10 @@ yargs.command(
       const rl = readline.createInterface({input: process.stdin, output: process.stdout });
       rl.question(`${errorTxt('Are you sure you want to delete these envs:')} 
       ${argv['pid:env'].join(' ')} ?\nTo continues, type 'yes': `, (answer) => {
+        rl.close()
         if (answer === 'yes') {
           pLimitForEachHandler(8, argv['pid:env'], deleteEnv)
         }
-        rl.close();
       });
     }
   }
@@ -203,7 +212,7 @@ yargs.command(
     yargs.option('x', {
       alias: 'expiring',
       description: 'Redeploy expiring envs without changes',
-      conflicts: ['pid:env', 'a'],
+      conflicts: ['pid:env', 'a', 'reset'],
       type: 'boolean',
       coerce: coercer
     })
@@ -214,15 +223,36 @@ yargs.command(
       cmdTxt('\ttar -rf head.tar auth.json'),
       normalize: true
     })
+    yargs.option('reset', {
+      description: 'Destructively reset an env before defore deploying. DATA WILL BE LOST.',
+      type: 'boolean',
+      coerce: coercer
+    })
+    yargs.option('yes', {
+      description: 'Answer "yes" to prompt',
+      type: 'boolean',
+      coerce: coercer
+    })
     addSharedPidEnvOpts()
   },
   argv => {
+    verifyOneOf(argv, ['x', 'a', 'pid:env'])
     if (argv.all) {
       console.log(errorTxt(disallowedCmdTxt))
     } else if (argv.expiring) {
       pLimitForEachHandler(8, getExpiringPidEnvs(), redeployEnv)
+    } else if (argv.yes) {
+      pLimitForEachHandler(8, argv['pid:env'], deployEnvFromTar, [argv['tar-file'], !argv['reset']])
     } else {
-      pLimitForEachHandler(8, argv['pid:env'], deployEnvFromTar, [argv['tar-file']])
+      const rl = readline.createInterface({input: process.stdin, output: process.stdout });
+      const question = argv['reset'] ? errorTxt('Are you sure you want to RESET and then deploy these envs:') :
+        headerTxt('Are you sure you want to deploy to these envs:')
+      rl.question(question + `\n${argv['pid:env'].join(' ')} ?\nTo continues, type 'yes': `, (answer) => {
+        rl.close()
+        if (answer === 'yes') {
+          pLimitForEachHandler(8, argv['pid:env'], deployEnvFromTar, [argv['tar-file'], argv['reset']])
+        }
+      })
     }
   }
 )

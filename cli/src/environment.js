@@ -27,7 +27,6 @@ const updateEnvironment = async (project, environment = 'master') => {
     })
     .catch(error => {
       if (/Specified environment not found/.test(error.message)) {
-        const [prefix, project, environment] = error.cmd.match(/.* -p\s+"([^ ]+)"\s+-e\s"([^"]+)"/)
         return setEnvironmentMissing(project, environment)
       }
       logger.mylog('error', error)
@@ -64,7 +63,29 @@ const setEnvironmentMissing = (project, environment) => {
 }
 exports.setEnvironmentMissing = setEnvironmentMissing
 
-const deployEnvFromTar = async (project, environment, tarFile) => {
+const resetEnv = async (project, environment) => {
+  const remoteCmd = `mysql -h database.internal -e "drop database if exists main; 
+  create database if not exists main default character set utf8;"; 
+  rm -rf ~/var/* ~/app/etc/env.php ~/app/etc/config.php;`
+  const cmd = `${await getSshCmd(project, environment)} '${remoteCmd}'`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .then(({stdout, stderr}) => {
+      if (/Failed to identify project/.test(stderr)) {
+        throw 'Project not found.'
+      }
+      logger.mylog('info', `Env: ${environment} of project: ${project} has been reset.`)
+      return true
+    })
+    .catch(error => logger.mylog('error', error))
+  return result
+}
+
+const deployEnvFromTar = async (project, environment, tarFile, reset = false) => {
+  const basename = tarFile.replace(/.*\//,'')
+  if (reset) {
+    await resetEnv(project, environment)
+  }
   // clone to nested tmp dir, discard all but the git dir and auth.json, mv git dir and tar file to parent dir
   // extract tar, commit, and push
   const cmd = `mkdir -p "/tmp/${project}-${environment}"
@@ -73,8 +94,8 @@ const deployEnvFromTar = async (project, environment, tarFile) => {
     cp "${tarFile}" /tmp/${project}-${environment}/
     rm -rf "/tmp/${project}-${environment}/tmp"
     cd "/tmp/${project}-${environment}"
-    tar -xf "${tarFile}"
-    rm "${tarFile}"
+    tar -xf "${basename}"
+    rm "${basename}"
     git add -u
     git add .
     git commit -m "commit from tar file"
@@ -84,12 +105,16 @@ const deployEnvFromTar = async (project, environment, tarFile) => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
-      if (/Failed to identify project/.test(stderr)) {
+      if (/InvalidArgumentException/.test(stderr)) {
         throw 'Project not found.'
       }
       logger.mylog('info', `Env: ${environment} of project: ${project} deployed using ${tarFile}.`)
+      return true
     })
-    .catch(error => logger.mylog('error', error))
+    .catch(error => { 
+      logger.mylog('error', error)
+      return false
+    })
   return result
 }
 exports.deployEnvFromTar = deployEnvFromTar
@@ -138,7 +163,7 @@ const checkCertificate = async (project, environment = 'master') => {
     })
     logger.mylog('debug', result)
     logger.mylog('info', `${result.host} expires on ${new Date(result.expiration * 1000).toDateString()}`)
-    return result
+    return await result
   } catch (error) {
     logger.mylog('error', error)
   }
@@ -229,19 +254,22 @@ exports.branchEnvFromMaster = branchEnvFromMaster
 
 
 const execInEnv = async (project, environment, filePath) => {
-  const file = await sendPathToRemoteTmpDir(project, environment, filePath)
-  const remoteCmd = /\.sql$/.test(file)
-    ? `mysql main -h database.internal < "${file}"`
-    : `chmod +x "${file}"; "${file}"`
-  const cmd = `${await getSshCmd(project, environment)} '${remoteCmd}'`
-  const result = exec(cmd)
-    .then(execOutputHandler)
-    .then(({stdout, stderr}) => {
-      logger.mylog('info', `File: ${filePath} executed in env: ${environment} of project: ${project}.`)
-      return true
-    })
-    .catch(error => logger.mylog('error', error))
-  return result
+  try {
+    const file = await sendPathToRemoteTmpDir(project, environment, filePath)
+    const remoteCmd = /\.sql$/.test(file)
+      ? `mysql main -h database.internal < "${file}"`
+      : `chmod +x "${file}"; "${file}"`
+    const cmd = `${await getSshCmd(project, environment)} '${remoteCmd}'`
+    const result = exec(cmd)
+      .then(execOutputHandler)
+      .then(({stdout, stderr}) => {
+        logger.mylog('info', `File: ${filePath} executed in env: ${environment} of project: ${project}.`)
+        return true
+      })
+    return await result
+  } catch (error) {
+    logger.mylog('error', error)
+  }
 }
 exports.execInEnv = execInEnv
 
@@ -302,6 +330,10 @@ const sendPathToRemoteTmpDir = async (project, environment, path) => {
       )
     return file
   } catch (error) {
+    if (/you successfully connected, but the service/.test(error.message)) {
+      setEnvironmentMissing(project, environment)
+      throw error
+    }
     logger.mylog('error', error)
   }
 }
@@ -328,7 +360,7 @@ const getPathFromRemote = async (project, environment, remotePath) => {
         logger.mylog('info', `Path: ${remotePath} of env: ${environment} of project: ${project} transferred to: ${localDest}.`)
         return true
       })
-    return result
+    return await result
   } catch (error) {
     logger.mylog('error', error)
   }

@@ -51,7 +51,7 @@ class SimpleDialogDemo extends React.Component {
   render() {
     return (
       <div>
-        <Button onClick={this.handleClickOpen}>
+        <Button variant="raised" color="primary" onClick={this.handleClickOpen} className="dialog-button">
           {this.props.children.length} <Icon color="secondary">format_align_left</Icon>
         </Button>
         <SimpleDialogWrapped open={this.state.open} onClose={this.handleClose} title={this.props.title}>

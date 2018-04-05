@@ -51,6 +51,22 @@ a {
   font-size: 1em;
 }
 
+.ReactTable .-filters .adjacent-to-checkbox-column .material-icons {
+  font-size: 0.8em;
+}
+
+.-filters .adjacent-to-checkbox-column {
+  left: -30px;
+}
+.checkbox-selection-to-clipboard-button {
+  margin-right: 10px;
+}
+
+button.dialog-button {
+  min-width: 10px;
+  padding: 4px;
+}
+
 .ReactTable .-filters .material-icons {
   font-size: 1.2em;
 }

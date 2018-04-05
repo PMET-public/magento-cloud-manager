@@ -2,7 +2,6 @@ import React, {Component} from 'react'
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
 import Icon from 'material-ui/Icon'
-import projEnvCell from '../util/projEnvCell'
 import {calcWidth, moment} from '../util/common'
 import UniqueOptions from '../util/UniqueOptions'
 import Dialog from '../util/Dialog'
@@ -10,6 +9,7 @@ import Gauge from '../util/Gauge'
 import Tooltip from 'material-ui/Tooltip'
 import {stat} from 'fs'
 import checkboxHOC from 'react-table/lib/hoc/selectTable'
+import Clipboard from 'react-clipboard.js'
 
 const CheckboxTable = checkboxHOC(ReactTable)
 
@@ -104,8 +104,9 @@ export default class extends Component {
   )
 
   empty = () => {}
-  checkIcon = () => <Icon>check</Icon>
-  errorIcon = () => <Icon>error_outline</Icon>
+  checkIcon = () => <Icon color='#400'>check</Icon>
+  errorIcon = () => <Icon color="error">error_outline</Icon>
+  missingIcon = () => <Icon color="error">remove_circle</Icon>
   timerIcon = () => <Icon>timer</Icon>
 
   toggleSelection = (key, shift, row) => {
@@ -150,7 +151,7 @@ export default class extends Component {
           }}
           onChange={() => {}}
         />
-        <label for={props.id ? props.id : 'all'} />
+        <label htmlFor={props.id ? props.id : 'all'} />
       </div>
     )
   }
@@ -174,7 +175,8 @@ export default class extends Component {
             .then(res => {
               this.setState({
                 data: res.map(row => {
-                  row._id = row.id
+                  // row._id = row.id
+                  row._id = row.project_id + ':' + row.environment_id
                   return row
                 }),
                 loading: false
@@ -196,9 +198,74 @@ export default class extends Component {
         }}
         columns={[
           {
-            Header: 'Project Env Info',
+            Header: ('Project Env Info'),
             columns: [
-              projEnvCell,
+              {
+                Header: 'Project Env',
+                accessor: 'id',
+                minWidth: 200,
+                maxWidth: 200,
+                headerClassName: 'adjacent-to-checkbox-column',
+                Cell: cell => (
+                  <div>
+                    <a
+                      className=""
+                      target="_blank"
+                      href={`https://${cell.original.region}.magento.cloud/projects/${cell.original.project_id}/environments/${
+                        cell.original.environment_id
+                      }`}>
+                      {cell.original.project_title} {cell.original.environment_title}
+                      <br />({cell.original.project_id})
+                    </a>
+                    <br />
+                    <a
+                      target="_blank"
+                      href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${cell.original.environment_id}`}>
+                      <Icon color="secondary">cloud_download</Icon>
+                    </a>
+                    <a
+                      target="_blank"
+                      href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
+                        cell.original.region
+                      }.magentosite.cloud/`}>
+                      <Icon color="secondary">shopping_cart</Icon>
+                    </a>
+                    <a
+                      target="_blank"
+                      href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
+                        cell.original.region
+                      }.magentosite.cloud/admin/`}>
+                      <Icon color="secondary">dashboard</Icon>
+                    </a>
+                    <Clipboard
+                      data-clipboard-text={`~/.magento-cloud/bin/magento-cloud ssh -p ${cell.original.project_id} -e ${
+                        cell.original.environment_id
+                      }`}>
+                      <Icon color="secondary">code</Icon>
+                    </Clipboard>
+                  </div>
+                ),
+                Filter: ({filter, onChange}) => (
+                  <div>
+                    <Clipboard className='checkbox-selection-to-clipboard-button' data-clipboard-text={this.state.selection.join(' ')}>
+                      <Icon color="secondary">code</Icon>
+                    </Clipboard>
+                    <input
+                      placeholder="Regex"
+                      type="text"
+                      onChange={event => onChange(event.target.value)}
+                      style={{width: '90%'}}
+                      value={filter && filter.value ? filter.value : ''}
+                    />
+                  </div>
+                ),
+                filterMethod: (filter, row, column) => {
+                  const o = row._original
+                  return new RegExp(filter.value, 'i').test(
+                    `${o.project_title} ${o.environment_title} ${o.project_id} ${o.environment_id}`
+                  )
+                }
+              },
               {
                 Header: 'Region',
                 accessor: 'region',
@@ -214,6 +281,83 @@ export default class extends Component {
                   </select>
                 ),
                 filterMethod: this.exactMatchRow
+              },
+              {
+                Header: 'Status',
+                accessor: 'status',
+                className: 'right',
+                width: calcWidth(7),
+                Filter: ({filter, onChange}) => (
+                  <select
+                    onChange={event => onChange(event.target.value)}
+                    style={{width: '100%'}}
+                    value={filter ? filter.value : 'all'}>
+                    <option value="">Show All</option>
+                    <UniqueOptions data={this.state.data} accessor={'status'} />
+                  </select>
+                ),
+                filterMethod: this.exactMatchRow
+              }
+            ]
+          },
+          {
+            Header: 'Usage',
+            columns: [
+              {
+                Header: 'Users',
+                accessor: 'user_list',
+                maxWidth: calcWidth(3),
+                Cell: cell => {
+                  const list = cell.value ? cell.value.trim().split(/,/).map(x => x.replace(/:(.*)/, ' ($1)')) : []
+                  return list.length ? <Dialog title="Users (roles)">{list}</Dialog> : ''
+                },
+                filterMethod: (filter, row, column) => {
+                  return new RegExp(filter.value, 'i').test(row[filter.id])
+                },
+                sortMethod: (a, b) => {
+                  const aLength = a ? a.trim().split(/,/).length : 0
+                  const bLength = b ? b.trim().split(/,/).length : 0
+                  return bLength - aLength
+                }
+              },
+              {
+                Header: 'Created',
+                accessor: 'last_created_at',
+                Cell: cell => { 
+                  return moment(cell.value*1000).fromNow()
+                },
+                maxWidth: calcWidth(5),
+                className: 'right'
+              },
+              {
+                Header: 'Last Customer Login',
+                accessor: 'last_login_customer',
+                Cell: cell => this.formatDate(cell.value),
+                maxWidth: calcWidth(5),
+                className: 'right'
+              },
+              {
+                Header: 'Last Admin Login',
+                accessor: 'last_login_admin',
+                Cell: cell => this.formatDate(cell.value),
+                maxWidth: calcWidth(5),
+                className: 'right'
+              },
+              {
+                Header: 'Cert Expiration',
+                accessor: 'expiration',
+                Cell: cell => {
+                  if (!cell.value) {
+                    return 'N/A'
+                  }
+                  const expiryDate = new Date(cell.value * 1000)
+                  if (expiryDate < new Date()) {
+                    return 'Expired!'
+                  }
+                  return moment(expiryDate).fromNow()
+                },
+                maxWidth: calcWidth(5),
+                className: 'right'
               }
             ]
           },
@@ -238,14 +382,14 @@ export default class extends Component {
               {
                 Header: 'app.yaml MD5',
                 accessor: 'app_yaml_md5',
-                Cell: cell => cell.value.slice(0, 3),
+                Cell: cell => cell.value ? cell.value.slice(0, 3) : '',
                 maxWidth: calcWidth(4),
                 filterable: false
               },
               {
                 Header: 'composer.lock MD5',
                 accessor: 'composer_lock_md5',
-                Cell: cell => cell.value.slice(0, 3),
+                Cell: cell => cell.value ? cell.value.slice(0, 3) : '',
                 maxWidth: calcWidth(4),
                 filterable: false
               },
@@ -256,86 +400,6 @@ export default class extends Component {
                 maxWidth: calcWidth(5),
                 className: 'right',
                 filterable: false
-              }
-            ]
-          },
-          {
-            Header: 'Performance',
-            columns: [
-              {
-                Header: 'Cumulative CPU',
-                accessor: 'cumulative_cpu_percent',
-                Cell: cell => cell.value.toFixed(0),
-                maxWidth: calcWidth(3),
-                className: 'right',
-                Filter: '%'
-              },
-              {
-                Header: 'Storefront (uncached)',
-                accessor: 'store_url_uncached',
-                Cell: cell => this.formatSecs(cell.value),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon
-              },
-              {
-                Header: 'Storefront (cached)',
-                accessor: 'store_url_cached',
-                Cell: cell => this.formatSecs(cell.value),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon
-              },
-              {
-                Header: 'Cat Page (uncached)',
-                accessor: 'cat_url_uncached',
-                Cell: cell => this.formatSecs(cell.value),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon
-              },
-              {
-                Header: 'Cat Page (partial cache)',
-                accessor: 'cat_url_partial_cache',
-                Cell: cell => this.formatSecs(cell.value),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon
-              },
-              {
-                Header: 'Cat Page (cached)',
-                accessor: 'cat_url_cached',
-                Cell: cell => this.formatSecs(cell.value),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon
-              },
-              {
-                Header: 'Cat Page Products',
-                accessor: 'cat_url_product_count',
-                Cell: cell => (
-                  <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
-                    {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
-                  </Tooltip>
-                ),
-                maxWidth: calcWidth(2),
-                className: 'right',
-                filterable: false
-              },
-              {
-                Header: 'Cat Page',
-                accessor: 'cat_url',
-                Cell: cell => (cell.value || '').replace(/.*\//, ''),
-                maxWidth: 200,
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="">Show All</option>
-                    <UniqueOptions data={this.state.data} accessor={'cat_url'} />
-                  </select>
-                )
               }
             ]
           },
@@ -464,37 +528,82 @@ export default class extends Component {
             ]
           },
           {
-            Header: 'Usage',
+            Header: 'Performance',
             columns: [
               {
-                Header: 'Last Customer Login',
-                accessor: 'last_login_customer',
-                Cell: cell => this.formatDate(cell.value),
-                maxWidth: calcWidth(5),
-                className: 'right'
+                Header: 'Cumulative CPU',
+                accessor: 'cumulative_cpu_percent',
+                Cell: cell => cell.value ? cell.value.toFixed(0) : '',
+                maxWidth: calcWidth(3),
+                className: 'right',
+                Filter: '%'
               },
               {
-                Header: 'Last Admin Login',
-                accessor: 'last_login_admin',
-                Cell: cell => this.formatDate(cell.value),
-                maxWidth: calcWidth(5),
-                className: 'right'
+                Header: 'Storefront (uncached)',
+                accessor: 'store_url_uncached',
+                Cell: cell => this.formatSecs(cell.value),
+                maxWidth: calcWidth(4.5),
+                className: 'right',
+                Filter: this.timerIcon
               },
               {
-                Header: 'Cert Expiration',
-                accessor: 'expiration',
-                Cell: cell => {
-                  if (!cell.value) {
-                    return 'N/A'
-                  }
-                  const expiryDate = new Date(cell.value * 1000)
-                  if (expiryDate < new Date()) {
-                    return 'Expired!'
-                  }
-                  return moment(expiryDate).fromNow()
-                },
-                maxWidth: calcWidth(5),
-                className: 'right'
+                Header: 'Storefront (cached)',
+                accessor: 'store_url_cached',
+                Cell: cell => this.formatSecs(cell.value),
+                maxWidth: calcWidth(4.5),
+                className: 'right',
+                Filter: this.timerIcon
+              },
+              {
+                Header: 'Cat Page (uncached)',
+                accessor: 'cat_url_uncached',
+                Cell: cell => this.formatSecs(cell.value),
+                maxWidth: calcWidth(4.5),
+                className: 'right',
+                Filter: this.timerIcon
+              },
+              {
+                Header: 'Cat Page (partial cache)',
+                accessor: 'cat_url_partial_cache',
+                Cell: cell => this.formatSecs(cell.value),
+                maxWidth: calcWidth(4.5),
+                className: 'right',
+                Filter: this.timerIcon
+              },
+              {
+                Header: 'Cat Page (cached)',
+                accessor: 'cat_url_cached',
+                Cell: cell => this.formatSecs(cell.value),
+                maxWidth: calcWidth(4.5),
+                className: 'right',
+                Filter: this.timerIcon
+              },
+              {
+                Header: 'Cat Page Products',
+                accessor: 'cat_url_product_count',
+                Cell: cell => (
+                  <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
+                    {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
+                  </Tooltip>
+                ),
+                maxWidth: calcWidth(2),
+                className: 'right',
+                filterable: false
+              },
+              {
+                Header: 'Cat Page',
+                accessor: 'cat_url',
+                Cell: cell => (cell.value || '').replace(/.*\//, ''),
+                maxWidth: 200,
+                Filter: ({filter, onChange}) => (
+                  <select
+                    onChange={event => onChange(event.target.value)}
+                    style={{width: '100%'}}
+                    value={filter ? filter.value : 'all'}>
+                    <option value="">Show All</option>
+                    <UniqueOptions data={this.state.data} accessor={'cat_url'} />
+                  </select>
+                )
               }
             ]
           },
