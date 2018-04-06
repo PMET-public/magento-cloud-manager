@@ -103,8 +103,23 @@ export default class extends Component {
     </select>
   )
 
+  errorList = (list) => {
+    if (/^1[45]/.test(list[0])) {
+      return list.map( li => {
+        const [secSinceEpoch, file, msg] = li.split(' ', 3)
+        return <div>
+          {new Date(secSinceEpoch * 1000).toISOString()}
+          <b>{file}</b>
+          {msg}
+        </div>
+      })
+    } else {
+      return list
+    }
+  }
+
   empty = () => {}
-  checkIcon = () => <Icon color='#400'>check</Icon>
+  checkIcon = () => <Icon>check</Icon>
   errorIcon = () => <Icon color="error">error_outline</Icon>
   missingIcon = () => <Icon color="error">remove_circle</Icon>
   timerIcon = () => <Icon>timer</Icon>
@@ -512,16 +527,17 @@ export default class extends Component {
                 Header: 'Errors',
                 accessor: 'error_logs',
                 Cell: cell => {
-                  const list = cell.value ? cell.value.trim().split(/\(\(\d+\s*\)\)/) : []
-                  return list.length ? <Dialog title="Environmental Errors">{list}</Dialog> : ''
+                  const list = cell.value ? cell.value.trim().replace(/ (1[45]\d{8} \/)/g, '\n$1').split('\n') : []
+                  list.forEach
+                  return list.length ? <Dialog title="Environmental Errors">{this.errorList(list)}</Dialog> : ''
                 },
                 maxWidth: calcWidth(5),
                 filterMethod: (filter, row, column) => {
                   return new RegExp(filter.value, 'i').test(row[filter.id])
                 },
                 sortMethod: (a, b) => {
-                  const aLength = a ? a.trim().split(/\(\(\d+\s*\)\)/).length : 0
-                  const bLength = b ? b.trim().split(/\(\(\d+\s*\)\)/).length : 0
+                  const aLength = a ? a.trim().split(/ 1[45]\d{8} \//).length : 0
+                  const bLength = b ? b.trim().split(/ 1[45]\d{8} \//).length : 0
                   return bLength - aLength
                 }
               }

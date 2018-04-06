@@ -1,4 +1,5 @@
 const https = require('https')
+const moment = require('moment')
 const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
 const {localCloudSshKeyPath} = require('../config.json')
 
@@ -86,30 +87,37 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false) =>
   if (reset) {
     await resetEnv(project, environment)
   }
+  // split the cmd into separate parts to trap STDERR output from `MC_CLI get` that is not actually error
   // clone to nested tmp dir, discard all but the git dir and auth.json, mv git dir and tar file to parent dir
   // extract tar, commit, and push
   const cmd = `mkdir -p "/tmp/${project}-${environment}"
-    ${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}/tmp"
-    mv /tmp/${project}-${environment}/tmp/{.git,auth.json} /tmp/${project}-${environment}/
-    cp "${tarFile}" /tmp/${project}-${environment}/
-    rm -rf "/tmp/${project}-${environment}/tmp"
-    cd "/tmp/${project}-${environment}"
-    tar -xf "${basename}"
-    rm "${basename}"
-    git add -u
-    git add .
-    git commit -m "commit from tar file"
-    git push
-    cd ..
-    rm -rf "/tmp/${project}-${environment}"`
+    ${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}/tmp"`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       if (/InvalidArgumentException/.test(stderr)) {
         throw 'Project not found.'
       }
-      logger.mylog('info', `Env: ${environment} of project: ${project} deployed using ${tarFile}.`)
-      return true
+      const cmd = `mv /tmp/${project}-${environment}/tmp/{.git,auth.json} /tmp/${project}-${environment}/
+        cp ${tarFile} /tmp/${project}-${environment}/
+        rm -rf "/tmp/${project}-${environment}/tmp"
+        cd "/tmp/${project}-${environment}"
+        tar -xf "${basename}"
+        rm "${basename}"
+        git add -u
+        git add .
+        git commit -m "commit from tar file"
+        git push
+        cd ..
+        #rm -rf "/tmp/${project}-${environment}"`
+      const result = exec(cmd)
+        .then(execOutputHandler)
+        .then(({stdout, stderr}) => {
+          if (!stderr) {
+            logger.mylog('info', `Env: ${environment} of project: ${project} deployed using ${tarFile}.`)
+          }
+        })
+      return result
     })
     .catch(error => { 
       logger.mylog('error', error)
@@ -157,12 +165,31 @@ const checkCertificate = async (project, environment = 'master') => {
         const result = db
           .prepare('INSERT OR REPLACE INTO cert_expirations (host_name, expiration) VALUES (?, ?)')
           .run(hostName, expiration)
+
+        if (response.statusCode === 403 || response.statusCode === 401) {
+          // authorization required, SC likely disabled public access
+        } else if (response.statusCode === 404) {
+          updateEnvironment(project, environment) // probably deleted env
+        } else if (response.statusCode == 302 && response.headers.location.indexOf(hostName) == 8) {
+          // valid response
+        } else {
+          let body = ''
+          response.on('data', chunk => body += chunk)
+          response.on('end', () => {
+            // check if body contains baseUrl
+            if (!/baseUrl.*magentosite.cloud/.test(body)) {
+              logger.mylog('error', `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
+                `https://${hostName}/ unexpected response`)
+            }
+          })
+        }
         resolve({...result, expiration: expiration, host: hostName})
       })
       request.end()
     })
     logger.mylog('debug', result)
-    logger.mylog('info', `${result.host} expires on ${new Date(result.expiration * 1000).toDateString()}`)
+    logger.mylog('info', `Expires: ${moment(result.expiration*1000).format('YYYY-MM-DD')} ` + 
+      `url: https://${result.host}/ env: ${project}:${environment}`)
     return await result
   } catch (error) {
     logger.mylog('error', error)
@@ -188,7 +215,7 @@ const getAllLiveEnvsFromDB = () => {
     LEFT JOIN projects p ON e.project_id = p.id 
     LEFT JOIN cert_expirations c ON 
       c.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
-    WHERE e.active = 1 AND (e.failure = 0 OR e.failure IS null)`
+      WHERE e.active = 1 AND e.missing = 0 AND (e.failure = 0 OR e.failure IS null)`
   const result = db.prepare(sql).all()
   logger.mylog('debug', result)
   return result
@@ -227,11 +254,8 @@ exports.deleteEnv = async (project, environment) => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .catch(error => {
-      if (/No inactive environments found/.test(error.stderr)) {
-        // this should not be considered an error, but the CLI has a non-zero exit status
-        // log the "error" for verbose mode and return
-        logger.mylog('debug', error.stderr)
-        return true
+      if (/Specified environment not found/.test(error.message)) {
+        setEnvironmentMissing(project, environment)
       }
       logger.mylog('error', error)
     })
@@ -332,7 +356,6 @@ const sendPathToRemoteTmpDir = async (project, environment, path) => {
   } catch (error) {
     if (/you successfully connected, but the service/.test(error.message)) {
       setEnvironmentMissing(project, environment)
-      throw error
     }
     logger.mylog('error', error)
   }
@@ -342,16 +365,16 @@ exports.sendPathToRemoteTmpDir = sendPathToRemoteTmpDir
 const getPathFromRemote = async (project, environment, remotePath) => {
   try {
     remotePath = remotePath
-      .replace(/^[~\.]/,'/app') // ~/ or ./ -> /app/
+      .replace(/^[~.]/,'/app') // ~/ or ./ -> /app/
       .replace(/^\.\.\//,'/') // ../ -> /
-      .replace(/^([^\/])/,'\/app\/$1') // anything-else -> /app/anything-else
+      .replace(/^([^/])/,'/app/$1') // anything-else -> /app/anything-else
       .replace(/\/$/, '')  // some-dir/ -> some-dir
     if (!remotePath) {
       throw `Invalid normalized path: "${remotePath}".`
     }
     const {machineName, region} = await getMachineNameAndRegion(project, environment)
     const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
-    const localDest = `./tmp/${project}-${environment}${remotePath.replace(/(.*\/)[^\/]*/,'$1')}`
+    const localDest = `./tmp/${project}-${environment}${remotePath.replace(/(.*\/)[^/]*/,'$1')}`
     const cmd = `mkdir -p "${localDest}"
       scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${project}-${machineName}--mymagento@${domain}:${remotePath} ${localDest}`
     const result = exec(cmd)

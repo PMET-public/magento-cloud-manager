@@ -5,6 +5,7 @@ const parseActivityList = activities => {
   const successes = {}
   const failures = {}
   activities.forEach(activity => {
+    // eslint-disable-next-line
     let [id, created, description, progress, state, result, environment] = activity.split('\t')
     environment = environment.replace(/"/g, '').replace(/.*, /, '') // for branch activity, remove parent name & only keep new branch name
     if (result === 'failure') {
@@ -42,14 +43,23 @@ const getActivitiesFromApi = async (project, type) => {
   return result
 }
 
-const mergeMostRecentActivityResultByEnv = (arr1, arr2) => {
+const mergeMostRecentActivityResultByEnv = (resultLists) => {
+  let combinedKeys = []
+  resultLists.forEach(list => combinedKeys = combinedKeys.concat(Object.keys(list)))
+  combinedKeys = new Set(combinedKeys)
   const combinedResults = {}
-  const combinedKeys = new Set(Object.keys(arr1).concat(Object.keys(arr2)))
+  //const combinedKeys = new Set(Object.keys(arr1).concat(Object.keys(arr2)))
+  // find the most recent result
   combinedKeys.forEach(env => {
-    let time1 = arr1[env],
-      time2 = arr2[env]
-    combinedResults[env] =
-      typeof time2 === 'undefined' || (typeof time1 !== 'undefined' && time2 < time1) ? time1 : time2
+    resultLists.forEach(list => {
+      if (!combinedResults[env] || (list[env] && list[env] > combinedResults[env])) {
+        combinedResults[env] = list[env]
+      }
+    })
+    // let time1 = arr1[env],
+    //   time2 = arr2[env]
+    // combinedResults[env] =
+    //   typeof time2 === 'undefined' || (typeof time1 !== 'undefined' && time2 < time1) ? time1 : time2
   })
   return combinedResults
 }
@@ -60,10 +70,12 @@ exports.searchActivitiesForFailures = async (project) => {
     let successes = 0
     const branchActivities = await getActivitiesFromApi(project, 'branch')
     const pushActivities = await getActivitiesFromApi(project, 'push')
+    const redeployActivities = await getActivitiesFromApi(project, 'redeploy')
     const branchResults = parseActivityList(branchActivities)
     const pushResults = parseActivityList(pushActivities)
-    const combinedSuccesses = mergeMostRecentActivityResultByEnv(branchResults.successes, pushResults.successes)
-    const combinedFailures = mergeMostRecentActivityResultByEnv(branchResults.failures, pushResults.failures)
+    const redeployResults = parseActivityList(redeployActivities)
+    const combinedSuccesses = mergeMostRecentActivityResultByEnv([branchResults.successes, pushResults.successes, redeployResults.successes])
+    const combinedFailures = mergeMostRecentActivityResultByEnv([branchResults.failures, pushResults.failures, redeployResults.failures])
     for (let environment in combinedFailures) {
       const value =
         typeof combinedSuccesses[environment] === 'undefined' ||

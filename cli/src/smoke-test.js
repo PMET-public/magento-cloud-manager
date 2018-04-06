@@ -1,7 +1,20 @@
-const { exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB } = require('./common')
+const { exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB, db} = require('./common')
 const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd} = require('./environment.js')
 
-const smokeTestApp = async (project, environment = 'master') => {
+const priorResultStillValid = (project, environment, stillValidTime = 24) => {
+  const sql = `SELECT timestamp FROM smoke_tests WHERE project_id = ? AND environment_id = ?
+  AND timestamp > ${new Date() / 1000 - stillValidTime * 60 * 60}`
+  const result = db.prepare(sql).get(project, environment)
+  if (result) {
+    logger.mylog('info', `Prior smoke test of env: ${environment} of project: ${project} still valid.`)
+  }
+  return result
+}
+
+const smokeTestApp = async (project, environment = 'master', stillValidTime) => {
+  if (priorResultStillValid(project, environment, stillValidTime)) {
+    return true
+  }
   const cmd = `${await getSshCmd(project, environment)} '
     # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
     echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
@@ -19,11 +32,11 @@ const smokeTestApp = async (project, environment = 'master') => {
 
     # sort based on the 3 field to rev output to keep most recent occurrence of error only
     # do a final sort and remove benign errors
-    echo error_logs $(perl -ne "/.*(CRITICAL|ERROR):? / 
-        and print" ~/var/log/{debug,exception,support_report,system}.log /var/log/{app,deploy,error}.log 2>/dev/null | 
-        tac | sort -k 3 -ru | sort |
-        sed "/Dotmailer connector API endpoint cannot be empty/d;/Could not ping search engine:/d" | 
-        awk "{print \\"((\\" NR, \\"))\\", \\$0}")
+    echo error_logs $( { perl -lne "/.*?\\":\\"(.*?)\\",\\".*/ and print((stat(\\$ARGV))[9] . 
+    \\" \\" . \\$ARGV . \\" \\" . \\"\\$1\\")" ~/var/report/* 2> /dev/null ; perl -MDate::Parse=str2time -lne "
+    /\\[([^]]*)].*(CRITICAL|ERROR):? (.*)/ and print(str2time(\\$1) . \\" \\" . \\$ARGV . \\" \\" . \\$2 .\\" \\" . 
+    \\$3)" ~/var/log/{debug,exception,support_report,system}.log \
+    /var/log/{app,deploy,error}.log 2> /dev/null ; } | sort -k 3 -ru )
 
     mysql main -sN -h database.internal -e "
       SELECT \\"not_valid_index_count\\", COUNT(*) FROM indexer_state WHERE status != \\"valid\\";
@@ -77,16 +90,15 @@ const smokeTestApp = async (project, environment = 'master') => {
       return true
     })
     .catch(error => {
-      logger.mylog('error', `Env: ${environment} of project: ${project} failed.`)
-      logger.mylog('error', error)
       if (typeof error.stderr !== 'undefined') {
-        if (/Specified environment not found/.test(error.stderr)) {
+        if (/Specified environment not found|you successfully connected, but the service/.test(error.stderr)) {
           setEnvironmentMissing(project, environment)
         } else if (/not currently active/.test(error.stderr)) {
           setEnvironmentInactive(project, environment)
         }
       }
+      logger.mylog('error', error.stderr)
     })
-  return result
+  return await result
 }
 exports.smokeTestApp = smokeTestApp
