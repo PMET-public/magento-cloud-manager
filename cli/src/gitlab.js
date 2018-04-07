@@ -1,7 +1,5 @@
 const {db, logger, fetch} = require('./common')
-
-const {gitlabToken} = require('../.secrets.json')
-const {gitlabDomain, gitlabProjectIds} = require('../config.json')
+const {gitlabToken, gitlabDomain, gitlabProjectIds} = require('../.secrets.json')
 const perPage = 100
 const defaultHeaders = {
   'PRIVATE-TOKEN': `${gitlabToken}`,

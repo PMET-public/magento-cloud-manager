@@ -2,7 +2,7 @@ const https = require('https')
 const moment = require('moment')
 const {writeFileSync} = require('fs')
 const {exec, execOutputHandler, db, MC_CLI, logger, interpolateTmpl} = require('./common')
-const {localCloudSshKeyPath} = require('../config.json')
+const {localCloudSshKeyPath} = require('../.secrets.json')
 
 const updateEnvironment = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`

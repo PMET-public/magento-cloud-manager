@@ -385,7 +385,7 @@ yargs.command(
 
 yargs.command(
   ['project:grant-gitlab [pid:env...]', 'pg'],
-  'Grant access to proj(s) to all configured gitlab projects in config.json',
+  'Grant access to proj(s) to all configured gitlab projects in .secrets.json',
   addSharedPidEnvOpts,
   async argv => {
     verifyOneOf(argv, ['a', 'pid:env'])
