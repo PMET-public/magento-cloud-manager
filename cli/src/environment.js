@@ -1,7 +1,7 @@
 const https = require('https')
 const moment = require('moment')
 const {writeFileSync} = require('fs')
-const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
+const {exec, execOutputHandler, db, MC_CLI, logger, interpolateTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../config.json')
 
 const updateEnvironment = async (project, environment = 'master') => {
@@ -68,7 +68,8 @@ exports.setEnvironmentMissing = setEnvironmentMissing
 const resetEnv = async (project, environment) => {
   const remoteCmd = `mysql -h database.internal -e "drop database if exists main; 
   create database if not exists main default character set utf8;"; 
-  rm -rf ~/var/* ~/app/etc/env.php ~/app/etc/config.php;`
+  # can not remove var/export so or noop cmd (|| :) in case it exists
+  rm -rf ~/var/* ~/app/etc/env.php ~/app/etc/config.php || :`
   const cmd = `${await getSshCmd(project, environment)} '${remoteCmd}'`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -286,12 +287,14 @@ const branchEnvFromMaster = async (project, environment) => {
 }
 exports.branchEnvFromMaster = branchEnvFromMaster
 
-
 const execInEnv = async (project, environment, filePath) => {
   try {
+    if (/\.tmpl\./.test(filePath)) {
+      filePath = interpolateTmpl(filePath)
+    }
     const file = await sendPathToRemoteTmpDir(project, environment, filePath)
     const remoteCmd = /\.sql$/.test(file)
-      ? `mysql main -h database.internal < "${file}"`
+      ? `mysql main -vvv -h database.internal < "${file}"`
       : `chmod +x "${file}"; "${file}"`
     const cmd = `${await getSshCmd(project, environment)} '${remoteCmd}'`
     const result = exec(cmd)
