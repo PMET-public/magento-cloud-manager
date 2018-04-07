@@ -35,46 +35,55 @@ exports.updateHost = async (project, environment = 'master') => {
 
 exports.getSampleEnvs = () => {
   // prefer master envs b/c masters can not be deleted and so can't be recreated on new host
-  // can still be rebalanced/migrated if enabled by infrastructure
+  // can still be rebalanced/migrated to another host though
+  // length col accounts for rare case where env name begins with substring "master"
   const sql = `SELECT proj_env_id FROM 
-      (SELECT proj_env_id, host_id, instr(proj_env_id, ':master') is_master 
-      FROM matched_envs_hosts ORDER BY is_master ASC) 
+      (SELECT proj_env_id, host_id, instr(proj_env_id, ':master') is_master, length(proj_env_id) length
+      FROM matched_envs_hosts ORDER BY is_master ASC, length DESC) 
     GROUP BY host_id`
   const result = db.prepare(sql).all().map(row => row.proj_env_id)
   logger.mylog('debug', result)
   return result
 }
 
-// this method allows us to reduce the performance queries.
+const getCotenantGroups = () => {
+  // identify cotenants - envs currently on the same host based 
+  // since their boot time, # cpus, & ip address are currently the same
+  // (ordered by region to keep hosts in the same region together when enumerated)
+  // using only the most recent result since environments can migrate across hosts over time
+  const sql = `SELECT GROUP_CONCAT(h.project_id || ':' || h.environment_id) cotenant_group, 
+      h.load_avg_15, h.cpus, h.boot_time, h.ip, h.timestamp, p.region
+    FROM
+      (SELECT id, project_id FROM environments e
+      WHERE active = 1 AND missing = 0 AND (failure = 0 OR failure IS null)) e
+    LEFT JOIN 
+      (SELECT project_id, environment_id, load_avg_15, cpus, boot_time, ip, MAX(timestamp) timestamp
+      FROM hosts_states h GROUP BY project_id, environment_id) h 
+    ON e.id = h.environment_id AND e.project_id = h.project_id
+    LEFT JOIN projects p on p.id = h.project_id
+    GROUP BY boot_time, cpus, ip
+    ORDER BY region`
+  const cotenantGroups = db.prepare(sql).all()
+  logger.mylog('debug', cotenantGroups)
+  return cotenantGroups
+}
+exports.getCotenantGroups = getCotenantGroups
+
+// this method allows us to reduce the # of queries for performance monitoring.
 // by occasionally querying all the envs and then mapping envs
 // to specific hosts based on the same boot time, # cpus, and ip address,
-// on subsequent queries, just query one representative env per host
+// we can just query one representative env per host on subsequent queries.
 exports.updateEnvHostRelationships = () => {
-  // since all of a project's environments are no longer constrained to a single host,
+  // project's environments are not constrained to a single host,
   // track environments by a project:environment pair to have a unique identifier
   const envHosts = {} // a dictionary to lookup each env's host
   let hostsEnvs = [] // list of envs associated with each host
 
-  // identify cotenants - envs grouped by same boot time, # cpus, & ip address
-  // ordered by region to keep hosts in the same region together when enumerated
-  // using only the most recent result since environments can migrate across hosts over time
-  let cotenantGroups = db
-    .prepare(
-      `SELECT GROUP_CONCAT(id) cotenant_group, boot_time, cpus, ip 
-      FROM
-        (SELECT project_id || ':' || environment_id id, boot_time, cpus, ip, MAX(h.timestamp) timestamp, region
-        FROM hosts_states h
-        LEFT JOIN projects p ON p.id = h.project_id
-        GROUP BY project_id, environment_id)
-      GROUP BY boot_time, cpus, ip
-      ORDER BY region`
-    )
-    .all()
-  logger.mylog('debug', cotenantGroups)
-  cotenantGroups = cotenantGroups.map(row => row['cotenant_group'].split(','))
-  // since hosts reboot and then are assigned new IPs, upsized, etc., the groupings based on those values are incomplete
+  let cotenantGroups = getCotenantGroups().map(row => row['cotenant_group'].split(','))
+  // since hosts reboot and then are assigned new IPs, upsized, etc., 
+  // groupings based on those values are incomplete
   // however, envs should not migrate from hosts often (ever?)
-  // so any env cotenancy can be merged with another if they share a host
+  // so any env cotenancy can be merged with another if they share the same host
   cotenantGroups.forEach(group => {
     let hostsThatAreActuallyTheSame = []
     const nextNewHostIndex = hostsEnvs.length

@@ -229,6 +229,11 @@ yargs.command(
       type: 'boolean',
       coerce: coercer
     })
+    yargs.option('force', {
+      description: 'Force rebuild & redeploy. N.B. Deploying the existing container may be faster via ssh.',
+      type: 'boolean',
+      coerce: coercer
+    })
     yargs.option('yes', {
       description: 'Answer "yes" to any prompt(s)',
       type: 'boolean',
@@ -243,7 +248,7 @@ yargs.command(
     } else if (argv.expiring) {
       pLimitForEachHandler(4, getExpiringPidEnvs(), redeployEnv)
     } else if (argv.yes) {
-      pLimitForEachHandler(4, argv['pid:env'], deployEnvFromTar, [argv['tar-file'], argv['reset']])
+      pLimitForEachHandler(4, argv['pid:env'], deployEnvFromTar, [argv['tar-file'], argv['reset'], argv['force']])
     } else {
       const rl = readline.createInterface({input: process.stdin, output: process.stdout });
       const question = argv['reset'] ? errorTxt('Are you sure you want to RESET and then deploy these envs:') :
@@ -251,7 +256,7 @@ yargs.command(
       rl.question(question + `\n${argv['pid:env'].join(' ')} ?\nTo continues, type 'yes': `, (answer) => {
         rl.close()
         if (answer === 'yes') {
-          pLimitForEachHandler(4, argv['pid:env'], deployEnvFromTar, [argv['tar-file'], argv['reset']])
+          pLimitForEachHandler(4, argv['pid:env'], deployEnvFromTar, [argv['tar-file'], argv['reset'], argv['force']])
         }
       })
     }

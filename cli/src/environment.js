@@ -1,5 +1,6 @@
 const https = require('https')
 const moment = require('moment')
+const {writeFileSync} = require('fs')
 const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
 const {localCloudSshKeyPath} = require('../config.json')
 
@@ -82,7 +83,7 @@ const resetEnv = async (project, environment) => {
   return result
 }
 
-const deployEnvFromTar = async (project, environment, tarFile, reset = false) => {
+const deployEnvFromTar = async (project, environment, tarFile, reset = false, forceRebuildRedeploy = false) => {
   const basename = tarFile.replace(/.*\//,'')
   if (reset) {
     await resetEnv(project, environment)
@@ -107,15 +108,24 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false) =>
         git add -u
         git add .
         git commit -m "commit from tar file"
-        git push
-        cd ..
-        #rm -rf "/tmp/${project}-${environment}"`
+        git push`
       const result = exec(cmd)
         .then(execOutputHandler)
         .then(({stdout, stderr}) => {
           if (!stderr) {
             logger.mylog('info', `Env: ${environment} of project: ${project} deployed using ${tarFile}.`)
+          } else if (/Everything up-to-date/.test(stderr) && forceRebuildRedeploy) {
+            writeFileSync('/tmp/${project}-${environment}/.redeploy', new Date().toLocaleString())
+            const cmd = `cd "/tmp/${project}-${environment}"; git add .redeploy; 
+              git commit -m "commit from tar file"; git push`
+            const result = exec(cmd)
+            return result
           }
+        })
+        .then(() => {
+          const cmd = `rm -rf "/tmp/${project}-${environment}"`
+          const result = exec(cmd)
+          return result
         })
       return result
     })

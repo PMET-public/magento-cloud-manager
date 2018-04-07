@@ -1,10 +1,10 @@
 const {db} = require('../util/common')
 
 module.exports = (req, res) => {
-  // over time, environments could migrate hosts as a project's environment is deleted & recreated (or perhaps
-  // rebalanced on the infrastructure)
-  // this could create inaccurate historic charts but should is hopefully rare event especially for masters which should
-  // can not be deleted
+  // over time, environments could migrate hosts as a project's environment is deleted & recreated 
+  // (or perhaps rebalanced on the infrastructure)
+  // this could create inaccurate historic charts but hopefully is rare especially for masters
+  // which can not be deleted
   const days = isNaN(req.query.days) ? 1 : req.query.days
   const sql = `SELECT host_id, region, cpus, load_avg_15, timestamp
     FROM

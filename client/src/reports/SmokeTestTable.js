@@ -106,7 +106,7 @@ export default class extends Component {
   errorList = (list) => {
     if (/^1[45]/.test(list[0])) {
       return list.map( li => {
-        const [secSinceEpoch, file, msg] = li.split(' ', 3)
+        const [entireLi, secSinceEpoch, file, msg] = li.match(/(.*?) (.*?) (.*)/)
         return <div>
           {new Date(secSinceEpoch * 1000).toISOString()}
           <b>{file}</b>
@@ -528,7 +528,6 @@ export default class extends Component {
                 accessor: 'error_logs',
                 Cell: cell => {
                   const list = cell.value ? cell.value.trim().replace(/ (1[45]\d{8} \/)/g, '\n$1').split('\n') : []
-                  list.forEach
                   return list.length ? <Dialog title="Environmental Errors">{this.errorList(list)}</Dialog> : ''
                 },
                 maxWidth: calcWidth(5),
