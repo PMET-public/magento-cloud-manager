@@ -152,8 +152,11 @@ yargs
     coerce: coercer
   })
 
-yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, argv =>
-  pLimitForEachHandler(4, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], checkCertificate)
+yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, 
+  argv => {
+    verifyOneOf(argv, ['i', 'a', 'pid:env'])
+    pLimitForEachHandler(4, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], checkCertificate)
+  }
 )
 
 yargs.command(
@@ -215,7 +218,7 @@ yargs.command(
     yargs.option('x', {
       alias: 'expiring',
       description: 'Redeploy expiring envs without changes',
-      conflicts: ['pid:env', 'a', 'reset'],
+      conflicts: ['tar-file', 'a', 'reset', 'force'],
       type: 'boolean',
       coerce: coercer
     })

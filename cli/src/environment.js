@@ -170,7 +170,7 @@ const checkCertificate = async (project, environment = 'master') => {
   try {
     const hostName = await getHostName(project, environment)
     const result = await new Promise((resolve, reject) => {
-      const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, response => {
+      const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, async response => {
         const certificateInfo = response.connection.getPeerCertificate()
         const expiration = Math.floor(new Date(certificateInfo.valid_to) / 1000)
         const result = db
@@ -180,7 +180,7 @@ const checkCertificate = async (project, environment = 'master') => {
         if (response.statusCode === 403 || response.statusCode === 401) {
           // authorization required, SC likely disabled public access
         } else if (response.statusCode === 404) {
-          updateEnvironment(project, environment) // probably deleted env
+          await updateEnvironment(project, environment) // probably deleted env
         } else if (response.statusCode == 302 && response.headers.location.indexOf(hostName) == 8) {
           // valid response
         } else {

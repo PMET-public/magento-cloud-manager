@@ -28,50 +28,53 @@ const ms5min = 5 * 60 * 1000
 const ms30min = 30 * 60 * 1000
 const ms2hrs = 120 * 60 * 1000
 
-const verboseOpt = {opt: 'verbose', alias: 'v'}
-const quietOpt = {opt: 'quiet', alias: 'q'}
-const helpOpt = {opt: 'help', alias: 'h'}
-const allOpt = {opt: 'all', alias: 'a'}
+// terminology https://stackoverflow.com/questions/36495669/difference-between-terms-option-argument-and-parameter
+const verboseOpt = {name: 'verbose', alias: 'v'}
+const quietOpt = {name: 'quiet', alias: 'q'}
+const helpOpt = {name: 'help', alias: 'h'}
+const allOpt = {name: 'all', alias: 'a'}
 const commonValidOpts = [verboseOpt, quietOpt, helpOpt]
-const listOfConflicts = [[verboseOpt.alias, quietOpt.alias]]
-const validCommands = [
-  {cmd: 'env:check-cert', alias: 'ec'},
+const validSubCommands = [
+  {name: 'env:check-cert', alias: 'ec'},
   {
-    cmd: 'env:delete',
-    validOpts: [{opt: 'inactive', alias: 'i'}],
-    listOfConflicts: [['i', 'a', 'pid:env']]
+    name: 'env:delete',
+    validOpts: [{name: 'inactive', alias: 'i'}, {name: 'yes'}],
+    listOpts: ['i']
   },
   {
-    cmd: 'env:deploy',
-    validOpts: [{opt: 'expiring', alias: 'x'}],
-    listOfConflicts: [['x', 'a', 'pid:env']],
-    expectsAtLeast1: true
+    name: 'env:deploy',
+    validOpts: [{name: 'expiring', alias: 'x'}, {name: 'yes'}, {name: 'reset'}, {name: 'force'}],
+    listOpts: ['x'],
+    firstConflictsWithRemaining: [['x', 'tar-file', 'reset', 'force']]
   },
-  {cmd: 'env:exec', alias: 'ee', expectsAtLeast1: true},
-  {cmd: 'env:get', alias: 'eg', expectsAtLeast1: true},
-  {cmd: 'env:put', alias: 'ep', expectsAtLeast1: true},
-  {cmd: 'env:smoke-test', alias: 'es'},
-  {cmd: 'env:update', alias: 'eu'},
-  {cmd: 'host:env-match', alias: 'he', expectsNoArgs: true},
+  {name: 'env:exec', alias: 'ee', numOfRequiredNonListArgs: 1},
+  {name: 'env:get', alias: 'eg', numOfRequiredNonListArgs: 1},
+  {name: 'env:put', alias: 'ep', numOfRequiredNonListArgs: 1},
+  {name: 'env:smoke-test', alias: 'es', validOpts: [{name: 'time', alias: 't'}]},
+  {name: 'env:update', alias: 'eu'},
+  {name: 'host:env-match', alias: 'he', numOfRequiredNonListArgs: 0},
   {
-    cmd: 'host:update',
+    name: 'host:update',
     alias: 'hu',
-    validOpts: [{opt: 'sample', alias: 's'}],
-    listOfConflicts: [['s', 'a', 'pid:env']]
+    validOpts: [{name: 'sample', alias: 's'}],
+    listOpts: ['s']
   },
-  {cmd: 'project:find-failures', alias: 'pf'},
-  {cmd: 'project:grant-gitlab', alias: 'pg'},
-  {cmd: 'project:update', alias: 'pu'}
+  {name: 'project:find-failures', alias: 'pf'},
+  {name: 'project:grant-gitlab', alias: 'pg'},
+  {name: 'project:update', alias: 'pu'}
 ]
 
 // add common opts
-validCommands.forEach(cmd => {
-  cmd.validOpts = commonValidOpts.concat(
-    cmd.validOpts ? cmd.validOpts : [],
-    cmd.cmd !== 'host:env-match' ? [allOpt] : []
-  )
-  cmd.listOfConflicts = listOfConflicts.concat(cmd.listOfConflicts ? cmd.listOfConflicts : [])
-  cmd.timeout = ['env:smoke-test', 'env:deploy'].includes(cmd.cmd) ? ms5min : ms1min
+validSubCommands.forEach(subCmd => {
+  subCmd.eachConflicts = [[verboseOpt.alias, quietOpt.alias]].concat(subCmd.eachConflicts || [])
+  subCmd.timeout = ['env:smoke-test', 'env:deploy'].includes(subCmd.name) ? ms5min : ms1min
+  subCmd.validOpts = subCmd.validOpts || []
+  subCmd.validOpts.push(...commonValidOpts)
+  if (subCmd.name !== 'host:env-match') {
+    subCmd.validOpts.push(allOpt)
+    subCmd.requiresOneOf = ['a', 'pid:env'].concat(subCmd.listOpts || [])
+    subCmd.eachConflicts.push(subCmd.requiresOneOf)
+  }
 })
 
-exports.validCommands = validCommands
+exports.validSubCommands = validSubCommands

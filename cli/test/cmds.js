@@ -1,7 +1,7 @@
 const {assert} = require('chai')
 const {regexToMatchAllOpsSuccess, regexToMatchMixedSuccess, regexToMatchDisallowed} = require('../src/common')
 const {branchEnvFromMaster} = require('../src/environment')
-const {execCmd, validCommands} = require('./common')
+const {execCmd, validSubCommands} = require('./common')
 const {writeFileSync, unlinkSync} = require('fs')
 
 // require('./options')
@@ -74,19 +74,19 @@ const disallowedTester = result => {
 const disallowedTestMsg = 'disallow all for this cmd'
 
 describe('invalid tests', () => {
-  validCommands.forEach(cmd => {
-    if (['env:delete', 'env:deploy', 'host:env-match'].includes(cmd.cmd)) {
+  validSubCommands.forEach(subCmd => {
+    if (['env:delete', 'env:deploy', 'host:env-match'].includes(subCmd.name)) {
       return
     }
-    if (cmd.expectsAtLeast1) {
-      testCmd(getCmdWithInvalidPid(cmd.cmd, ['dummy-arg']), invalidTester, invalidTestMsg, cmd.timeout)
+    if (subCmd.numOfRequiredNonListArgs === 1) {
+      testCmd(getCmdWithInvalidPid(subCmd.name, ['dummy-arg']), invalidTester, invalidTestMsg, subCmd.timeout)
     } else {
-      testCmd(getCmdWithInvalidPid(cmd.cmd), invalidTester, invalidTestMsg, cmd.timeout)
+      testCmd(getCmdWithInvalidPid(subCmd.name), invalidTester, invalidTestMsg, subCmd.timeout)
     }
   })
 })
 
-/*
+
 describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid pids', () => {
 
   before(() => {
@@ -94,38 +94,38 @@ describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid 
     writeFileSync(tmpSqlFile, 'select 1 from dual')
   })
 
-  validCommands.reverse().forEach(cmd => {
+  validSubCommands.reverse().forEach(subCmd => {
     // test delete & deploy separately later
-    if (['env:delete', 'env:deploy'].includes(cmd.cmd)) {
+    if (['env:delete', 'env:deploy'].includes(subCmd.name)) {
       return
     }
-    if (cmd.expectsNoArgs) {
-      testCmd(`${cmd.cmd} -v`, simpleValidTester, validTestMsg, cmd.timeout)
+    if (subCmd.numOfRequiredNonListArgs === 0) {
+      testCmd(`${subCmd.name} -v`, simpleValidTester, validTestMsg, subCmd.timeout)
       return
     }
-    switch (cmd.cmd) {
+    switch (subCmd.name) {
     case 'env:exec':
-      testCmd(getCmdWithValidPid(cmd.cmd, [tmpShFile]), simpleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithValidPid(cmd.cmd, [tmpSqlFile]), simpleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithMultipleValidPids(cmd.cmd, [tmpShFile]), multipleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithMultipleValidPids(cmd.cmd, [tmpSqlFile]), multipleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithMixedPids(cmd.cmd, [tmpShFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
-      testCmd(getCmdWithMixedPids(cmd.cmd, [tmpSqlFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
+      testCmd(getCmdWithValidPid(subCmd.name, [tmpShFile]), simpleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithValidPid(subCmd.name, [tmpSqlFile]), simpleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(subCmd.name, [tmpShFile]), multipleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(subCmd.name, [tmpSqlFile]), multipleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMixedPids(subCmd.name, [tmpShFile]), mixedValidTester, mixedTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMixedPids(subCmd.name, [tmpSqlFile]), mixedValidTester, mixedTestMsg, subCmd.timeout)
       break;
     case 'env:get':
-      testCmd(getCmdWithValidPid(cmd.cmd, [validRemoteFile]), simpleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithMultipleValidPids(cmd.cmd, [validRemoteFile]), multipleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithMixedPids(cmd.cmd, [validRemoteFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
+      testCmd(getCmdWithValidPid(subCmd.name, [validRemoteFile]), simpleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(subCmd.name, [validRemoteFile]), multipleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMixedPids(subCmd.name, [validRemoteFile]), mixedValidTester, mixedTestMsg, subCmd.timeout)
       break;
     case 'env:put':
-      testCmd(getCmdWithValidPid(cmd.cmd, [tmpSqlFile]), simpleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithMultipleValidPids(cmd.cmd, [tmpSqlFile]), multipleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithMixedPids(cmd.cmd, [tmpSqlFile]), mixedValidTester, mixedTestMsg, cmd.timeout)
+      testCmd(getCmdWithValidPid(subCmd.name, [tmpSqlFile]), simpleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(subCmd.name, [tmpSqlFile]), multipleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMixedPids(subCmd.name, [tmpSqlFile]), mixedValidTester, mixedTestMsg, subCmd.timeout)
       break;
     default: 
-      testCmd(getCmdWithValidPid(cmd.cmd), simpleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithMultipleValidPids(cmd.cmd), multipleValidTester, validTestMsg, cmd.timeout)
-      testCmd(getCmdWithMixedPids(cmd.cmd), mixedValidTester, mixedTestMsg, cmd.timeout)
+      testCmd(getCmdWithValidPid(subCmd.name), simpleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMultipleValidPids(subCmd.name), multipleValidTester, validTestMsg, subCmd.timeout)
+      testCmd(getCmdWithMixedPids(subCmd.name), mixedValidTester, mixedTestMsg, subCmd.timeout)
     }
   })
 
@@ -135,7 +135,7 @@ describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid 
   })
 
 })
-*/
+
 
 describe('test various batch and "--all" options', () => {
   before(() => {
@@ -146,27 +146,27 @@ describe('test various batch and "--all" options', () => {
   // list test individually to ease enabling/disabling them via commenting b/c they can be time consuming
   // with many -a operations, the -v will exceed the stdout buffer, so drop it
 
-  // testCmd('env:check-cert -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
+  testCmd('env:check-cert -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
 
-  // testCmd('env:delete -a', disallowedTester, disallowedTestMsg)
-  // testCmd('env:delete -i', multipleValidTester, validTestMsg, 1000 * 60 * 2)
-  // testCmd('env:deploy -a dummy-tar-file', disallowedTester)
-  // testCmd('env:deploy -x', )
+  testCmd('env:delete -a', disallowedTester, disallowedTestMsg)
+  testCmd('env:delete -i', multipleValidTester, validTestMsg, 1000 * 60 * 2)
+  testCmd('env:deploy -a dummy-tar-file', disallowedTester)
+  testCmd('env:deploy -x', )
 
-  // testCmd(`env:exec -a ${tmpShFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
-  // testCmd(`env:exec -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
-  // testCmd(`env:get -a ${validRemoteFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
-  // testCmd(`env:put -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
-  // testCmd('env:smoke-test -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
+  testCmd(`env:exec -a ${tmpShFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
+  testCmd(`env:exec -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
+  testCmd(`env:get -a ${validRemoteFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
+  testCmd(`env:put -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
+  testCmd('env:smoke-test -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
 
-  // testCmd('env:update -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
-  // testCmd('host:upate -s', multipleValidTester, validTestMsg, 1000 * 60 * 2)
+  testCmd('env:update -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
+  testCmd('host:upate -s', multipleValidTester, validTestMsg, 1000 * 60 * 2)
 
-  // testCmd('host:upate -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
-  // testCmd('project:find-failures -a', multipleValidTester, validTestMsg, 1000 * 60 * 30)
+  testCmd('host:upate -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
+  testCmd('project:find-failures -a', multipleValidTester, validTestMsg, 1000 * 60 * 30)
 
-  // testCmd('project:grant-gitlab -a', multipleValidTester, validTestMsg, 1000 * 60 * 5)
-  // testCmd('project:update -a', multipleValidTester, validTestMsg, 1000 * 60 * 5)
+  testCmd('project:grant-gitlab -a', multipleValidTester, validTestMsg, 1000 * 60 * 5)
+  testCmd('project:update -a', multipleValidTester, validTestMsg, 1000 * 60 * 5)
 
   after(() => {
     unlinkSync(tmpShFile)
