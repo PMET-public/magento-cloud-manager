@@ -81,12 +81,13 @@ export default class extends Component {
           let allXY = []
           // group rows by project
           res.forEach(row => {
-            const label = `${row.region}-${row.title.replace(/-.*/,'')}-${row.ee_composer_version}`
+            const label = `${row.region}-${row.title.replace(/-.*/, '')}-${row.ee_composer_version}`
             if (typeof responseData[label] === 'undefined') {
               responseData[label] = []
             }
             // avg utilization of start and end
-            const x = (parseInt(row.utilization_start.split(',')[0], 10) + parseInt(row.utilization_end.split(',')[0], 10))/2
+            const x =
+              (parseInt(row.utilization_start.split(',')[0], 10) + parseInt(row.utilization_end.split(',')[0], 10)) / 2
             // just end
             // const x = parseInt(row.utilization_end.split(',')[0], 10)
             const y = Math.round(row.cat_url_uncached * 10) / 10
@@ -117,7 +118,7 @@ export default class extends Component {
               pointHoverBorderWidth: 2,
               pointRadius: 2,
               pointHitRadius: 10,
-              data: val.sort((a,b) => a.x - b.x)
+              data: val.sort((a, b) => a.x - b.x)
             })
           })
           this.setState((prevState, props) => {

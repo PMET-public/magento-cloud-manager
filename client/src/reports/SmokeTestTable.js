@@ -103,15 +103,17 @@ export default class extends Component {
     </select>
   )
 
-  errorList = (list) => {
+  errorList = list => {
     if (/^1[45]/.test(list[0])) {
-      return list.map( li => {
+      return list.map(li => {
         const [entireLi, secSinceEpoch, file, msg] = li.match(/(.*?) (.*?) (.*)/)
-        return <div>
-          {new Date(secSinceEpoch * 1000).toISOString()}
-          <b>{file}</b>
-          {msg}
-        </div>
+        return (
+          <div>
+            {new Date(secSinceEpoch * 1000).toISOString()}
+            <b>{file}</b>
+            {msg}
+          </div>
+        )
       })
     } else {
       return list
@@ -213,7 +215,7 @@ export default class extends Component {
         }}
         columns={[
           {
-            Header: ('Project Env Info'),
+            Header: 'Project Env Info',
             columns: [
               {
                 Header: 'Project Env',
@@ -226,16 +228,18 @@ export default class extends Component {
                     <a
                       className=""
                       target="_blank"
-                      href={`https://${cell.original.region}.magento.cloud/projects/${cell.original.project_id}/environments/${
-                        cell.original.environment_id
-                      }`}>
+                      href={`https://${cell.original.region}.magento.cloud/projects/${
+                        cell.original.project_id
+                      }/environments/${cell.original.environment_id}`}>
                       {cell.original.project_title} {cell.original.environment_title}
                       <br />({cell.original.project_id})
                     </a>
                     <br />
                     <a
                       target="_blank"
-                      href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${cell.original.environment_id}`}>
+                      href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${
+                        cell.original.environment_id
+                      }`}>
                       <Icon color="secondary">cloud_download</Icon>
                     </a>
                     <a
@@ -262,7 +266,9 @@ export default class extends Component {
                 ),
                 Filter: ({filter, onChange}) => (
                   <div>
-                    <Clipboard className='checkbox-selection-to-clipboard-button' data-clipboard-text={this.state.selection.join(' ')}>
+                    <Clipboard
+                      className="checkbox-selection-to-clipboard-button"
+                      data-clipboard-text={this.state.selection.join(' ')}>
                       <Icon color="secondary">code</Icon>
                     </Clipboard>
                     <input
@@ -323,7 +329,12 @@ export default class extends Component {
                 accessor: 'user_list',
                 maxWidth: calcWidth(3),
                 Cell: cell => {
-                  const list = cell.value ? cell.value.trim().split(/,/).map(x => x.replace(/:(.*)/, ' ($1)')) : []
+                  const list = cell.value
+                    ? cell.value
+                        .trim()
+                        .split(/,/)
+                        .map(x => x.replace(/:(.*)/, ' ($1)'))
+                    : []
                   return list.length ? <Dialog title="Users (roles)">{list}</Dialog> : ''
                 },
                 filterMethod: (filter, row, column) => {
@@ -338,8 +349,8 @@ export default class extends Component {
               {
                 Header: 'Created',
                 accessor: 'last_created_at',
-                Cell: cell => { 
-                  return moment(cell.value*1000).fromNow()
+                Cell: cell => {
+                  return moment(cell.value * 1000).fromNow()
                 },
                 maxWidth: calcWidth(5),
                 className: 'right'
@@ -397,14 +408,14 @@ export default class extends Component {
               {
                 Header: 'app.yaml MD5',
                 accessor: 'app_yaml_md5',
-                Cell: cell => cell.value ? cell.value.slice(0, 3) : '',
+                Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
                 maxWidth: calcWidth(4),
                 filterable: false
               },
               {
                 Header: 'composer.lock MD5',
                 accessor: 'composer_lock_md5',
-                Cell: cell => cell.value ? cell.value.slice(0, 3) : '',
+                Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
                 maxWidth: calcWidth(4),
                 filterable: false
               },
@@ -527,7 +538,12 @@ export default class extends Component {
                 Header: 'Errors',
                 accessor: 'error_logs',
                 Cell: cell => {
-                  const list = cell.value ? cell.value.trim().replace(/ (1[45]\d{8} \/)/g, '\n$1').split('\n') : []
+                  const list = cell.value
+                    ? cell.value
+                        .trim()
+                        .replace(/ (1[45]\d{8} \/)/g, '\n$1')
+                        .split('\n')
+                    : []
                   return list.length ? <Dialog title="Environmental Errors">{this.errorList(list)}</Dialog> : ''
                 },
                 maxWidth: calcWidth(5),
@@ -548,7 +564,7 @@ export default class extends Component {
               {
                 Header: 'Cumulative CPU',
                 accessor: 'cumulative_cpu_percent',
-                Cell: cell => cell.value ? cell.value.toFixed(0) : '',
+                Cell: cell => (cell.value ? cell.value.toFixed(0) : ''),
                 maxWidth: calcWidth(3),
                 className: 'right',
                 Filter: '%'

@@ -3,7 +3,6 @@ const archiver = require('archiver')
 const chalk = require('chalk')
 
 module.exports = (req, res) => {
-
   const proj = req.query.p
   const env = req.query.e
   if (!proj || !env) {

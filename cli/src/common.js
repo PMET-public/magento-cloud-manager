@@ -61,13 +61,10 @@ logger.quietConsole = new winston.transports.Console({
 // attempt to stringify objects and detect some objects that will return {} when stringified (e.g. some errors)
 // https://github.com/winstonjs/winston/issues/1217
 logger.mylog = (level, msg, ...rest) => {
-  msg = typeof msg === 'undefined' ?
-    'why are you logging undefined msgs?!' :
-    typeof msg === 'string' ?
-      msg :
-      typeof msg.message !== 'undefined' ?
-        msg.message :
-        JSON.stringify(msg)
+  msg =
+    typeof msg === 'undefined'
+      ? 'why are you logging undefined msgs?!'
+      : typeof msg === 'string' ? msg : typeof msg.message !== 'undefined' ? msg.message : JSON.stringify(msg)
   logger.log(level, msg, ...rest)
 }
 
@@ -97,12 +94,14 @@ const execOutputHandler = ({stdout, stderr}) => {
   if (stderr) {
     // an error hasn't been thrown yet, so just log the error output if it shouldn't be filtered
     // a subsequent handler may parse stderr and decide to throw one
-    const nonErrorRegexes = [ // non-error "errors"
+    const nonErrorRegexes = [
+      // non-error "errors"
       /project.*successfully downloaded/,
       /Everything up-to-date/
-    ] 
+    ]
     const result = nonErrorRegexes.filter(regex => regex.test(stderr))
-    if (result.length === 0) { // stderr did not match any filtering regex
+    if (result.length === 0) {
+      // stderr did not match any filtering regex
       logger.mylog('error', stderr)
     }
   }
@@ -137,30 +136,29 @@ exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], add
   return result
 }
 
-
 const secrets = require('../.secrets.json')
 const fs = require('fs')
-const interpolateTmpl = (file) => {
-  const tmpl = fs.readFileSync(file, {encoding:'utf8'})
+const interpolateTmpl = file => {
+  const tmpl = fs.readFileSync(file, {encoding: 'utf8'})
   let output = tmpl
   const matches = new Set(tmpl.match(/\{\{(.*?)\}\}/g))
   if (matches) {
     matches.forEach(key => {
-      key = key.replace(/{{|}}/g,'')
+      key = key.replace(/{{|}}/g, '')
       const replacement = secrets[key]
       if (typeof replacement !== 'undefined') {
         output = output.replace(new RegExp('{{' + key + '}}', 'g'), replacement)
       }
-    });
+    })
   }
   if (tmpl === output) {
     return tmpl // no changes
   } else {
     const basename = file.replace(/.*\//, '')
-    const newFile = '/tmp/'+(new Date()/1000)+'-'+basename
+    const newFile = '/tmp/' + new Date() / 1000 + '-' + basename
     fs.writeFileSync(newFile, output)
     return newFile
-  } 
+  }
 }
 exports.interpolateTmpl = interpolateTmpl
 
@@ -179,8 +177,8 @@ exports.showWhoAmI = async () => {
 
 exports.disallowedCmdTxt = 'Are you crazy?!'
 exports.regexToMatchDisallowed = /Are you crazy/
-exports.allOpsSuccessTemplate = (total) => `All ${total} operations successful.`
+exports.allOpsSuccessTemplate = total => `All ${total} operations successful.`
 exports.regexToMatchAllOpsSuccess = /All.*operations successful./
-exports.mixedSuccessTemplate = (total, successful) => 
-  (total - successful) + ` operation(s) failed. ${successful} succeeded.`
+exports.mixedSuccessTemplate = (total, successful) =>
+  total - successful + ` operation(s) failed. ${successful} succeeded.`
 exports.regexToMatchMixedSuccess = /\d+ operation.*failed.* \d+ succeeded/

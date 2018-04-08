@@ -1,7 +1,7 @@
 const {db} = require('../util/common')
 
 module.exports = (req, res) => {
-  // over time, environments could migrate hosts as a project's environment is deleted & recreated 
+  // over time, environments could migrate hosts as a project's environment is deleted & recreated
   // (or perhaps rebalanced on the infrastructure)
   // this could create inaccurate historic charts but hopefully is rare especially for masters
   // which can not be deleted

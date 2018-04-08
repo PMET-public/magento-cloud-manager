@@ -85,7 +85,7 @@ const resetEnv = async (project, environment) => {
 }
 
 const deployEnvFromTar = async (project, environment, tarFile, reset = false, forceRebuildRedeploy = false) => {
-  const basename = tarFile.replace(/.*\//,'')
+  const basename = tarFile.replace(/.*\//, '')
   if (reset) {
     await resetEnv(project, environment)
   }
@@ -130,7 +130,7 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
         })
       return result
     })
-    .catch(error => { 
+    .catch(error => {
       logger.mylog('error', error)
       return false
     })
@@ -185,12 +185,15 @@ const checkCertificate = async (project, environment = 'master') => {
           // valid response
         } else {
           let body = ''
-          response.on('data', chunk => body += chunk)
+          response.on('data', chunk => (body += chunk))
           response.on('end', () => {
             // check if body contains baseUrl
             if (!/baseUrl.*magentosite.cloud/.test(body)) {
-              logger.mylog('error', `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
-                `https://${hostName}/ unexpected response`)
+              logger.mylog(
+                'error',
+                `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
+                  `https://${hostName}/ unexpected response`
+              )
             }
           })
         }
@@ -199,8 +202,11 @@ const checkCertificate = async (project, environment = 'master') => {
       request.end()
     })
     logger.mylog('debug', result)
-    logger.mylog('info', `Expires: ${moment(result.expiration*1000).format('YYYY-MM-DD')} ` + 
-      `url: https://${result.host}/ env: ${project}:${environment}`)
+    logger.mylog(
+      'info',
+      `Expires: ${moment(result.expiration * 1000).format('YYYY-MM-DD')} ` +
+        `url: https://${result.host}/ env: ${project}:${environment}`
+    )
     return await result
   } catch (error) {
     logger.mylog('error', error)
@@ -234,13 +240,13 @@ const getAllLiveEnvsFromDB = () => {
 exports.getAllLiveEnvsFromDB = getAllLiveEnvsFromDB
 
 const getLiveEnvsAsPidEnvArr = () => {
-  return getAllLiveEnvsFromDB().map( ({project_id, environment_id}) => `${project_id}:${environment_id}`)
+  return getAllLiveEnvsFromDB().map(({project_id, environment_id}) => `${project_id}:${environment_id}`)
 }
 exports.getLiveEnvsAsPidEnvArr = getLiveEnvsAsPidEnvArr
 
 // need to delete from child first
 // or how to warn if inactive parent & active child?
-exports.deleteInactiveEnvs = async (project) => {
+exports.deleteInactiveEnvs = async project => {
   const cmd = `${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -378,22 +384,25 @@ exports.sendPathToRemoteTmpDir = sendPathToRemoteTmpDir
 const getPathFromRemote = async (project, environment, remotePath) => {
   try {
     remotePath = remotePath
-      .replace(/^[~.]/,'/app') // ~/ or ./ -> /app/
-      .replace(/^\.\.\//,'/') // ../ -> /
-      .replace(/^([^/])/,'/app/$1') // anything-else -> /app/anything-else
-      .replace(/\/$/, '')  // some-dir/ -> some-dir
+      .replace(/^[~.]/, '/app') // ~/ or ./ -> /app/
+      .replace(/^\.\.\//, '/') // ../ -> /
+      .replace(/^([^/])/, '/app/$1') // anything-else -> /app/anything-else
+      .replace(/\/$/, '') // some-dir/ -> some-dir
     if (!remotePath) {
       throw `Invalid normalized path: "${remotePath}".`
     }
     const {machineName, region} = await getMachineNameAndRegion(project, environment)
     const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
-    const localDest = `./tmp/${project}-${environment}${remotePath.replace(/(.*\/)[^/]*/,'$1')}`
+    const localDest = `./tmp/${project}-${environment}${remotePath.replace(/(.*\/)[^/]*/, '$1')}`
     const cmd = `mkdir -p "${localDest}"
       scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${project}-${machineName}--mymagento@${domain}:${remotePath} ${localDest}`
     const result = exec(cmd)
       .then(execOutputHandler)
       .then(() => {
-        logger.mylog('info', `Path: ${remotePath} of env: ${environment} of project: ${project} transferred to: ${localDest}.`)
+        logger.mylog(
+          'info',
+          `Path: ${remotePath} of env: ${environment} of project: ${project} transferred to: ${localDest}.`
+        )
         return true
       })
     return await result

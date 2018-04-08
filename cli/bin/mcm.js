@@ -2,7 +2,7 @@
 
 const yargs = require('yargs')
 const chalk = require('chalk')
-const readline = require('readline');
+const readline = require('readline')
 
 // be kind with our requests and don't abuse the API or servers
 // remember p-limit expects an async function or a function that returns a promise
@@ -79,18 +79,18 @@ const verifyOneOf = (argv, args) => {
   }
 }
 
-// apply a function to a list of ids (pid or pid:env) 
+// apply a function to a list of ids (pid or pid:env)
 const pLimitForEachHandler = async (limit, arrOfIds, func, arrOfAdditionalArgs) => {
   const curLimit = pLimit(limit)
   const promises = []
-  arrOfIds.forEach( id => {
+  arrOfIds.forEach(id => {
     const args = id.split(':')
-    if (args.length === 1 ) {
+    if (args.length === 1) {
       args.push('master')
-    } 
+    }
     if (arrOfAdditionalArgs && arrOfAdditionalArgs.length) {
       args.push(...arrOfAdditionalArgs)
-    } 
+    }
     promises.push(
       curLimit(async () => {
         const result = func(...args)
@@ -110,7 +110,6 @@ const pLimitForEachHandler = async (limit, arrOfIds, func, arrOfAdditionalArgs) 
   }
   return result
 }
-
 
 yargs
   .usage(cmdTxt('$0 <cmd> [args]'))
@@ -142,7 +141,7 @@ yargs
     description: 'Display debugging information',
     global: true,
     type: 'boolean',
-    coerce: coercer,
+    coerce: coercer
   })
   .option('q', {
     alias: 'quiet',
@@ -153,8 +152,8 @@ yargs
     coerce: coercer
   })
 
-yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, 
-  argv => pLimitForEachHandler(4, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], checkCertificate)
+yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, argv =>
+  pLimitForEachHandler(4, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], checkCertificate)
 )
 
 yargs.command(
@@ -185,23 +184,26 @@ yargs.command(
       coerce: coercer
     })
   },
-  async argv =>{
+  async argv => {
     verifyOneOf(argv, ['i', 'a', 'pid:env'])
     if (argv.all) {
       console.log(errorTxt(disallowedCmdTxt))
     } else if (argv.inactive) {
-      pLimitForEachHandler(4, (await getProjectsFromApi()), deleteInactiveEnvs)
+      pLimitForEachHandler(4, await getProjectsFromApi(), deleteInactiveEnvs)
     } else if (argv.yes) {
       pLimitForEachHandler(4, argv['pid:env'], deleteEnv)
     } else {
-      const rl = readline.createInterface({input: process.stdin, output: process.stdout });
-      rl.question(`${errorTxt('Are you sure you want to delete these envs:')} 
-      ${argv['pid:env'].join(' ')} ?\nTo continues, type 'yes': `, (answer) => {
-        rl.close()
-        if (answer === 'yes') {
-          pLimitForEachHandler(4, argv['pid:env'], deleteEnv)
+      const rl = readline.createInterface({input: process.stdin, output: process.stdout})
+      rl.question(
+        `${errorTxt('Are you sure you want to delete these envs:')} 
+      ${argv['pid:env'].join(' ')} ?\nTo continues, type 'yes': `,
+        answer => {
+          rl.close()
+          if (answer === 'yes') {
+            pLimitForEachHandler(4, argv['pid:env'], deleteEnv)
+          }
         }
-      });
+      )
     }
   }
 )
@@ -219,9 +221,10 @@ yargs.command(
     })
     yargs.positional('tar-file', {
       type: 'string',
-      describe: `A tar of the git HEAD to push. E.g.,\n${cmdTxt('\tgit archive --format=tar HEAD > head.tar')}` +
-      '\nDon\'t forget any files needed that are not tracked in git. E.g.,\n  ' +
-      cmdTxt('\ttar -rf head.tar auth.json'),
+      describe:
+        `A tar of the git HEAD to push. E.g.,\n${cmdTxt('\tgit archive --format=tar HEAD > head.tar')}` +
+        '\nDon\'t forget any files needed that are not tracked in git. E.g.,\n  ' +
+        cmdTxt('\ttar -rf head.tar auth.json'),
       normalize: true
     })
     yargs.option('reset', {
@@ -250,10 +253,11 @@ yargs.command(
     } else if (argv.yes) {
       pLimitForEachHandler(4, argv['pid:env'], deployEnvFromTar, [argv['tar-file'], argv['reset'], argv['force']])
     } else {
-      const rl = readline.createInterface({input: process.stdin, output: process.stdout });
-      const question = argv['reset'] ? errorTxt('Are you sure you want to RESET and then deploy these envs:') :
-        headerTxt('Are you sure you want to deploy to these envs:')
-      rl.question(question + `\n${argv['pid:env'].join(' ')} ?\nTo continues, type 'yes': `, (answer) => {
+      const rl = readline.createInterface({input: process.stdin, output: process.stdout})
+      const question = argv['reset']
+        ? errorTxt('Are you sure you want to RESET and then deploy these envs:')
+        : headerTxt('Are you sure you want to deploy to these envs:')
+      rl.question(question + `\n${argv['pid:env'].join(' ')} ?\nTo continues, type 'yes': `, answer => {
         rl.close()
         if (answer === 'yes') {
           pLimitForEachHandler(4, argv['pid:env'], deployEnvFromTar, [argv['tar-file'], argv['reset'], argv['force']])
@@ -293,7 +297,9 @@ yargs.command(
   },
   argv => {
     verifyOneOf(argv, ['a', 'pid:env'])
-    pLimitForEachHandler(6, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], getPathFromRemote, [argv['remote-path']])
+    pLimitForEachHandler(6, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], getPathFromRemote, [
+      argv['remote-path']
+    ])
   }
 )
 
@@ -310,11 +316,14 @@ yargs.command(
   },
   argv => {
     verifyOneOf(argv, ['a', 'pid:env'])
-    pLimitForEachHandler(6, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], sendPathToRemoteTmpDir, [argv['local-path']])
+    pLimitForEachHandler(6, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], sendPathToRemoteTmpDir, [
+      argv['local-path']
+    ])
   }
 )
 
-yargs.command(['env:smoke-test [pid:env...]', 'es'], 
+yargs.command(
+  ['env:smoke-test [pid:env...]', 'es'],
   'Run smoke tests in env(s)',
   yargs => {
     addSharedPidEnvOpts()
@@ -325,19 +334,17 @@ yargs.command(['env:smoke-test [pid:env...]', 'es'],
       default: 24,
       coerce: coercer
     })
-  }, 
+  },
   argv => {
     verifyOneOf(argv, ['a', 'pid:env'])
     pLimitForEachHandler(2, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], smokeTestApp, [argv['time']])
   }
 )
 
-yargs.command(['env:update [pid:env...]', 'eu'], 'Query API about env(s)', addSharedPidEnvOpts, 
-  argv => {
-    verifyOneOf(argv, ['a', 'pid:env'])
-    pLimitForEachHandler(6, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], updateEnvironment)
-  }
-)
+yargs.command(['env:update [pid:env...]', 'eu'], 'Query API about env(s)', addSharedPidEnvOpts, argv => {
+  verifyOneOf(argv, ['a', 'pid:env'])
+  pLimitForEachHandler(6, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], updateEnvironment)
+})
 
 yargs.command(
   ['host:env-match', 'he'],
@@ -364,11 +371,7 @@ yargs.command(
   },
   argv => {
     verifyOneOf(argv, ['s', 'a', 'pid:env'])
-    const pidEnvs = argv.all ?
-      getLiveEnvsAsPidEnvArr() :
-      argv.sample ?
-        getSampleEnvs() :
-        argv['pid:env']
+    const pidEnvs = argv.all ? getLiveEnvsAsPidEnvArr() : argv.sample ? getSampleEnvs() : argv['pid:env']
     pLimitForEachHandler(4, pidEnvs, updateHost)
   }
 )
@@ -393,15 +396,11 @@ yargs.command(
   }
 )
 
-yargs.command(['project:update [pid:env...]', 'pu'], 'Query API about proj(s)', addSharedPidEnvOpts, 
-  async argv => {
-    verifyOneOf(argv, ['a', 'pid:env'])
-    pLimitForEachHandler(6, argv.all ? await getProjectsFromApi() : argv['pid:env'], updateProject)
-  }
-)
-
-;(async() => {
+yargs.command(['project:update [pid:env...]', 'pu'], 'Query API about proj(s)', addSharedPidEnvOpts, async argv => {
+  verifyOneOf(argv, ['a', 'pid:env'])
+  pLimitForEachHandler(6, argv.all ? await getProjectsFromApi() : argv['pid:env'], updateProject)
+})
+;(async () => {
   await showWhoAmI() // force token refresh before parsing arg; should be < 1 sec
   yargs.argv
 })()
-

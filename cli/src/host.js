@@ -41,13 +41,16 @@ exports.getSampleEnvs = () => {
       (SELECT proj_env_id, host_id, instr(proj_env_id, ':master') is_master, length(proj_env_id) length
       FROM matched_envs_hosts ORDER BY is_master ASC, length DESC) 
     GROUP BY host_id`
-  const result = db.prepare(sql).all().map(row => row.proj_env_id)
+  const result = db
+    .prepare(sql)
+    .all()
+    .map(row => row.proj_env_id)
   logger.mylog('debug', result)
   return result
 }
 
 const getCotenantGroups = () => {
-  // identify cotenants - envs currently on the same host based 
+  // identify cotenants - envs currently on the same host based
   // since their boot time, # cpus, & ip address are currently the same
   // (ordered by region to keep hosts in the same region together when enumerated)
   // using only the most recent result since environments can migrate across hosts over time
@@ -80,7 +83,7 @@ exports.updateEnvHostRelationships = () => {
   let hostsEnvs = [] // list of envs associated with each host
 
   let cotenantGroups = getCotenantGroups().map(row => row['cotenant_group'].split(','))
-  // since hosts reboot and then are assigned new IPs, upsized, etc., 
+  // since hosts reboot and then are assigned new IPs, upsized, etc.,
   // groupings based on those values are incomplete
   // however, envs should not migrate from hosts often (ever?)
   // so any env cotenancy can be merged with another if they share the same host

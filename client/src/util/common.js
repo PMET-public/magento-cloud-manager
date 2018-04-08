@@ -30,13 +30,13 @@ exports.calcWidth = maxExpectedChars => {
 // http://www.stat.wmich.edu/s216/book/node122.html
 exports.removePercentOutliers = (arrXY, percentOutliers) => {
   const n = arrXY.length
-  arrXY.sort((a,b) => a.x - b.x)
-  const subsetSize = Math.round(n * (100 - percentOutliers)/100)
-  const offset = Math.floor((n-subsetSize)/2)
-  return arrXY.slice(offset,subsetSize)
+  arrXY.sort((a, b) => a.x - b.x)
+  const subsetSize = Math.round(n * (100 - percentOutliers) / 100)
+  const offset = Math.floor((n - subsetSize) / 2)
+  return arrXY.slice(offset, subsetSize)
 }
 
-exports.calcCoefficient = (arrXY) => {
+exports.calcCoefficient = arrXY => {
   let n = arrXY.length
   let sumX = 0
   let sumY = 0
@@ -47,10 +47,10 @@ exports.calcCoefficient = (arrXY) => {
   arrXY.forEach(({x, y}) => {
     sumX += x
     sumY += y
-    sumXY += x*y
-    sumXsquared += x*x
-    sumYsquared += y*y
+    sumXY += x * y
+    sumXsquared += x * x
+    sumYsquared += y * y
   })
 
-  return (sumXY - (sumX*sumY/n))/Math.sqrt((sumXsquared - (sumX*sumX/n))*(sumYsquared - (sumY*sumY/n)))
+  return (sumXY - sumX * sumY / n) / Math.sqrt((sumXsquared - sumX * sumX / n) * (sumYsquared - sumY * sumY / n))
 }

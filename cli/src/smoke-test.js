@@ -1,4 +1,4 @@
-const { exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB, db} = require('./common')
+const {exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB, db} = require('./common')
 const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd} = require('./environment.js')
 const {magentoAdminUser, magentoAdminPassword} = require('../.secrets.json')
 

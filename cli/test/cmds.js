@@ -32,7 +32,7 @@ const tmpShFile = `/tmp/${sEpoch}.sh`
 const tmpSqlFile = `/tmp/${sEpoch}.sql`
 const validRemoteFile = '/var/log/deploy.log'
 
-const testCmd = (cmdStr, resultTester, AssertionMsg,  timeout = 15000) => {
+const testCmd = (cmdStr, resultTester, AssertionMsg, timeout = 15000) => {
   it(cmdStr, async () => {
     const result = await execCmd(cmdStr)
     assert(resultTester(result), AssertionMsg)
@@ -74,7 +74,6 @@ const disallowedTester = result => {
 const disallowedTestMsg = 'disallow all for this cmd'
 
 describe('invalid tests', () => {
-
   validCommands.forEach(cmd => {
     if (['env:delete', 'env:deploy', 'host:env-match'].includes(cmd.cmd)) {
       return
@@ -85,7 +84,6 @@ describe('invalid tests', () => {
       testCmd(getCmdWithInvalidPid(cmd.cmd), invalidTester, invalidTestMsg, cmd.timeout)
     }
   })
-
 })
 
 /*
@@ -139,9 +137,7 @@ describe('test 1 valid pid, multiple valid pids, and a mix of valid and invalid 
 })
 */
 
-
 describe('test various batch and "--all" options', () => {
-
   before(() => {
     writeFileSync(tmpShFile, '#!/bin/bash\necho "hello world"')
     writeFileSync(tmpSqlFile, 'select 1 from dual')
@@ -151,18 +147,18 @@ describe('test various batch and "--all" options', () => {
   // with many -a operations, the -v will exceed the stdout buffer, so drop it
 
   // testCmd('env:check-cert -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
-  
+
   // testCmd('env:delete -a', disallowedTester, disallowedTestMsg)
   // testCmd('env:delete -i', multipleValidTester, validTestMsg, 1000 * 60 * 2)
   // testCmd('env:deploy -a dummy-tar-file', disallowedTester)
   // testCmd('env:deploy -x', )
-  
+
   // testCmd(`env:exec -a ${tmpShFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
   // testCmd(`env:exec -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
   // testCmd(`env:get -a ${validRemoteFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
   // testCmd(`env:put -a ${tmpSqlFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)
   // testCmd('env:smoke-test -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
-  
+
   // testCmd('env:update -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
   // testCmd('host:upate -s', multipleValidTester, validTestMsg, 1000 * 60 * 2)
 
@@ -176,12 +172,11 @@ describe('test various batch and "--all" options', () => {
     unlinkSync(tmpShFile)
     unlinkSync(tmpSqlFile)
   })
-
 })
 
 // https://stackoverflow.com/questions/41949895/how-to-set-timeout-on-before-hook-in-mocha
-describe('branch sample env, deploy to it, then delete it', function () {
-  this.timeout(1000 * 60 * 15);
+describe('branch sample env, deploy to it, then delete it', function() {
+  this.timeout(1000 * 60 * 15)
 
   const envName = Math.floor(new Date() / 1000)
 
@@ -191,5 +186,4 @@ describe('branch sample env, deploy to it, then delete it', function () {
 
   testCmd(`env:deploy ref.tar xpwgonshm6qm2:${envName}`, multipleValidTester, validTestMsg, 1000 * 60 * 2)
   testCmd(`env:delete --yes xpwgonshm6qm2:${envName}`, multipleValidTester, validTestMsg, 1000 * 60 * 2)
-
 })

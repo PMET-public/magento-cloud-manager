@@ -43,9 +43,9 @@ const getActivitiesFromApi = async (project, type) => {
   return result
 }
 
-const mergeMostRecentActivityResultByEnv = (resultLists) => {
+const mergeMostRecentActivityResultByEnv = resultLists => {
   let combinedKeys = []
-  resultLists.forEach(list => combinedKeys = combinedKeys.concat(Object.keys(list)))
+  resultLists.forEach(list => (combinedKeys = combinedKeys.concat(Object.keys(list))))
   combinedKeys = new Set(combinedKeys)
   const combinedResults = {}
   //const combinedKeys = new Set(Object.keys(arr1).concat(Object.keys(arr2)))
@@ -64,7 +64,7 @@ const mergeMostRecentActivityResultByEnv = (resultLists) => {
   return combinedResults
 }
 
-exports.searchActivitiesForFailures = async (project) => {
+exports.searchActivitiesForFailures = async project => {
   try {
     let fails = 0
     let successes = 0
@@ -74,8 +74,16 @@ exports.searchActivitiesForFailures = async (project) => {
     const branchResults = parseActivityList(branchActivities)
     const pushResults = parseActivityList(pushActivities)
     const redeployResults = parseActivityList(redeployActivities)
-    const combinedSuccesses = mergeMostRecentActivityResultByEnv([branchResults.successes, pushResults.successes, redeployResults.successes])
-    const combinedFailures = mergeMostRecentActivityResultByEnv([branchResults.failures, pushResults.failures, redeployResults.failures])
+    const combinedSuccesses = mergeMostRecentActivityResultByEnv([
+      branchResults.successes,
+      pushResults.successes,
+      redeployResults.successes
+    ])
+    const combinedFailures = mergeMostRecentActivityResultByEnv([
+      branchResults.failures,
+      pushResults.failures,
+      redeployResults.failures
+    ])
     for (let environment in combinedFailures) {
       const value =
         typeof combinedSuccesses[environment] === 'undefined' ||

@@ -94,10 +94,12 @@ exports.addCloudProjectKeyToGitlabKeys = async cloudProject => {
       .map(key => key.id)
     let status = 'added to'
     for (let gitlabProjectId of gitlabProjectIds) {
-      if (keyId.length) { // just enable
+      if (keyId.length) {
+        // just enable
         result = await enableDeployKey(gitlabProjectId, keyId)
         status = 'enabled on'
-      } else { // add
+      } else {
+        // add
         result = await apiPost(`projects/${gitlabProjectId}/deploy_keys`, {
           title: 'MECE',
           key: clientSshKey
