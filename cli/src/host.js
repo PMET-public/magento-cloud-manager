@@ -49,44 +49,19 @@ exports.getSampleEnvs = () => {
   return result
 }
 
-const getCotenantGroups = () => {
-  // identify cotenants - envs currently on the same host based
-  // since their boot time, # cpus, & ip address are currently the same
-  // (ordered by region to keep hosts in the same region together when enumerated)
-  // using only the most recent result since environments can migrate across hosts over time
-  const sql = `SELECT GROUP_CONCAT(h.project_id || ':' || h.environment_id) cotenant_group, 
-      h.load_avg_15, h.cpus, h.boot_time, h.ip, h.timestamp, p.region
-    FROM
-      (SELECT id, project_id FROM environments e
-      WHERE active = 1 AND missing = 0 AND (failure = 0 OR failure IS null)) e
-    LEFT JOIN 
-      (SELECT project_id, environment_id, load_avg_15, cpus, boot_time, ip, MAX(timestamp) timestamp
-      FROM hosts_states h GROUP BY project_id, environment_id) h 
-    ON e.id = h.environment_id AND e.project_id = h.project_id
-    LEFT JOIN projects p on p.id = h.project_id
-    GROUP BY boot_time, cpus, ip
-    ORDER BY region`
-  const cotenantGroups = db.prepare(sql).all()
-  logger.mylog('debug', cotenantGroups)
-  return cotenantGroups
-}
-exports.getCotenantGroups = getCotenantGroups
-
-// this method allows us to reduce the # of queries for performance monitoring.
-// by occasionally querying all the envs and then mapping envs
-// to specific hosts based on the same boot time, # cpus, and ip address,
+// this method enables us to reduce the # of queries for performance monitoring.
+// by mapping envs to specific hosts based on the same boot time, # cpus, and ip address,
+// and then further reducing the list by combining any previous cotenant groups that share an env
 // we can just query one representative env per host on subsequent queries.
 exports.updateEnvHostRelationships = () => {
-  // project's environments are not constrained to a single host,
-  // track environments by a project:environment pair to have a unique identifier
   const envHosts = {} // a dictionary to lookup each env's host
   let hostsEnvs = [] // list of envs associated with each host
 
   let cotenantGroups = getCotenantGroups().map(row => row['cotenant_group'].split(','))
   // since hosts reboot and then are assigned new IPs, upsized, etc.,
-  // groupings based on those values are incomplete
+  // groupings based on just those values (getCotenantGroups()) are incomplete
   // however, envs should not migrate from hosts often (ever?)
-  // so any env cotenancy can be merged with another if they share the same host
+  // so any env cotenancy can be merged with another if an env is shared between the cotenancy
   cotenantGroups.forEach(group => {
     let hostsThatAreActuallyTheSame = []
     const nextNewHostIndex = hostsEnvs.length
@@ -140,3 +115,26 @@ exports.updateEnvHostRelationships = () => {
   logger.mylog('info', `${Object.keys(envHosts).length} envs matched to ${hostsEnvs.length} hosts.`)
   return result
 }
+
+const getCotenantGroups = () => {
+  // identify cotenants - envs on the same host when they were last checked since
+  // their boot time, # cpus, & ip address were the same at that time.
+  // (ordered by region to keep hosts in the same region together when enumerated)
+  const sql = `SELECT GROUP_CONCAT(h.project_id || ':' || h.environment_id) cotenant_group,
+    cast (h.load_avg_15 * 100 / h.cpus as int) utilization,
+      load_avg_15, cpus, boot_time, ip, h.timestamp, region
+    FROM
+      (SELECT id, project_id FROM environments e
+      WHERE active = 1 AND missing = 0 AND (failure = 0 OR failure IS null)) e
+    LEFT JOIN 
+      (SELECT project_id, environment_id, load_avg_15, cpus, boot_time, ip, MAX(timestamp) timestamp
+      FROM hosts_states h GROUP BY project_id, environment_id) h 
+    ON e.id = h.environment_id AND e.project_id = h.project_id
+    LEFT JOIN projects p on p.id = h.project_id
+    GROUP BY boot_time, cpus, ip
+    ORDER BY region, cotenant_group`
+  const cotenantGroups = db.prepare(sql).all()
+  logger.mylog('debug', cotenantGroups)
+  return cotenantGroups
+}
+exports.getCotenantGroups = getCotenantGroups

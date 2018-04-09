@@ -83,7 +83,7 @@ const verifyOneOf = (argv, args) => {
 const pLimitForEachHandler = async (limit, arrOfIds, func, arrOfAdditionalArgs) => {
   const curLimit = pLimit(limit)
   const promises = []
-  arrOfIds.forEach(id => {
+  arrOfIds.forEach((id, index, array) => {
     const args = id.split(':')
     if (args.length === 1) {
       args.push('master')
@@ -93,7 +93,9 @@ const pLimitForEachHandler = async (limit, arrOfIds, func, arrOfAdditionalArgs) 
     }
     promises.push(
       curLimit(async () => {
+        // logger.mylog('debug', `calling ${func.name}(${args.join(', ')})`)
         const result = func(...args)
+        // logger.mylog('debug', `result of ${func.name}(${args.join(', ')}) is ${result}`)
         return result
       })
     )
@@ -155,7 +157,7 @@ yargs
 yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, 
   argv => {
     verifyOneOf(argv, ['i', 'a', 'pid:env'])
-    pLimitForEachHandler(4, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], checkCertificate)
+    pLimitForEachHandler(6, argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'], checkCertificate)
   }
 )
 

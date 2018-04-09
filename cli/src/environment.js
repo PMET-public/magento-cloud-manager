@@ -51,7 +51,7 @@ exports.setEnvironmentFailure = (project, environment, value) => {
     .prepare('UPDATE environments SET failure = ?, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(value, project, environment)
   logger.mylog('debug', result)
-  logger.mylog('info', `Env: ${environment} of project: ${project} set to failed.`)
+  logger.mylog('info', `Env: ${environment} of project: ${project} set failure: ${value}.`)
   return result
 }
 
@@ -180,7 +180,17 @@ const checkCertificate = async (project, environment = 'master') => {
         if (response.statusCode === 403 || response.statusCode === 401) {
           // authorization required, SC likely disabled public access
         } else if (response.statusCode === 404) {
-          await updateEnvironment(project, environment) // probably deleted env
+          if (response.headers['set-cookie']) {
+            // storefront exists but returning 404
+            logger.mylog(
+              'error',
+              `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
+                `https://${hostName}/ unexpected response`
+            )
+          } else {
+            // probably deleted env
+            await updateEnvironment(project, environment)
+          }
         } else if (response.statusCode == 302 && response.headers.location.indexOf(hostName) == 8) {
           // valid response
         } else {
