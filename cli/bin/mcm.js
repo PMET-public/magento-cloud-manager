@@ -334,7 +334,7 @@ yargs.command(
     addSharedPidEnvOpts()
     yargs.option('t', {
       alias: 'time',
-      description: 'Time (in hours) that a prior result is still valid. Value of 0 will force retest.',
+      description: 'Time (in hours) to regard a prior result as still valid for this run. "0" will force rerun.',
       type: 'number',
       default: 24,
       coerce: coercer
