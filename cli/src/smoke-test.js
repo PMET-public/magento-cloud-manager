@@ -3,7 +3,11 @@ const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd} = require('./en
 const {magentoAdminUser, magentoAdminPassword} = require('../.secrets.json')
 
 const smokeTestApp = async (project, environment = 'master') => {
-  const cmd = `${await getSshCmd(project, environment)} '
+  const sshCmd = await getSshCmd(project, environment)
+  if (typeof sshCmd === 'undefined') {
+    return
+  }
+  const cmd = `${sshCmd} '
     # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
     echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
       sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")

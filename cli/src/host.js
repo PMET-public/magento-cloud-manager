@@ -1,7 +1,7 @@
 const {exec, execOutputHandler, db, logger, parseFormattedCmdOutputIntoDB} = require('./common')
 const {getSshCmd, updateEnvironment} = require('./environment')
 
-exports.updateHost = async (project, environment = 'master') => {
+const updateHost = async (project, environment = 'master') => {
   const cmd = `${await getSshCmd(project, environment)} '
     echo boot_time $(cat /proc/stat | sed -n "s/btime //p")
     # netstat not available on all containers
@@ -32,8 +32,9 @@ exports.updateHost = async (project, environment = 'master') => {
     })
   return result
 }
+exports.updateHost = updateHost
 
-exports.getSampleEnvs = () => {
+const getSampleEnvs = () => {
   // prefer master envs b/c masters can not be deleted and so can't be recreated on new host
   // can still be rebalanced/migrated to another host though
   // length col accounts for rare case where env name begins with substring "master"
@@ -48,12 +49,13 @@ exports.getSampleEnvs = () => {
   logger.mylog('debug', result)
   return result
 }
+exports.getSampleEnvs = getSampleEnvs
 
 // this method enables us to reduce the # of queries for performance monitoring.
 // by mapping envs to specific hosts based on the same boot time, # cpus, and ip address,
 // and then further reducing the list by combining any previous cotenant groups that share an env
 // we can just query one representative env per host on subsequent queries.
-exports.updateEnvHostRelationships = () => {
+const updateEnvHostRelationships = () => {
   const envHosts = {} // a dictionary to lookup each env's host
   let hostsEnvs = [] // list of envs associated with each host
 
@@ -115,6 +117,7 @@ exports.updateEnvHostRelationships = () => {
   logger.mylog('info', `${Object.keys(envHosts).length} envs matched to ${hostsEnvs.length} hosts.`)
   return result
 }
+exports.updateEnvHostRelationships = updateEnvHostRelationships
 
 const getCotenantGroups = () => {
   // identify cotenants - envs on the same host when they were last checked since

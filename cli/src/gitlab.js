@@ -57,7 +57,7 @@ const enableDeployKey = (gitlabProjectId, keyId) => {
   return apiPost(`projects/${gitlabProjectId}/deploy_keys/${keyId}/enable`)
 }
 
-// exports.enableAllGitlabKeysForAllConfiguredProjects = async () => {
+// const enableAllGitlabKeysForAllConfiguredProjects = async () => {
 //   // use awaits to run requests sequentially and reduce load on gitlab
 //   // this function should complete in < 1 min regardless and is only run infrequently
 //   const allCloudKeyIdsInGitlab = (await getAllDeployKeysFromGitlab())
@@ -78,10 +78,9 @@ const enableDeployKey = (gitlabProjectId, keyId) => {
 //       `Gitlab enabled to access all ${gitlabProjectIds.length} configured Gitlab projects.`
 //   )
 // }
+// exports.enableAllGitlabKeysForAllConfiguredProjects = enableAllGitlabKeysForAllConfiguredProjects
 
-// catch error where already added and then just try to enable?
-
-exports.addCloudProjectKeyToGitlabKeys = async cloudProject => {
+const addCloudProjectKeyToGitlabKeys = async cloudProject => {
   try {
     const sql = 'SELECT client_ssh_key FROM projects WHERE id = ?'
     let result = db.prepare(sql).get(cloudProject)
@@ -113,3 +112,4 @@ exports.addCloudProjectKeyToGitlabKeys = async cloudProject => {
     logger.mylog('error', error)
   }
 }
+exports.addCloudProjectKeyToGitlabKeys = addCloudProjectKeyToGitlabKeys

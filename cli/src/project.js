@@ -1,6 +1,6 @@
 const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
 
-exports.getProjectsFromApi = async () => {
+const getProjectsFromApi = async () => {
   const cmd = `${MC_CLI} projects --pipe`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -10,8 +10,9 @@ exports.getProjectsFromApi = async () => {
     .catch(error => logger.mylog('error', error))
   return result
 }
+exports.getProjectsFromApi = getProjectsFromApi
 
-exports.updateProject = async project => {
+const updateProject = async project => {
   try {
     await getProjectInfoFromApi(project)
     await recordUsers(project)
@@ -21,6 +22,7 @@ exports.updateProject = async project => {
     logger.mylog('error', error)
   }
 }
+exports.updateProject = updateProject
 
 const getProjectInfoFromApi = async project => {
   const cmd = `${MC_CLI} project:info -p ${project} --format=tsv`

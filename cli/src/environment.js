@@ -37,7 +37,7 @@ const updateEnvironment = async (project, environment = 'master') => {
 }
 exports.updateEnvironment = updateEnvironment
 
-exports.setEnvironmentInactive = (project, environment) => {
+const setEnvironmentInactive = (project, environment) => {
   const result = db
     .prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(project, environment)
@@ -45,8 +45,9 @@ exports.setEnvironmentInactive = (project, environment) => {
   logger.mylog('info', `Env: ${environment} of project: ${project} set to inactive.`)
   return result
 }
+exports.setEnvironmentInactive = setEnvironmentInactive
 
-exports.setEnvironmentFailure = (project, environment, value) => {
+const setEnvironmentFailure = (project, environment, value) => {
   const result = db
     .prepare('UPDATE environments SET failure = ?, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
     .run(value, project, environment)
@@ -54,6 +55,7 @@ exports.setEnvironmentFailure = (project, environment, value) => {
   logger.mylog('info', `Env: ${environment} of project: ${project} set failure: ${value}.`)
   return result
 }
+exports.setEnvironmentFailure = setEnvironmentFailure
 
 const setEnvironmentMissing = (project, environment) => {
   const result = db
@@ -256,7 +258,7 @@ exports.getLiveEnvsAsPidEnvArr = getLiveEnvsAsPidEnvArr
 
 // need to delete from child first
 // or how to warn if inactive parent & active child?
-exports.deleteInactiveEnvs = async project => {
+const deleteInactiveEnvs = async project => {
   const cmd = `${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -271,8 +273,9 @@ exports.deleteInactiveEnvs = async project => {
     })
   return result
 }
+exports.deleteInactiveEnvs = deleteInactiveEnvs
 
-exports.deleteEnv = async (project, environment) => {
+const deleteEnv = async (project, environment) => {
   if (environment === 'master') {
     logger.mylog('error', `Can not delete master env of project: ${project}`)
     return
@@ -288,6 +291,7 @@ exports.deleteEnv = async (project, environment) => {
     })
   return result
 }
+exports.deleteEnv = deleteEnv
 
 const branchEnvFromMaster = async (project, environment) => {
   const cmd = `${MC_CLI} branch -p ${project} -e master ${environment} --force`

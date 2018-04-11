@@ -85,7 +85,7 @@ exports.db = db
 
 const exec = require('util').promisify(require('child_process').exec)
 // can not use arrow func b/c "=>" does not have its own arguments
-exports.exec = function() {
+exports.exec = function myexec() {
   logger.mylog('debug', arguments[0])
   return exec.apply(this, arguments)
 }
@@ -116,14 +116,14 @@ const MC_CLI = '~/.magento-cloud/bin/magento-cloud'
 exports.MC_CLI = MC_CLI
 
 const fetch = require('node-fetch')
-exports.fetch = function() {
+exports.fetch = function myfetch() {
   logger.mylog('debug', arguments[0])
   return fetch.apply(this, arguments)
 }
 
 // this helper function takes out formatted as "column_name value\n"
 // and inserts it into the specified table
-exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], additionalVals = []) => {
+const parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], additionalVals = []) => {
   const cmdOutput = stdout
     .trim()
     .split('\n')
@@ -135,6 +135,7 @@ exports.parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], add
   logger.mylog('debug', result)
   return result
 }
+exports.parseFormattedCmdOutputIntoDB = parseFormattedCmdOutputIntoDB
 
 const secrets = require('../.secrets.json')
 const fs = require('fs')
@@ -167,13 +168,14 @@ exports.interpolateTmpl = interpolateTmpl
 // 2) more importantly though it can be used as a trivial cmd to renew a potentially expired cloud token
 // without it, an expired token will cause all parallel triggered cmds to fail
 // until the first that triggers a renewal completes its renewal
-exports.showWhoAmI = async () => {
-  const cmd = `${MC_CLI} auth:info --property mail`
+const showWhoAmI = async () => {
+  const cmd = `echo running as $(${MC_CLI} auth:info --property mail)`
   const result = await exec(cmd)
     .then(execOutputHandler)
     .catch(error => logger.mylog('error', error))
   return result
 }
+exports.showWhoAmI = showWhoAmI
 
 exports.disallowedCmdTxt = 'Are you crazy?!'
 exports.regexToMatchDisallowed = /Are you crazy/

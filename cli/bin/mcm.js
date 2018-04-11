@@ -101,14 +101,14 @@ const pLimitForEachHandler = async (limit, func, pidEnvs, additionalArgs = []) =
     promises.push(
       curLimit(async () => {
         logger.mylog('debug', `calling ${func.name}(${args.join(', ')})`)
-        const result = func(...args)
+        const result = await func(...args)
         logger.mylog('debug', `result of ${func.name}(${args.join(', ')}) is ${result}`)
         return result
       })
     )
   })
   const result = await Promise.all(promises)
-  if (pidEnvs.length > 1) {
+  if (pidEnvs.size > 1) {
     const successful = result.filter(val => val).length
     const total = result.length
     if (successful === total) {
@@ -125,21 +125,23 @@ const filterStillValidRuns = (time, func, pidEnvs, additionalArgs = []) => {
   const regex = new RegExp(`^(20.*) debug: result of ${func.name}\\\(([^)]+${args})\\\)`)
   const lines = readFileSync(`${__dirname}/../debug.log`, {encoding:'utf8'}).split('\n')
   let origSize = pidEnvs.size
-  const trackedSkipMsgs = {} // avoid repeated output
   for (let line of lines) {
     const matches = line.match(regex)
-    if (matches && (new Date(matches[1])/1000 > new Date()/1000 - 3600 * time)) {
-      pidEnvs.delete(matches[2].replace(', ',':'))
-      let skipMsg = `Skipping ... ${func.name}(${matches[2]}${args}) found in debug log within valid time window.`
-      if (!trackedSkipMsgs[skipMsg]) {
-        trackedSkipMsgs[skipMsg] = true
-        logger.mylog('debug', skipMsg)
+    // check match was a valid result (not undefined) and within timeframe 
+    if (matches && !/undefined$/.test(matches.input) && (new Date(matches[1])/1000 > new Date()/1000 - 3600 * time)) {
+      // check if pidEnv is in our set (also check variation w/o ":master")
+      if (pidEnvs.delete(matches[2].replace(', ',':')) || pidEnvs.delete(matches[2].replace(/, master(,|$)/,''))) {
+        logger.mylog('debug', `Skipping ... ${func.name}(${matches[2]}${args}) in debug log within valid time.`)
+        if (pidEnvs.size === 0) {
+          break // all items have been removed
+        }
       }
     }
   }
   if (origSize !== pidEnvs.size) {
-    logger.mylog('info', `${origSize - pidEnvs.size} items will be skipped due to recent runs with the same parameters. ` +
-      'See debug output or log file for details. Use -t 0 to override.')
+    const diff = origSize - pidEnvs.size
+    logger.mylog('info', `${pidEnvs.size === 0 ? 'All ' + diff : diff} item(s) skipped due to recent runs with ` +
+      'same parameters. See debug output or log file for details. Use -t 0 to override.')
   }
   return pidEnvs
 }

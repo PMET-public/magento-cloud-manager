@@ -12,19 +12,19 @@ const invalidPid = 'invalid-pid'
 const invalidPidEnv = 'invalid-pid:master'
 
 const getCmdWithInvalidPid = (cmd, extraArgs = []) => {
-  return `${cmd} -v ${extraArgs.join(' ')} ${invalidPidEnv}`
+  return `${cmd} -t 0 -v ${extraArgs.join(' ')} ${invalidPidEnv}`
 }
 
 const getCmdWithValidPid = (cmd, extraArgs = []) => {
-  return `${cmd} -v ${extraArgs.join(' ')} ${validPid}`
+  return `${cmd} -t 0 -v ${extraArgs.join(' ')} ${validPid}`
 }
 
 const getCmdWithMultipleValidPids = (cmd, extraArgs = []) => {
-  return `${cmd} -v ${extraArgs.join(' ')} ${validPid} ${validPidEnv}`
+  return `${cmd} -t 0 -v ${extraArgs.join(' ')} ${validPid} ${validPidEnv}`
 }
 
 const getCmdWithMixedPids = (cmd, extraArgs = []) => {
-  return `${cmd} -v ${extraArgs.join(' ')} ${validPid} ${validPidEnv} ${invalidPid}`
+  return `${cmd} -t 0 -v ${extraArgs.join(' ')} ${validPid} ${validPidEnv} ${invalidPid}`
 }
 
 const sEpoch = Math.floor(new Date() / 1000)
