@@ -1,7 +1,7 @@
 const https = require('https')
 const moment = require('moment')
 const {writeFileSync} = require('fs')
-const {exec, execOutputHandler, db, MC_CLI, logger, interpolateTmpl} = require('./common')
+const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../.secrets.json')
 
 const updateEnvironment = async (project, environment = 'master') => {
@@ -310,7 +310,7 @@ exports.branchEnvFromMaster = branchEnvFromMaster
 const execInEnv = async (project, environment, filePath) => {
   try {
     if (/\.tmpl\./.test(filePath)) {
-      filePath = interpolateTmpl(filePath)
+      filePath = renderTmpl(filePath)
     }
     const file = await sendPathToRemoteTmpDir(project, environment, filePath)
     const remoteCmd = /\.sql$/.test(file)

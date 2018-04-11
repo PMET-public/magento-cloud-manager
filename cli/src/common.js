@@ -139,29 +139,16 @@ exports.parseFormattedCmdOutputIntoDB = parseFormattedCmdOutputIntoDB
 
 const secrets = require('../.secrets.json')
 const fs = require('fs')
-const interpolateTmpl = file => {
+const {render} = require('mustache')
+const renderTmpl = file => {
   const tmpl = fs.readFileSync(file, {encoding: 'utf8'})
-  let output = tmpl
-  const matches = new Set(tmpl.match(/\{\{(.*?)\}\}/g))
-  if (matches) {
-    matches.forEach(key => {
-      key = key.replace(/{{|}}/g, '')
-      const replacement = secrets[key]
-      if (typeof replacement !== 'undefined') {
-        output = output.replace(new RegExp('{{' + key + '}}', 'g'), replacement)
-      }
-    })
-  }
-  if (tmpl === output) {
-    return tmpl // no changes
-  } else {
-    const basename = file.replace(/.*\//, '')
-    const newFile = '/tmp/' + new Date() / 1000 + '-' + basename
-    fs.writeFileSync(newFile, output)
-    return newFile
-  }
+  const basename = file.replace(/.*\//, '')
+  const newFile = '/tmp/' + new Date() / 1000 + '-' + basename
+  const output = render(tmpl,secrets)
+  fs.writeFileSync(newFile, output)
+  return newFile
 }
-exports.interpolateTmpl = interpolateTmpl
+exports.renderTmpl = renderTmpl
 
 // this method serves 2 purposes
 // 1) it shows in the debug log who the cmd is being run as
