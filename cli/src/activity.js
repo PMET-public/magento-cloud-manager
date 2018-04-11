@@ -64,7 +64,7 @@ const mergeMostRecentActivityResultByEnv = resultLists => {
   return combinedResults
 }
 
-exports.searchActivitiesForFailures = async project => {
+ const searchActivitiesForFailures = async project => {
   try {
     let fails = 0
     let successes = 0
@@ -99,3 +99,4 @@ exports.searchActivitiesForFailures = async project => {
     logger.mylog('error', error)
   }
 }
+exports.searchActivitiesForFailures = searchActivitiesForFailures

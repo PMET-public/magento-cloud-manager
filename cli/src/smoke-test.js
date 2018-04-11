@@ -1,21 +1,8 @@
-const {exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB, db} = require('./common')
+const {exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB} = require('./common')
 const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd} = require('./environment.js')
 const {magentoAdminUser, magentoAdminPassword} = require('../.secrets.json')
 
-const priorResultStillValid = (project, environment, stillValidTime = 24) => {
-  const sql = `SELECT timestamp FROM smoke_tests WHERE project_id = ? AND environment_id = ?
-  AND timestamp > ${new Date() / 1000 - stillValidTime * 60 * 60}`
-  const result = db.prepare(sql).get(project, environment)
-  if (result) {
-    logger.mylog('info', `Prior smoke test of env: ${environment} of project: ${project} still valid.`)
-  }
-  return result
-}
-
-const smokeTestApp = async (project, environment = 'master', stillValidTime) => {
-  if (priorResultStillValid(project, environment, stillValidTime)) {
-    return true
-  }
+const smokeTestApp = async (project, environment = 'master') => {
   const cmd = `${await getSshCmd(project, environment)} '
     # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
     echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 

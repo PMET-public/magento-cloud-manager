@@ -33,6 +33,7 @@ const verboseOpt = {name: 'verbose', alias: 'v'}
 const quietOpt = {name: 'quiet', alias: 'q'}
 const helpOpt = {name: 'help', alias: 'h'}
 const allOpt = {name: 'all', alias: 'a'}
+const timeOpt = {name: 'time', alias: 't'}
 const commonValidOpts = [verboseOpt, quietOpt, helpOpt]
 const validSubCommands = [
   {name: 'env:check-cert', alias: 'ec'},
@@ -50,7 +51,7 @@ const validSubCommands = [
   {name: 'env:exec', alias: 'ee', numOfRequiredNonListArgs: 1},
   {name: 'env:get', alias: 'eg', numOfRequiredNonListArgs: 1},
   {name: 'env:put', alias: 'ep', numOfRequiredNonListArgs: 1},
-  {name: 'env:smoke-test', alias: 'es', validOpts: [{name: 'time', alias: 't'}]},
+  {name: 'env:smoke-test', alias: 'es'},
   {name: 'env:update', alias: 'eu'},
   {name: 'host:env-match', alias: 'he', numOfRequiredNonListArgs: 0},
   {
@@ -71,7 +72,7 @@ validSubCommands.forEach(subCmd => {
   subCmd.validOpts = subCmd.validOpts || []
   subCmd.validOpts.push(...commonValidOpts)
   if (subCmd.name !== 'host:env-match') {
-    subCmd.validOpts.push(allOpt)
+    subCmd.validOpts.push(allOpt, timeOpt)
     subCmd.requiresOneOf = ['a', 'pid:env'].concat(subCmd.listOpts || [])
     subCmd.eachConflicts.push(subCmd.requiresOneOf)
   }
