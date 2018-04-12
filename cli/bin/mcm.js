@@ -11,7 +11,7 @@ const pLimit = require('p-limit')
 
 const {logger, showWhoAmI, disallowedCmdTxt, allOpsSuccessTemplate, mixedSuccessTemplate} = require('../src/common')
 const {updateHost, getSampleEnvs, updateEnvHostRelationships} = require('../src/host')
-const {updateProject, getProjectsFromApi} = require('../src/project')
+const {updateProject, getProjectsFromApi, discoverEnvs} = require('../src/project')
 const {smokeTestApp} = require('../src/smoke-test')
 const {searchActivitiesForFailures} = require('../src/activity')
 const {addCloudProjectKeyToGitlabKeys} = require('../src/gitlab')
@@ -64,7 +64,7 @@ const addSharedPidEnvOpts = () => {
     alias: 'time',
     description: 'Time (in hours) to regard a prior run with the same params as still valid. "0" will force rerun.',
     type: 'number',
-    default: 8
+    default: 12
   })
 }
 
@@ -431,6 +431,20 @@ yargs.command(
       pidEnvs = filterStillValidRuns(argv['time'], updateHost, pidEnvs)
     }
     pLimitForEachHandler(4, updateHost, pidEnvs)
+  }
+)
+
+yargs.command(
+  ['project:discover-envs [pid:env...]', 'pd'],
+  'Query API to find new (and missing) envs',
+  addSharedPidEnvOpts,
+  async argv => {
+    verifyOneOf(argv, ['a', 'pid:env'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+    if (argv['time']) {
+      pidEnvs = filterStillValidRuns(argv['time'], searchActivitiesForFailures, pidEnvs)
+    }
+    pLimitForEachHandler(4, discoverEnvs, pidEnvs)
   }
 )
 

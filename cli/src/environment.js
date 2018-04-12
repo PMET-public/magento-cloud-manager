@@ -95,7 +95,7 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
   // clone to nested tmp dir, discard all but the git dir and auth.json, mv git dir and tar file to parent dir
   // extract tar, commit, and push
   const cmd = `mkdir -p "/tmp/${project}-${environment}"
-    ${MC_CLI} get -e ${environment} ${project} "/tmp/${project}-${environment}/tmp"`
+    ${MC_CLI} get --yes -e ${environment} ${project} "/tmp/${project}-${environment}/tmp"`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -110,6 +110,8 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
         rm "${basename}"
         git add -u
         git add .
+        # special case: 1st time auth.json explicitly added b/c of .gitignore. subsequent runs have no affect
+        git add -f auth.json
         git commit -m "commit from tar file"
         git push`
       const result = exec(cmd)

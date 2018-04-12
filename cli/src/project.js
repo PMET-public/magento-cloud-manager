@@ -1,4 +1,6 @@
 const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
+const {updateEnvironment, setEnvironmentMissing} = require('./environment')
+const {addCloudProjectKeyToGitlabKeys} = require('./gitlab')
 
 const getProjectsFromApi = async () => {
   const cmd = `${MC_CLI} projects --pipe`
@@ -83,4 +85,54 @@ const recordUsers = async project => {
       return true
     })
   return result
+}
+
+const discoverEnvs = async project => {
+  const cmd = `${MC_CLI} environment:list -p ${project} --format=tsv | sed '1d'`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .then(({stdout, stderr}) => {
+      const sql = 'SELECT id FROM environments WHERE project_id = ?'
+      const result = db.prepare(sql).all(project)
+      logger.mylog('debug', result)
+      const dbEnvironments = result.map(row => row.id)
+      stdout
+        .trim()
+        .split('\n')
+        .map(row => row.split('\t'))
+        .forEach(([environment, name, status]) => {
+
+          const index = dbEnvironments.indexOf(environment)
+          if (index > -1) { // in API & DB, remove from list
+            dbEnvironments.splice(index, 1);
+          } else {
+            // found in API but not DB -> run update env
+            updateEnvironment(project, environment)
+          }
+          // if master env and inactive, initialize project and 
+          if (environment === 'master' && /inactive/i.test(status)) {
+            initProject(project)
+            addCloudProjectKeyToGitlabKeys(project)
+          }
+        })
+      if (dbEnvironments.length) {
+        // in DB but not API -> set to missing
+        dbEnvironments.forEach(environment => setEnvironmentMissing(project, environment))
+      }
+      return true
+    })
+  return result
+}
+exports.discoverEnvs = discoverEnvs
+
+const initProject = async project => {
+  console.log('khb inactive')
+}
+
+const addUser = async (project, email, role) => {
+
+}
+
+const delUser = async (project, email) => {
+
 }
