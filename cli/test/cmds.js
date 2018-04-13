@@ -34,9 +34,7 @@ const validRemoteFile = '/var/log/deploy.log'
 
 const testCmd = (cmdStr, resultTester, AssertionMsg, timeout = 15000) => {
   it(cmdStr, async () => {
-    let a = Math.round(new Date()/1000)
     const result = await execCmd(cmdStr)
-    console.log(Math.round(new Date()/1000) - a + ' s')
     assert(resultTester(result), AssertionMsg)
   }).timeout(timeout)
 }

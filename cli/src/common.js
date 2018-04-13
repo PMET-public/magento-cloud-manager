@@ -2,7 +2,9 @@
 const winston = require('winston')
 
 // need to create format to show timestamps? https://github.com/winstonjs/winston/issues/1175
-const myFormat = winston.format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
+const myFormat = winston.format.printf(info => {
+  return `${info.timestamp} ${info.level}: ${info.message}`
+})
 
 // create 2 active file loggers, 1 for just errors, 1 for debugging
 const logger = winston.createLogger({
@@ -38,7 +40,6 @@ logger.verboseConsole = new winston.transports.Console({
     winston.format.align(),
     winston.format.printf(info => {
       const {timestamp, level, message, stderr, ...args} = info
-
       const ts = timestamp.slice(0, 19).replace('T', ' ')
       return `${ts} [${level}]: ${message ? message + '\n' : ''}${stderr ? 'STDERR:\n' + stderr : ''} ${
         Object.keys(args).length ? JSON.stringify(args, null, 2) : ''
@@ -62,9 +63,9 @@ logger.quietConsole = new winston.transports.Console({
 // https://github.com/winstonjs/winston/issues/1217
 logger.mylog = (level, msg, ...rest) => {
   msg =
-    typeof msg === 'undefined'
-      ? 'why are you logging undefined msgs?!'
-      : typeof msg === 'string' ? msg : typeof msg.message !== 'undefined' ? msg.message : JSON.stringify(msg)
+  typeof msg === 'undefined'
+    ? 'why are you logging undefined msgs?!'
+    : typeof msg === 'string' ? msg : typeof msg.message !== 'undefined' ? msg.message : JSON.stringify(msg)
   logger.log(level, msg, ...rest)
 }
 
@@ -96,13 +97,17 @@ const execOutputHandler = ({stdout, stderr}) => {
     // a subsequent handler may parse stderr and decide to throw one
     const nonErrorRegexes = [
       // non-error "errors"
-      /project.*successfully downloaded/,
-      /Everything up-to-date/
+      /project.*successfully downloaded/i,
+      /Everything up-to-date/i,
+      /Activity.*succeeded/i,
+      /Variable.*already set as/i
     ]
     const result = nonErrorRegexes.filter(regex => regex.test(stderr))
     if (result.length === 0) {
       // stderr did not match any filtering regex
       logger.mylog('error', stderr)
+    } else {
+      logger.mylog('debug', stderr)
     }
   }
   if (stdout) {

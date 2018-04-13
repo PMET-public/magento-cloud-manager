@@ -1,6 +1,9 @@
 const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
 const {updateEnvironment, setEnvironmentMissing} = require('./environment')
 const {addCloudProjectKeyToGitlabKeys} = require('./gitlab')
+const {addUser, recordUsers} = require('./user')
+const {setVar} = require('./variable')
+const {defaultCloudUsers, defaultCloudVars} = require('../.secrets.json')
 
 const getProjectsFromApi = async () => {
   const cmd = `${MC_CLI} projects --pipe`
@@ -67,23 +70,10 @@ const getProjectInfoFromApi = async project => {
   return result
 }
 
-const recordUsers = async project => {
-  const cmd = `${MC_CLI} user:list -p ${project} --format=tsv | sed '1d'`
-  const result = exec(cmd)
-    .then(execOutputHandler)
-    .then(({stdout, stderr}) => {
-      const insertValues = []
-      stdout
-        .trim()
-        .split('\n')
-        .map(row => row.split('\t'))
-        .forEach(row => insertValues.push(`("${project}", "${row[0]}", "${row[2]}")`))
-      const sql = `DELETE FROM users WHERE project_id = "${project}";
-        INSERT INTO users (project_id, email, role) VALUES ${insertValues.join(',')}`
-      const result = db.exec(sql)
-      logger.mylog('debug', result)
-      return true
-    })
+const getEnvsFromDB = project => {
+  const sql = 'SELECT id FROM environments WHERE project_id = ?'
+  const result = db.prepare(sql).all(project)
+  logger.mylog('debug', result)
   return result
 }
 
@@ -91,11 +81,9 @@ const discoverEnvs = async project => {
   const cmd = `${MC_CLI} environment:list -p ${project} --format=tsv | sed '1d'`
   const result = exec(cmd)
     .then(execOutputHandler)
-    .then(({stdout, stderr}) => {
-      const sql = 'SELECT id FROM environments WHERE project_id = ?'
-      const result = db.prepare(sql).all(project)
-      logger.mylog('debug', result)
-      const dbEnvironments = result.map(row => row.id)
+    .then(async ({stdout, stderr}) => {
+      const promises = []
+      const dbEnvironments = getEnvsFromDB(project).map(row => row.id)
       stdout
         .trim()
         .split('\n')
@@ -103,36 +91,34 @@ const discoverEnvs = async project => {
         .forEach(([environment, name, status]) => {
 
           const index = dbEnvironments.indexOf(environment)
-          if (index > -1) { // in API & DB, remove from list
+          if (index > -1) { // in API & DB, remove from tracking list
             dbEnvironments.splice(index, 1);
           } else {
             // found in API but not DB -> run update env
-            updateEnvironment(project, environment)
+            promises.push(updateEnvironment(project, environment))
           }
           // if master env and inactive, initialize project and 
           if (environment === 'master' && /inactive/i.test(status)) {
-            initProject(project)
-            addCloudProjectKeyToGitlabKeys(project)
+            promises.push(initProject(project))
+            promises.push(addCloudProjectKeyToGitlabKeys(project))
           }
         })
       if (dbEnvironments.length) {
         // in DB but not API -> set to missing
         dbEnvironments.forEach(environment => setEnvironmentMissing(project, environment))
       }
-      return true
+      const result = await Promise.all(promises)
+      return result
     })
+    .catch(error => logger.mylog('error', error))
   return result
 }
 exports.discoverEnvs = discoverEnvs
 
 const initProject = async project => {
-  console.log('khb inactive')
-}
-
-const addUser = async (project, email, role) => {
-
-}
-
-const delUser = async (project, email) => {
-
+  const promises = []
+  Object.entries(defaultCloudVars).forEach(([name, value]) => promises.push(setVar(project, 'master', name, value)))
+  Object.entries(defaultCloudUsers).forEach(([email, role]) => promises.push(addUser(project, 'master', email, role)))
+  const result = await Promise.all(promises)
+  return result
 }

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 const yargs = require('yargs')
 const chalk = require('chalk')
 const readline = require('readline')
@@ -28,6 +27,8 @@ const {
   deployEnvFromTar,
   getExpiringPidEnvs
 } = require('../src/environment')
+const {addUser, delUser} = require('../src/user')
+const {setVar} = require('../src/variable')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
 const headerTxt = txt => chalk.yellow(txt)
@@ -191,8 +192,8 @@ yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of en
   argv => {
     verifyOneOf(argv, ['i', 'a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], checkCertificate, pidEnvs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, checkCertificate, pidEnvs)
     }
     pLimitForEachHandler(6, checkCertificate, pidEnvs)
   }
@@ -224,8 +225,8 @@ yargs.command(
       return pLimitForEachHandler(4, deleteInactiveEnvs, await getProjectsFromApi())
     } 
     let pidEnvs = new Set(argv['pid:env'])
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], deleteEnv, pidEnvs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, deleteEnv, pidEnvs)
     }
     if (argv.yes) {
       pLimitForEachHandler(4, deleteEnv, pidEnvs)
@@ -283,21 +284,21 @@ yargs.command(
   },
   argv => {
     verifyOneOf(argv, ['x', 'a', 'pid:env'])
-    const additionalArgs = [argv['tar-file'], argv['reset'], argv['force']]
+    const additionalArgs = [argv['tar-file'], argv.reset, argv.force]
     if (argv.all) {
       return console.log(errorTxt(disallowedCmdTxt))
     } else if (argv.expiring) {
       return pLimitForEachHandler(4, redeployEnv, getExpiringPidEnvs())
     }
     let pidEnvs = new Set(argv['pid:env'])
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], deployEnvFromTar, pidEnvs, additionalArgs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, deployEnvFromTar, pidEnvs, additionalArgs)
     }
     if (argv.yes) {
       pLimitForEachHandler(4, deployEnvFromTar, pidEnvs, additionalArgs)
     } else {
       const rl = readline.createInterface({input: process.stdin, output: process.stdout})
-      const question = argv['reset']
+      const question = argv.reset
         ? errorTxt('Are you sure you want to RESET and then deploy these envs:')
         : headerTxt('Are you sure you want to deploy to these envs:')
       rl.question(question + `\n${pidEnvs.join(' ')} ?\nTo continues, type 'yes': `, answer => {
@@ -325,8 +326,8 @@ yargs.command(
     verifyOneOf(argv, ['a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
     const additionalArgs = [argv.file]
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], execInEnv, pidEnvs, additionalArgs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, execInEnv, pidEnvs, additionalArgs)
     }
     pLimitForEachHandler(6, execInEnv, pidEnvs, additionalArgs)
   }
@@ -347,8 +348,8 @@ yargs.command(
     verifyOneOf(argv, ['a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
     const additionalArgs = [argv['remote-path']]
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], getPathFromRemote, pidEnvs, additionalArgs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, getPathFromRemote, pidEnvs, additionalArgs)
     }
     pLimitForEachHandler(6, getPathFromRemote, pidEnvs, additionalArgs)
   }
@@ -369,8 +370,8 @@ yargs.command(
     verifyOneOf(argv, ['a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
     const additionalArgs = [argv['local-path']]
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], sendPathToRemoteTmpDir, pidEnvs, additionalArgs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, sendPathToRemoteTmpDir, pidEnvs, additionalArgs)
     }
     pLimitForEachHandler(6, sendPathToRemoteTmpDir, pidEnvs, additionalArgs)
   }
@@ -385,8 +386,8 @@ yargs.command(
   argv => {
     verifyOneOf(argv, ['a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], smokeTestApp, pidEnvs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, smokeTestApp, pidEnvs)
     }
     pLimitForEachHandler(2, smokeTestApp, pidEnvs)
   }
@@ -395,8 +396,8 @@ yargs.command(
 yargs.command(['env:update [pid:env...]', 'eu'], 'Query API about env(s)', addSharedPidEnvOpts, argv => {
   verifyOneOf(argv, ['a', 'pid:env'])
   let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
-  if (argv['time']) {
-    pidEnvs = filterStillValidRuns(argv['time'], updateEnvironment, pidEnvs)
+  if (argv.time) {
+    pidEnvs = filterStillValidRuns(argv.time, updateEnvironment, pidEnvs)
   }
   pLimitForEachHandler(6, updateEnvironment, pidEnvs)
 })
@@ -427,8 +428,8 @@ yargs.command(
   argv => {
     verifyOneOf(argv, ['s', 'a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv.sample ? getSampleEnvs() : argv['pid:env'])
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], updateHost, pidEnvs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, updateHost, pidEnvs)
     }
     pLimitForEachHandler(4, updateHost, pidEnvs)
   }
@@ -441,8 +442,8 @@ yargs.command(
   async argv => {
     verifyOneOf(argv, ['a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], searchActivitiesForFailures, pidEnvs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
     }
     pLimitForEachHandler(4, discoverEnvs, pidEnvs)
   }
@@ -455,8 +456,8 @@ yargs.command(
   async argv => {
     verifyOneOf(argv, ['a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], searchActivitiesForFailures, pidEnvs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
     }
     pLimitForEachHandler(4, searchActivitiesForFailures, pidEnvs)
   }
@@ -469,8 +470,8 @@ yargs.command(
   async argv => {
     verifyOneOf(argv, ['a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
-    if (argv['time']) {
-      pidEnvs = filterStillValidRuns(argv['time'], addCloudProjectKeyToGitlabKeys, pidEnvs)
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, addCloudProjectKeyToGitlabKeys, pidEnvs)
     }
     pLimitForEachHandler(6, addCloudProjectKeyToGitlabKeys, pidEnvs)
   }
@@ -479,11 +480,56 @@ yargs.command(
 yargs.command(['project:update [pid:env...]', 'pu'], 'Query API about proj(s)', addSharedPidEnvOpts, async argv => {
   verifyOneOf(argv, ['a', 'pid:env'])
   let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
-  if (argv['time']) {
-    pidEnvs = filterStillValidRuns(argv['time'], updateProject, pidEnvs)
+  if (argv.time) {
+    pidEnvs = filterStillValidRuns(argv.time, updateProject, pidEnvs)
   }
   pLimitForEachHandler(6, updateProject, pidEnvs)
 })
+
+yargs.command(
+  ['user:add <email> <role> [pid...]', 'ua'],
+  'Add user with email and role to projects',
+  addSharedPidEnvOpts,
+  async argv => {
+    verifyOneOf(argv, ['a', 'pid'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
+    }
+    const additionalArgs = [argv.email, argv.role]
+    pLimitForEachHandler(4, addUser, pidEnvs, additionalArgs)
+  }
+)
+
+yargs.command(
+  ['user:delete <email> [pid...]', 'ud'],
+  'Delete user with email from projects',
+  addSharedPidEnvOpts,
+  async argv => {
+    verifyOneOf(argv, ['a', 'pid'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
+    }
+    const additionalArgs = [argv.email]
+    pLimitForEachHandler(4, delUser, pidEnvs, additionalArgs)
+  }
+)
+
+yargs.command(
+  ['variable:set <name> <value> [pid...]', 'vs'],
+  'Set var to value on projects',
+  addSharedPidEnvOpts,
+  async argv => {
+    verifyOneOf(argv, ['a', 'pid'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
+    }
+    const additionalArgs = [argv.name, argv.value]
+    pLimitForEachHandler(4, setVar, pidEnvs, additionalArgs)
+  }
+)
 
 ;(async () => {
   await showWhoAmI() // force token refresh before parsing arg; should be < 1 sec
