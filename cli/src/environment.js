@@ -71,7 +71,7 @@ const resetEnv = async (project, environment) => {
   const remoteCmd = `mysql -h database.internal -e "drop database if exists main; 
   create database if not exists main default character set utf8;"; 
   # can not remove var/export so or noop cmd (|| :) in case it exists
-  rm -rf ~/var/* ~/app/etc/env.php ~/app/etc/config.php || :`
+  rm -rf ~/var/* ~/pub/media/* ~/app/etc/env.php ~/app/etc/config.php || :`
   const cmd = `${await getSshCmd(project, environment)} '${remoteCmd}'`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -102,7 +102,7 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
       if (/InvalidArgumentException/.test(stderr)) {
         throw 'Project not found.'
       }
-      const cmd = `mv /tmp/${project}-${environment}/tmp/{.git,auth.json} /tmp/${project}-${environment}/
+      const cmd = `mv /tmp/${project}-${environment}/tmp/{.git,auth.json} /tmp/${project}-${environment}/ 2> /dev/null
         cp ${tarFile} /tmp/${project}-${environment}/
         rm -rf "/tmp/${project}-${environment}/tmp"
         cd "/tmp/${project}-${environment}"
@@ -113,14 +113,14 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
         # special case: 1st time auth.json explicitly added b/c of .gitignore. subsequent runs have no affect
         git add -f auth.json
         git commit -m "commit from tar file"
-        git push`
+        git push -u $(git remote) ${environment}`
       const result = exec(cmd)
         .then(execOutputHandler)
         .then(({stdout, stderr}) => {
           if (!stderr) {
             logger.mylog('info', `Env: ${environment} of project: ${project} deployed using ${tarFile}.`)
           } else if (/Everything up-to-date/.test(stderr) && forceRebuildRedeploy) {
-            writeFileSync('/tmp/${project}-${environment}/.redeploy', new Date().toLocaleString())
+            writeFileSync(`/tmp/${project}-${environment}/.redeploy`, new Date().toLocaleString())
             const cmd = `cd "/tmp/${project}-${environment}"; git add .redeploy; 
               git commit -m "commit from tar file"; git push`
             const result = exec(cmd)
@@ -172,7 +172,7 @@ exports.getExpiringPidEnvs = getExpiringPidEnvs
 
 const checkCertificate = async (project, environment = 'master') => {
   try {
-    const hostName = await getHostName(project, environment)
+    const hostName = await getWebHostName(project, environment)
     const result = await new Promise((resolve, reject) => {
       const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, async response => {
         const certificateInfo = response.connection.getPeerCertificate()
@@ -193,10 +193,20 @@ const checkCertificate = async (project, environment = 'master') => {
             )
           } else {
             // probably deleted env
+            logger.mylog(
+              'error',
+              `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
+                `https://${hostName}/ environment deleted?`
+            )
             await updateEnvironment(project, environment)
           }
         } else if (response.statusCode == 302 && response.headers.location.indexOf(hostName) == 8) {
           // valid response
+          logger.mylog(
+            'debug',
+            `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
+              `https://${hostName}/ valid response`
+          )
         } else {
           let body = ''
           response.on('data', chunk => (body += chunk))
@@ -353,9 +363,14 @@ const getMachineNameAndRegion = async (project, environment) => {
   }
 }
 
-const getHostName = async (project, environment) => {
+const getWebHostName = async (project, environment) => {
   const {machineName, region} = await getMachineNameAndRegion(project, environment)
   return `${machineName}-${project}.${region}.magentosite.cloud`
+}
+
+const getSshUserAndHost = async (project, environment) => {
+  const {machineName, region} = await getMachineNameAndRegion(project, environment)
+  return `${project}-${machineName}--mymagento@ssh.${region}.magento${region === 'us' ? 'site' : ''}.cloud`
 }
 
 // Using this method instead of the built in `magento-cloud ssh ...` prevents token timeouts for ssh cmds
@@ -363,28 +378,25 @@ const getHostName = async (project, environment) => {
 // will fail until the one that triggered a token renewal receives a new token
 const getSshCmd = async (project, environment) => {
   try {
-    const {machineName, region} = await getMachineNameAndRegion(project, environment)
-    const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
-    return `ssh ${project}-${machineName}--mymagento@${domain} -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes'`
+    return `ssh ${await getSshUserAndHost(project, environment)} -i ${localCloudSshKeyPath} ` + 
+      ' -o StrictHostKeyChecking=no -o IdentitiesOnly=yes'
   } catch (error) {
     logger.mylog('error', error)
   }
 }
 exports.getSshCmd = getSshCmd
 
-const sendPathToRemoteTmpDir = async (project, environment, path) => {
+const sendPathToRemoteTmpDir = async (project, environment, localPath) => {
   try {
-    const {machineName, region} = await getMachineNameAndRegion(project, environment)
     // create a unique remote tmp file
-    const file = '/tmp/' + Math.floor(new Date() / 1000) + '-' + path.replace(/.*\//, '')
-    const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
-    const cmd = `scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${path} ${project}-${machineName}--mymagento@${domain}:${file}`
+    const file = '/tmp/' + Math.floor(new Date() / 1000) + '-' + localPath.replace(/.*\//, '')
+    const cmd = `scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${localPath} ${await getSshUserAndHost(project, environment)}:${file}`
     await exec(cmd)
       .then(execOutputHandler)
       .then(() =>
         logger.mylog(
           'info',
-          `File: ${path} transferred to: ${file} in remote env: ${environment} of project: ${project}.`
+          `File: ${localPath} transferred to: ${file} in remote env: ${environment} of project: ${project}.`
         )
       )
     return file
@@ -407,11 +419,9 @@ const getPathFromRemote = async (project, environment, remotePath) => {
     if (!remotePath) {
       throw `Invalid normalized path: "${remotePath}".`
     }
-    const {machineName, region} = await getMachineNameAndRegion(project, environment)
-    const domain = `ssh.${region}.magento${region === 'us-3' ? '' : 'site'}.cloud`
     const localDest = `./tmp/${project}-${environment}${remotePath.replace(/(.*\/)[^/]*/, '$1')}`
     const cmd = `mkdir -p "${localDest}"
-      scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${project}-${machineName}--mymagento@${domain}:${remotePath} ${localDest}`
+      scp -r -i ${localCloudSshKeyPath} -o 'IdentitiesOnly=yes' ${await getSshUserAndHost(project, environment)}:${remotePath} ${localDest}`
     const result = exec(cmd)
       .then(execOutputHandler)
       .then(() => {
@@ -427,3 +437,52 @@ const getPathFromRemote = async (project, environment, remotePath) => {
   }
 }
 exports.getPathFromRemote = getPathFromRemote
+
+const backup = async (project, environment) => {
+  const sshCmd = await getSshCmd(project, environment)
+  const cmd = `${sshCmd} '
+    tarfile=/tmp/$(date "+%y-%m-%d-%H-%M")-${project}-${environment}-backup.tar
+    sqlfile=$(php ~/bin/magento setup:backup --db | sed -n "s/.*path: //p")
+    # replace specific host name with token placeholder
+    perl -i -pe "\\$c+=s/${await getWebHostName(project, environment)}/{{REPLACEMENT_BASE_URL}}/g; 
+      END{print \\"\\n\\$c host name replacements\\n\\"}" $sqlfile
+    # ssh into environment and from there rsync (compare) to master (as remote) since can not rsync using 2 remotes
+    rsync --dry-run --progress -rz --size-only --exclude "catalog/product/cache" \
+    /app/pub/media/ ${await getSshUserAndHost(project, 'master')}:/app/pub/media/ 2> /dev/null | sed "1d;
+    s/^/\\/app\\/pub\\/media\\//" | tar -cf $tarfile --files-from -
+    tar -rf $tarfile $sqlfile /app/composer.json /app/composer.lock /app/.magento.app.yaml
+    echo tarfile $tarfile'`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .then(async ({stdout, stderr}) => {
+      console.log(stdout, stderr)
+      getPathFromRemote(project, environment, stdout.replace(/[\s\S*]tarfile (.*)/,'$1'))
+    })
+    .catch(error => {
+      logger.mylog('error', error)
+    })
+  return result
+}
+exports.backup = backup
+
+const restore = async (project, environment, localPath) => {
+  const remoteTar = await sendPathToRemoteTmpDir(project, environment, localPath)
+  const sshCmd = await getSshCmd(project, environment)
+  const cmd = `${sshCmd} '
+  # extract all but filter basename of sql file
+  sqlfile=$(tar -C /app -xf ${remoteTar} | sed -n "/db.sql/ s/.*\\///p")
+  perl -i -pe "\\$c+=s/{{REPLACEMENT_BASE_URL}}/${await getWebHostName(project, environment)}/g; 
+    END{print \\"\\n\\$c host name replacements\\n\\"}" $sqlfile
+  php bin/magento setup:rollback -n -d $sqlfile
+  '`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .then(async ({stdout, stderr}) => {
+      console.log(stdout, stderr)
+    })
+    .catch(error => {
+      logger.mylog('error', error)
+    })
+  return result
+}
+exports.restore = restore

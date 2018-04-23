@@ -1,7 +1,7 @@
 const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
 
 const addUser = async (project, environment, email, role) => {
-  const cmd = `${MC_CLI} user:add --wait -p ${project} -r ${role} ${email}`
+  const cmd = `${MC_CLI} user:update --wait -p ${project} -r ${environment}:${role} ${email}`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {

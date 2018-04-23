@@ -25,7 +25,8 @@ const {
   sendPathToRemoteTmpDir,
   getLiveEnvsAsPidEnvArr,
   deployEnvFromTar,
-  getExpiringPidEnvs
+  getExpiringPidEnvs,
+  backup
 } = require('../src/environment')
 const {addUser, delUser} = require('../src/user')
 const {setVar} = require('../src/variable')
@@ -196,6 +197,18 @@ yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of en
       pidEnvs = filterStillValidRuns(argv.time, checkCertificate, pidEnvs)
     }
     pLimitForEachHandler(6, checkCertificate, pidEnvs)
+  }
+)
+
+
+yargs.command(
+  ['env:backup [pid:env]', 'eb'],
+  'Backup an env',
+  yargs => {
+    addSharedPidEnvOpts()
+  },
+  argv => {
+    backup(...argv['pid:env'].split(':'))
   }
 )
 

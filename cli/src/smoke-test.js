@@ -15,7 +15,8 @@ const smokeTestApp = async (project, environment = 'master') => {
     echo ee_composer_version $(perl -ne "
         s/.*magento\\/product-enterprise-edition.*:.*?\\"([^\\"]+)\\".*/\\1/ and print;
         s/.*(2\\.\\d+\\.\\d+\\.x-dev).*/\\1/ and print;
-        s/.*(dev-2\\.[0-9]+\\.[0-9]+).*/\\1/ and print
+        s/.*(dev-2\\.[0-9]+\\.[0-9]+).*/\\1/ and print;
+        s/.*magento-product-enterprise-edition-(2\\.[0-9]+\\.[0-9]+).*/\\1/ and print;
       " composer.lock | head -1)
     echo composer_lock_md5 $(md5sum composer.lock | sed "s/ .*//")
     echo composer_lock_mtime $(stat -t composer.lock | awk "{print \\$12}")
