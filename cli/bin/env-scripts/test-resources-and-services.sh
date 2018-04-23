@@ -20,7 +20,7 @@ else
   echo ' ok'
 fi
 
-echo -n Checking mysql ... 
+echo -n Checking mysql and app admin users ... 
 admin_count=$(timeout 5 mysql main -sN -h database.internal -e "SELECT count(*) FROM admin_user")
 if [ $? -ne 0 ]; then
   (>&2 echo 'Mysql error or did not respond in < 5 sec.')
@@ -64,6 +64,19 @@ elif [ "$http_status" -ne 302 ]; then
 else
   echo ' ok'
 fi
+
+# remote network check
+# low disk space test
+# current load avg (if under threshhold (eg. 1.2), try I/O test dd if= of=/)
+# tmp mysql table creation
+# url with FQDN check (should check router container)
+# certificate check
+# get last log error/exception
+
+# resource availability tests
+# CPU check (spawing multiple processes)
+# RAM check
+
 
 if [ $error -ne 0 ]; then
   exit 1

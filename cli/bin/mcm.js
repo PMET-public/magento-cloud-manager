@@ -247,7 +247,7 @@ yargs.command(
       const rl = readline.createInterface({input: process.stdin, output: process.stdout})
       rl.question(
         `${errorTxt('Are you sure you want to delete these envs:')} 
-      ${pidEnvs.join(' ')} ?\nTo continues, type 'yes': `,
+      ${Array.from(pidEnvs).join(' ')} ?\nTo continues, type 'yes': `,
         answer => {
           rl.close()
           if (answer === 'yes') {
@@ -266,7 +266,7 @@ yargs.command(
     addSharedPidEnvOpts()
     yargs.option('x', {
       alias: 'expiring',
-      description: 'Redeploy expiring envs without changes',
+      description: 'Redeploy envs with TLS certs that are about to expire (no other changes)',
       conflicts: ['tar-file', 'a', 'reset', 'force'],
       type: 'boolean',
       coerce: coercer
@@ -314,7 +314,7 @@ yargs.command(
       const question = argv.reset
         ? errorTxt('Are you sure you want to RESET and then deploy these envs:')
         : headerTxt('Are you sure you want to deploy to these envs:')
-      rl.question(question + `\n${pidEnvs.join(' ')} ?\nTo continues, type 'yes': `, answer => {
+      rl.question(question + `\n${Array.from(pidEnvs).join(' ')} ?\nTo continues, type 'yes': `, answer => {
         rl.close()
         if (answer === 'yes') {
           pLimitForEachHandler(4, deployEnvFromTar, pidEnvs, additionalArgs)
