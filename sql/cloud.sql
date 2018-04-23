@@ -48,6 +48,17 @@ CREATE TABLE "environments" (
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
 	PRIMARY KEY(`id`,`project_id`)
 );
+CREATE TABLE "cert_expirations" (
+	`host_name`	TEXT NOT NULL,
+	`expiration`	INTEGER NOT NULL,
+	`timestamp`	INTEGER NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
+	PRIMARY KEY(`host_name`)
+);
+CREATE TABLE "matched_envs_hosts" (
+	`proj_env_id`	TEXT NOT NULL,
+	`host_id`	INTEGER NOT NULL,
+	PRIMARY KEY(`proj_env_id`)
+);
 CREATE TABLE "smoke_tests" (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
@@ -79,18 +90,8 @@ CREATE TABLE "smoke_tests" (
 	`venia_check`	INTEGER,
 	`admin_check`	INTEGER,
 	`error_logs`	TEXT,
+	`cpus` INTEGER,
 	`utilization_start`	TEXT NOT NULL,
 	`utilization_end`	TEXT,
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
-);
-CREATE TABLE "cert_expirations" (
-	`host_name`	TEXT NOT NULL,
-	`expiration`	INTEGER NOT NULL,
-	`timestamp`	INTEGER NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
-	PRIMARY KEY(`host_name`)
-);
-CREATE TABLE "matched_envs_hosts" (
-	`proj_env_id`	TEXT NOT NULL,
-	`host_id`	INTEGER NOT NULL,
-	PRIMARY KEY(`proj_env_id`)
 );
