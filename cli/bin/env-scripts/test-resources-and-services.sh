@@ -66,9 +66,11 @@ else
 fi
 
 # remote network check
-# low disk space test
+# low disk space test - any FS that's not > 90% full and is not "/" or "/app"
+# df -h | perl -ne '/[09]\d% (?!\/(app)?$)/ and print' 
 # current load avg (if under threshhold (eg. 1.2), try I/O test dd if= of=/)
 # tmp mysql table creation
+# copy_tbl_time=$({ /usr/bin/time -f "%e" mysql -h database.internal -u user -D main -e "CREATE TABLE core_config_data_tmp AS (SELECT * FROM core_config_data); DROP TABLE core_config_data_tmp;";} 2>&1)
 # url with FQDN check (should check router container)
 # certificate check
 # get last log error/exception
