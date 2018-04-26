@@ -29,7 +29,7 @@ const {
   backup
 } = require('../src/environment')
 const {addUser, delUser} = require('../src/user')
-const {setVar} = require('../src/variable')
+const {getVar, setVar} = require('../src/variable')
 
 const errorTxt = txt => chalk.bold.white.bgRed(txt)
 const headerTxt = txt => chalk.yellow(txt)
@@ -522,7 +522,7 @@ yargs.command(
     verifyOneOf(argv, ['a', 'pid'])
     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
     if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
+      pidEnvs = filterStillValidRuns(argv.time, delUser, pidEnvs)
     }
     const additionalArgs = [argv.email]
     pLimitForEachHandler(4, delUser, pidEnvs, additionalArgs)
@@ -530,14 +530,29 @@ yargs.command(
 )
 
 yargs.command(
-  ['variable:set <name> <value> [pid...]', 'vs'],
-  'Set var to value on projects',
+  ['variable:get <name> [pid...]', 'vg'],
+  'Get var on projects\' envs',
   addSharedPidEnvOpts,
   async argv => {
     verifyOneOf(argv, ['a', 'pid'])
     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
     if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
+      pidEnvs = filterStillValidRuns(argv.time, getVar, pidEnvs)
+    }
+    const additionalArgs = [argv.name, argv.value]
+    pLimitForEachHandler(4, getVar, pidEnvs, additionalArgs)
+  }
+)
+
+yargs.command(
+  ['variable:set <name> <value> [pid...]', 'vs'],
+  'Set var to value on projects\' envs',
+  addSharedPidEnvOpts,
+  async argv => {
+    verifyOneOf(argv, ['a', 'pid'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, setVar, pidEnvs)
     }
     const additionalArgs = [argv.name, argv.value]
     pLimitForEachHandler(4, setVar, pidEnvs, additionalArgs)

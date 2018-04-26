@@ -1,10 +1,12 @@
 const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
 
 const addUser = async (project, environment, email, role) => {
-  const cmd = `${MC_CLI} user:update --wait -p ${project} -r ${environment}:${role} ${email}`
+  role = environment === 'master' ? role : environment + ':' + role
+  const cmd = `${MC_CLI} user:update --no-wait --yes -p ${project} -r ${role} ${email}`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
+      return true
     })
     .catch(error => {
       if (/owner.*cannot be changed/i.test(error.stderr)) {
