@@ -65,6 +65,46 @@ export default class extends Component {
     return String(row[filter.id]) === filter.value
   }
 
+  zeroIsPassing = (filter, row) => {
+    let val = parseInt(row[filter.id],10)
+    switch (filter.value) {
+      case 'passing':
+        return val === 0
+      case 'failing':
+        return val > 0
+      case 'untested':
+        return row[filter.id] === null
+      case 'default':
+        return true
+    }
+  }
+
+  zeroIsFailing = (filter, row) => {
+    let val = parseInt(row[filter.id],10)
+    switch (filter.value) {
+      case 'passing':
+        return val > 0
+      case 'failing':
+        return val === 0
+      case 'untested':
+        return row[filter.id] === null
+      case 'default':
+        return true
+    }
+  }
+
+  average = ({data, column}) => {
+    let sum = 0
+    let count = 0
+    data.forEach(v => {
+      if (v[column.id] !== null) {
+        sum += v[column.id]
+        count++
+      }
+    })
+    return <span>{Math.round(sum * 10 / count) / 10}</span>
+  }
+
   formatDate = secSinceEpoch => {
     return /^\d+$/.test(secSinceEpoch)
       ? moment(new Date(secSinceEpoch * 1000).toISOString().slice(0, 10)).fromNow()
@@ -88,7 +128,7 @@ export default class extends Component {
       onChange={event => onChange(event.target.value)}
       style={{width: '100%'}}
       value={filter ? filter.value : 'all'}>
-      <option value="all">Show All</option>
+      <option value="">Show All</option>
       <optgroup>
         <option key={'success'} value="1">
           success
@@ -102,6 +142,27 @@ export default class extends Component {
       </optgroup>
     </select>
   )
+
+  passFailFilter = ({filter, onChange}) => (
+    <select
+      onChange={event => onChange(event.target.value)}
+      style={{width: '100%'}}
+      value={filter ? filter.value : 'all'}>
+      <option value="">Show All</option>
+      <optgroup>
+        <option key={'success'} value="passing">
+          passing
+        </option>
+        <option key={'failed'} value="failing">
+          failing
+        </option>
+        <option key={'untested'} value="untested">
+          untested
+        </option>
+      </optgroup>
+    </select>
+  )
+
 
   errorList = list => {
     if (/^1[45]/.test(list[0])) {
@@ -202,7 +263,7 @@ export default class extends Component {
         }}
         minRows={0}
         filterable
-        defaultPageSize={25}
+        defaultPageSize={10}
         defaultFilterMethod={this.matchRow}
         className={'-striped -highlight rotated-headers'}
         style={{
@@ -453,7 +514,9 @@ export default class extends Component {
                 accessor: 'not_valid_index_count',
                 Cell: cell => this.validate(cell.value, v => v === 0, this.checkIcon, this.errorIcon),
                 maxWidth: calcWidth(2),
-                className: 'right'
+                className: 'right',
+                Filter: this.passFailFilter,
+                filterMethod: this.zeroIsPassing
               },
               {
                 Header: 'Products',
@@ -565,9 +628,10 @@ export default class extends Component {
                 Header: 'Cumulative CPU',
                 accessor: 'cumulative_cpu_percent',
                 Cell: cell => (cell.value ? cell.value.toFixed(0) : ''),
-                maxWidth: calcWidth(3),
+                maxWidth: calcWidth(4),
                 className: 'right',
-                Filter: '%'
+                Filter: '%',
+                Footer: this.average
               },
               {
                 Header: 'Storefront (uncached)',
@@ -575,7 +639,8 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
-                Filter: this.timerIcon
+                Filter: this.timerIcon,
+                Footer: this.average
               },
               {
                 Header: 'Storefront (cached)',
@@ -583,7 +648,8 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
-                Filter: this.timerIcon
+                Filter: this.timerIcon,
+                Footer: this.average
               },
               {
                 Header: 'Cat Page (uncached)',
@@ -591,7 +657,8 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
-                Filter: this.timerIcon
+                Filter: this.timerIcon,
+                Footer: this.average
               },
               {
                 Header: 'Cat Page (partial cache)',
@@ -599,7 +666,8 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
-                Filter: this.timerIcon
+                Filter: this.timerIcon,
+                Footer: this.average
               },
               {
                 Header: 'Cat Page (cached)',
@@ -607,7 +675,8 @@ export default class extends Component {
                 Cell: cell => this.formatSecs(cell.value),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
-                Filter: this.timerIcon
+                Filter: this.timerIcon,
+                Footer: this.average
               },
               {
                 Header: 'Cat Page Products',
@@ -619,7 +688,8 @@ export default class extends Component {
                 ),
                 maxWidth: calcWidth(2),
                 className: 'right',
-                filterable: false
+                Filter: this.passFailFilter,
+                filterMethod: this.zeroIsFailing
               },
               {
                 Header: 'Cat Page',

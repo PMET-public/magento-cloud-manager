@@ -5,7 +5,9 @@ export default function UniqueOptions(props) {
 
   let options = []
   if (data && data.length && typeof data[0][accessor] !== 'undefined') {
-    options = [...new Set(props.data.map(x => x[props.accessor]))].map(value => (
+    options = [...new Set(data.map(x => 
+      accessor === 'cat_url' && x[accessor] !== null ? x[accessor].replace(/.*\//,'') : x[accessor]))]
+    options = options.map(value => (
       <option key={value} value={value}>
         {value}
       </option>
