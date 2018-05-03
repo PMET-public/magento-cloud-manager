@@ -1,6 +1,6 @@
 const {exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB} = require('./common')
 const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd} = require('./environment.js')
-const {magentoAdminUser, magentoAdminPassword} = require('../.secrets.json')
+const {magentoSIAdminUser, magentoSIAdminPassword} = require('../.secrets.json')
 
 const smokeTestApp = async (project, environment = 'master') => {
   const sshCmd = await getSshCmd(project, environment)
@@ -42,7 +42,7 @@ const smokeTestApp = async (project, environment = 'master') => {
       SELECT \\"template_count\\", COUNT(*) FROM gene_bluefoot_stage_template;
       SELECT \\"last_login_customer\\", UNIX_TIMESTAMP(last_login_at) FROM customer_log 
         ORDER BY last_login_at DESC limit 1;
-      SELECT \\"last_login_admin\\", UNIX_TIMESTAMP(logdate) FROM admin_user WHERE username != \\"${magentoAdminUser}\\"
+      SELECT \\"last_login_admin\\", UNIX_TIMESTAMP(logdate) FROM admin_user WHERE username != \\"${magentoSIAdminUser}\\"
         ORDER BY logdate DESC limit 1;
     "
     # use curl -I for just headers using HTTP HEAD
@@ -54,7 +54,7 @@ const smokeTestApp = async (project, environment = 'master') => {
 
     test $http_status -eq 302 || exit 0
     store_url=$(curl -sI localhost | sed -n "s/Location: \\(.*\\)?.*/\\1/p")
-    cat_url=$(curl -s $store_url | perl -ne "s/.*?class.*?nav-1.*?href=.([^ ]+.html).*/\\1/ and print")
+    cat_url=$(curl -s $store_url | perl -ne "s/.*?class.*?nav-[12]-1.*?href=.([^ ]+.html).*/\\1/ and print")
     # if no category url, skip the rest of the tests
     test "$cat_url" = "" && exit 0
     echo cat_url $cat_url
@@ -68,12 +68,12 @@ const smokeTestApp = async (project, environment = 'master') => {
     echo cat_url_partial_cache $(curl $cat_url -o /dev/null -s -w "%{time_total}")
     echo german_check $(curl "$store_url?___store=luma_de&___from_store=default" -s | grep "baseUrl.*de_DE" | wc -l)
     echo venia_check $(curl "$store_url?___store=venia_us&___from_store=default" -s | grep "baseUrl.*venia" | wc -l)
-    php bin/magento admin:user:unlock ${magentoAdminUser} > /dev/null
+    php bin/magento admin:user:unlock ${magentoSIAdminUser} > /dev/null
     rm /tmp/myc 2> /dev/null || : 
     read -r form_url form_key <<<$(curl -sL -c /tmp/myc -b /tmp/myc "$store_url/admin/" | 
       perl -ne "s/.*var BASE_URL.*(https.*\\/).*/\\1/ and print;s/.*var FORM_KEY = .(.*).;.*/\\1/ and print")
     echo admin_check $(curl -sv -c /tmp/myc -b /tmp/myc -X POST -d \
-      "login[username]=${magentoAdminUser}&login[password]=${magentoAdminPassword}&form_key=$form_key" $form_url 2>&1 |
+      "login[username]=${magentoSIAdminUser}&login[password]=${magentoSIAdminPassword}&form_key=$form_key" $form_url 2>&1 |
       grep "Location.*admin/dashboard" | wc -l)
     echo utilization_end $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
       sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")
