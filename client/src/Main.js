@@ -12,8 +12,8 @@ class Main extends Component {
     const {classes, theme} = this.props
 
     return (
-      <main className={classes.content}>
-        <div className={classes.toolbar} />
+      <main className={classes.content + " main-content"} >
+        {/* <div className={classes.toolbar} /> */}
         <Route path={'/hosts-table'} component={HostsTable} />
         <Route path={'/hosts-chart'} component={HostsChart} />
         <Route path={'/response-times-chart'} component={ResponseTimesChart} />

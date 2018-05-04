@@ -54,25 +54,53 @@ if [ $exit_status -ne 0 ]; then
 fi
 
 echo -n Checking web app ... 
-http_status=$(timeout 5 curl -sI localhost | sed -n "s/HTTP\\/1.1 \\([0-9]*\\).*/\\1/p")
+location=$(timeout 30 curl -sI localhost | sed -n "s/Location: \(.*SID=.*\)/\1/p")
 if [ $? -ne 0 ]; then
-  (>&2 echo 'web server error or did not respond in < 5 sec.')
+  (>&2 echo 'Web server error or did not respond in < 30 sec.')
   error=1
-elif [ "$http_status" -ne 302 ]; then
-  (>&2 echo "Server responded with unexpected HTTP reponse status: $http_status")
+elif [ "$location" = "" ]; then
+  (>&2 echo "Web server responded with unexpected response.")
+  error=1
+else
+  curl -s "$location" | grep -q baseUrl
+  if [ $? -ne 0 ]; then
+    (>&2 echo 'Redirect url does not contain base url.')
+    error=1
+  fi
+  echo ' ok'
+fi
+
+# low disk space test - any fs that's not > 90% full and is not "/" or "/app"
+echo -n Checking available disk space ... 
+fs=$(df -h | perl -ne '/[09]\d% (?!\/(app)?$)/ and print' | awk '{print $6 " " $5}')
+if [ "$fs" = "" ]; then
+  (>&2 echo "Mounts with low disk space: $fs")
   error=1
 else
   echo ' ok'
 fi
 
-# remote network check
-# low disk space test - any FS that's not > 90% full and is not "/" or "/app"
-# df -h | perl -ne '/[09]\d% (?!\/(app)?$)/ and print' 
-# current load avg (if under threshhold (eg. 1.2), try I/O test dd if= of=/)
 # tmp mysql table creation
-# copy_tbl_time=$({ /usr/bin/time -f "%e" mysql -h database.internal -u user -D main -e "CREATE TABLE core_config_data_tmp AS (SELECT * FROM core_config_data); DROP TABLE core_config_data_tmp;";} 2>&1)
-# url with FQDN check (should check router container)
-# certificate check
+echo -n Checking DB speed ... 
+copy_tbl_time=$({ /usr/bin/time -f "%e" mysql -h database.internal -u user -D main -e \
+  "CREATE TABLE core_config_data_tmp AS (SELECT * FROM core_config_data); DROP TABLE core_config_data_tmp;";} 2>&1)
+if [ "$copy_tbl_time" > 0.25 ]; then
+  (>&2 echo "DB performing slowly. $copy_tbl_time sec to clone tmp config table.")
+  error=1
+else
+  echo ' ok'
+fi
+
+echo -n Checking utilization (loadavg / nproc) ...
+utilization=$(echo "print $(cat /proc/loadavg | awk '{print $1}') / $(nproc)" | perl)
+if [ "$utilization" > 2 ]; then
+  (>&2 echo "Current load avg is greater than twice # of cpus.")
+  error=1
+else
+  echo ' ok'
+fi
+
+# current load avg (if under threshhold (eg. 1.2), try I/O test dd if= of=/)
 # get last log error/exception
 
 # resource availability tests

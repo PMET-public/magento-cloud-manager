@@ -267,13 +267,18 @@ export default class extends Component {
         defaultFilterMethod={this.matchRow}
         className={'-striped -highlight rotated-headers'}
         style={{
-          height: this.state.height - 200 + 'px'
+          height: this.state.height - 165 + 'px'
         }}
         getTrProps={(state, rowInfo, column, instance) => {
           return {
             className: this.isSelected(rowInfo.row.id) ? '-selected' : undefined
           }
         }}
+        getPaginationProps={
+          (state, rowInfo, column, instance) => {
+            return { style: {width: 'calc(100% - 240px)'}}
+          }
+        }
         columns={[
           {
             Header: 'Project Env Info',
@@ -286,16 +291,6 @@ export default class extends Component {
                 headerClassName: 'adjacent-to-checkbox-column',
                 Cell: cell => (
                   <div>
-                    <a
-                      className=""
-                      target="_blank"
-                      href={`https://${cell.original.region}.magento.cloud/projects/${
-                        cell.original.project_id
-                      }/environments/${cell.original.environment_id}`}>
-                      {cell.original.project_title} {cell.original.environment_title}
-                      <br />({cell.original.project_id})
-                    </a>
-                    <br />
                     <a
                       target="_blank"
                       href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${
@@ -322,7 +317,17 @@ export default class extends Component {
                         cell.original.environment_id
                       }`}>
                       <Icon color="secondary">code</Icon>
-                    </Clipboard>
+                    </Clipboard> &nbsp;
+                    <a
+                      className=""
+                      target="_blank"
+                      href={`https://${cell.original.region}.magento.cloud/projects/${
+                        cell.original.project_id
+                      }/environments/${cell.original.environment_id}`}>
+                      {cell.original.project_title}<br/>
+                      {cell.original.environment_title} &nbsp;
+                      {cell.original.project_id}
+                    </a>
                   </div>
                 ),
                 Filter: ({filter, onChange}) => (
@@ -388,7 +393,7 @@ export default class extends Component {
               {
                 Header: 'Users',
                 accessor: 'user_list',
-                maxWidth: calcWidth(3),
+                maxWidth: calcWidth(4),
                 Cell: cell => {
                   const list = cell.value
                     ? cell.value
@@ -535,7 +540,7 @@ export default class extends Component {
               {
                 Header: 'Admins',
                 accessor: 'admin_user_count',
-                Cell: cell => this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon),
+                Cell: cell => this.validate(cell.value, v => v > 0, cell.value, this.errorIcon),
                 maxWidth: calcWidth(2),
                 className: 'right'
               },
@@ -575,7 +580,12 @@ export default class extends Component {
                 Cell: cell => <div>{cell.value}</div>,
                 maxWidth: calcWidth(2),
                 className: 'right'
-              },
+              }
+            ]
+          },
+          {
+            Header: 'App Checks',
+            columns: [
               {
                 Header: 'German',
                 accessor: 'german_check',
@@ -591,7 +601,7 @@ export default class extends Component {
                 Filter: this.httpTestFilter
               },
               {
-                Header: 'Admin',
+                Header: 'Admin Login',
                 accessor: 'admin_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.errorIcon),
                 maxWidth: calcWidth(1),

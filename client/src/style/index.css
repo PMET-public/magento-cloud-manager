@@ -2,6 +2,7 @@ body {
   margin: 0;
   padding: 0;
   font-family: Roboto;
+  overflow: hidden;
 }
 
 a {
@@ -75,6 +76,10 @@ main {
   overflow-x: scroll;
 }
 
+main.main-content {
+  padding: 65px 0 0 0
+}
+
 .ReactTable .rt-thead .rt-th {
   padding: 6px 3px;
 }
@@ -131,7 +136,6 @@ main {
   transform: none;
 }
 
-
 .rotated-headers .rt-thead .rt-resizable-header-content {
   overflow: visible;
 }
@@ -158,10 +162,6 @@ a {
 
 .hosts-current-table, .hosts-current-table .-pagination {
   max-width: 600px;
-}
-
-.-pagination {
-
 }
 
 .gauge-wrapper {

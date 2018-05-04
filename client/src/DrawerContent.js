@@ -12,7 +12,7 @@ class DrawerContent extends Component {
 
     return (
       <div>
-        <div className={classes.toolbar} />
+        {/*<div className={classes.toolbar} />*/}
 
         <MenuList>
           <Link to={'/'}>
