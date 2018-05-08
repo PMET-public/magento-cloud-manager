@@ -39,8 +39,8 @@ export default class extends Component {
       width: 0,
       height: 0,
       selection: [],
-      selectAll: false,
-      filtered: []
+      selectAll: false
+      // , filtered: []
     }
     this.updateWindowDimensions = this.updateWindowDimensions.bind(this)
   }
@@ -249,7 +249,7 @@ export default class extends Component {
         SelectInputComponent={this.selectInputComponent}
         SelectAllInputComponent={this.selectInputComponent}
         data={this.state.data}
-        filtered={this.state.filtered}
+        //filtered={this.state.filtered}
         onFetchData={(state, instance) => {
           this.setState({loading: true})
           fetch('/smoke-tests')
@@ -257,15 +257,14 @@ export default class extends Component {
             .then(res => {
               this.setState({
                 data: res.map(row => {
-                  // row._id = row.id
                   row._id = row.project_id + ':' + row.environment_id
                   return row
                 }),
-                loading: false,
-                filtered: [{
-                  id: 'status',
-                  value: 'active'
-                }]
+                loading: false
+                // , filtered: [{
+                //   id: 'status',
+                //   value: 'active'
+                // }]
               })
             })
         }}
@@ -378,8 +377,8 @@ export default class extends Component {
                 filterMethod: this.exactMatchRow
               },
               {
-                Header: 'Env Status',
-                accessor: 'status',
+                Header: 'Proj Status',
+                accessor: 'proj_status',
                 className: 'right',
                 width: calcWidth(7),
                 Filter: ({filter, onChange}) => (
@@ -388,7 +387,23 @@ export default class extends Component {
                     style={{width: '100%'}}
                     value={filter ? filter.value : 'all'}>
                     <option value="all">Show All</option>
-                    <UniqueOptions data={this.state.data} accessor={'status'} />
+                    <UniqueOptions data={this.state.data} accessor={'proj_status'} />
+                  </select>
+                ),
+                filterMethod: this.exactMatchRow
+              },
+              {
+                Header: 'Env Status',
+                accessor: 'env_status',
+                className: 'right',
+                width: calcWidth(7),
+                Filter: ({filter, onChange}) => (
+                  <select
+                    onChange={event => onChange(event.target.value)}
+                    style={{width: '100%'}}
+                    value={filter ? filter.value : 'all'}>
+                    <option value="all">Show All</option>
+                    <UniqueOptions data={this.state.data} accessor={'env_status'} />
                   </select>
                 ),
                 filterMethod: this.exactMatchRow

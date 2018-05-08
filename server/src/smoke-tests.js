@@ -13,8 +13,8 @@ module.exports = (req, res) => {
     s.cat_url_cached, s.german_check, s.venia_check, s.admin_check, s.error_logs, s.cpus, s.utilization_start,
     s.utilization_end, s.timestamp,
     e.project_id, e.id environment_id, e.title environment_title, machine_name, last_created_at,
-    case when missing = 1 then 'missing' when failure = 1 then 'failure' else 'active' end as status,
-    p.region, p.title project_title, p.user_list,
+    case when e.missing = 1 then 'missing' when e.failure = 1 then 'failure' else 'active' end as env_status,
+    p.region, p.title project_title, p.user_list, case when p.active = 1 then 'active' else 'missing' end as proj_status, 
     c.host_name, c.expiration
   FROM environments e
   LEFT JOIN 
