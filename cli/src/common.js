@@ -94,7 +94,7 @@ const dbExists = () => {
 }
 
 const initDB = () => {
-  const result = db.exec(fs.readFileSync(`${__dirname}/../../sql/cloud.sql`))
+  const result = db.exec(fs.readFileSync(`${__dirname}/../../sql/cloud.sql`, {encoding: 'utf8'}))
   logger.mylog('debug', result)
 }
 
@@ -166,7 +166,7 @@ const renderTmpl = file => {
   const tmpl = fs.readFileSync(file, {encoding: 'utf8'})
   const basename = file.replace(/.*\//, '')
   const newFile = '/tmp/' + new Date() / 1000 + '-' + basename
-  const output = render(tmpl,secrets)
+  const output = render(tmpl, secrets)
   fs.writeFileSync(newFile, output)
   return newFile
 }
