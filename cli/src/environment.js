@@ -3,6 +3,7 @@ const moment = require('moment')
 const {writeFileSync} = require('fs')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../.secrets.json')
+const {setProjectInactive} = require('./project')
 
 const updateEnvironment = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
@@ -30,6 +31,8 @@ const updateEnvironment = async (project, environment = 'master') => {
     .catch(error => {
       if (/Specified environment not found/.test(error.message)) {
         return setEnvironmentMissing(project, environment)
+      } else if (/Specified project not found/.test(error.message)) {
+        return setProjectInactive(project)
       }
       logger.mylog('error', error)
     })
@@ -253,7 +256,7 @@ exports.getEnvsFromApi = getEnvsFromApi
 const getAllLiveEnvsFromDB = () => {
   const sql = `SELECT e.id environment_id, e.project_id, c.expiration
     FROM environments e 
-    LEFT JOIN projects p ON e.project_id = p.id 
+    LEFT JOIN projects p ON e.project_id = p.id && p.active = 1
     LEFT JOIN cert_expirations c ON 
       c.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
       WHERE e.active = 1 AND e.missing = 0 AND (e.failure = 0 OR e.failure IS null)`

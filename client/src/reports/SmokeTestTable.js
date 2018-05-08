@@ -39,7 +39,8 @@ export default class extends Component {
       width: 0,
       height: 0,
       selection: [],
-      selectAll: false
+      selectAll: false,
+      filtered: []
     }
     this.updateWindowDimensions = this.updateWindowDimensions.bind(this)
   }
@@ -62,11 +63,14 @@ export default class extends Component {
   }
 
   exactMatchRow = (filter, row) => {
+    if (filter.value === 'all') {
+      return true
+    }
     return String(row[filter.id]) === filter.value
   }
 
   zeroIsPassing = (filter, row) => {
-    let val = parseInt(row[filter.id],10)
+    const val = parseInt(row[filter.id],10)
     switch (filter.value) {
       case 'passing':
         return val === 0
@@ -80,7 +84,7 @@ export default class extends Component {
   }
 
   zeroIsFailing = (filter, row) => {
-    let val = parseInt(row[filter.id],10)
+    const val = parseInt(row[filter.id],10)
     switch (filter.value) {
       case 'passing':
         return val > 0
@@ -162,7 +166,6 @@ export default class extends Component {
       </optgroup>
     </select>
   )
-
 
   errorList = list => {
     if (/^1[45]/.test(list[0])) {
@@ -246,6 +249,7 @@ export default class extends Component {
         SelectInputComponent={this.selectInputComponent}
         SelectAllInputComponent={this.selectInputComponent}
         data={this.state.data}
+        filtered={this.state.filtered}
         onFetchData={(state, instance) => {
           this.setState({loading: true})
           fetch('/smoke-tests')
@@ -257,7 +261,11 @@ export default class extends Component {
                   row._id = row.project_id + ':' + row.environment_id
                   return row
                 }),
-                loading: false
+                loading: false,
+                filtered: [{
+                  id: 'status',
+                  value: 'active'
+                }]
               })
             })
         }}
@@ -363,14 +371,14 @@ export default class extends Component {
                     onChange={event => onChange(event.target.value)}
                     style={{width: '100%'}}
                     value={filter ? filter.value : 'all'}>
-                    <option value="">Show All</option>
+                    <option value="all">Show All</option>
                     <UniqueOptions data={this.state.data} accessor={'region'} />
                   </select>
                 ),
                 filterMethod: this.exactMatchRow
               },
               {
-                Header: 'Status',
+                Header: 'Env Status',
                 accessor: 'status',
                 className: 'right',
                 width: calcWidth(7),
@@ -379,7 +387,7 @@ export default class extends Component {
                     onChange={event => onChange(event.target.value)}
                     style={{width: '100%'}}
                     value={filter ? filter.value : 'all'}>
-                    <option value="">Show All</option>
+                    <option value="all">Show All</option>
                     <UniqueOptions data={this.state.data} accessor={'status'} />
                   </select>
                 ),
@@ -440,7 +448,7 @@ export default class extends Component {
                 accessor: 'expiration',
                 Cell: cell => {
                   if (!cell.value) {
-                    return 'N/A'
+                    return cell.value
                   }
                   const expiryDate = new Date(cell.value * 1000)
                   if (expiryDate < new Date()) {
@@ -449,7 +457,39 @@ export default class extends Component {
                   return moment(expiryDate).fromNow()
                 },
                 maxWidth: calcWidth(5),
-                className: 'right'
+                className: 'right',
+                Filter: ({filter, onChange}) => (
+                  <select
+                    onChange={event => onChange(event.target.value)}
+                    style={{width: '100%'}}
+                    value={filter ? filter.value : 'all'}>
+                    <option value="">Show All</option>
+                    <optgroup>
+                      <option key={'0'} value="expired">
+                        expired
+                      </option>
+                      <option key={'2wks'} value="2wks">
+                        &lt; 2 wks
+                      </option>
+                      <option key={'untested'} value="untested">
+                        untested
+                      </option>
+                    </optgroup>
+                  </select>
+                ),
+                filterMethod: (filter, row) => {
+                  const expiryDate = new Date(row[filter.id] * 1000)
+                  switch (filter.value) {
+                    case 'expired':
+                      return row[filter.id] && expiryDate < new Date()
+                    case '2wks':
+                      return row[filter.id] && expiryDate >= new Date() && expiryDate/1000 < new Date()/1000 + 2 * 7 * 24 * 60 * 60
+                    case 'untested':
+                      return row[filter.id] === null
+                    case 'default':
+                      return true
+                  }
+                }
               }
             ]
           },

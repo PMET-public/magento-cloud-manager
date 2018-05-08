@@ -24,10 +24,24 @@ const updateProject = async project => {
     logger.mylog('info', `Project: ${project} updated and users recorded.`)
     return true
   } catch (error) {
+    if (error.message && /Specified project not found/.test(error.message)) {
+      return setProjectInactive(project)
+    }
     logger.mylog('error', error)
   }
 }
 exports.updateProject = updateProject
+
+const setProjectInactive = project => {
+  const result = db
+    .prepare('UPDATE projects SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE id = ?')
+    .run(project)
+  logger.mylog('debug', result)
+  logger.mylog('info', `Project: ${project} set to inactive.`)
+  return result
+}
+exports.setProjectInactive = setProjectInactive
+
 
 const getProjectInfoFromApi = async project => {
   const cmd = `${MC_CLI} project:info -p ${project} --format=tsv`
