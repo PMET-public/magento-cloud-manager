@@ -1,3 +1,4 @@
+const fs = require('fs')
 // setup logging
 const winston = require('winston')
 
@@ -73,7 +74,8 @@ exports.logger = logger
 
 // setup DB
 const Database = require('better-sqlite3')
-const db = new Database(`${__dirname}/../../sql/cloud.db`)
+const dbPath = `${__dirname}/../../sql/cloud.db`
+const db = new Database(dbPath)
 const {prepare} = db
 
 // can not use arrow func b/c "=>" does not have its own arguments
@@ -83,6 +85,22 @@ db.prepare = function() {
   return prepare.apply(this, arguments)
 }
 exports.db = db
+
+const dbExists = () => {
+  const sql = 'SELECT count(name) tbl_count FROM sqlite_master WHERE type="table";'
+  const result = db.prepare(sql).get()
+  logger.mylog('debug', result)
+  return !!result.tbl_count
+}
+
+const initDB = () => {
+  const result = db.exec(fs.readFileSync(`${__dirname}/../../sql/cloud.sql`))
+  logger.mylog('debug', result)
+}
+
+if (!dbExists()) {
+  initDB()
+}
 
 const exec = require('util').promisify(require('child_process').exec)
 // can not use arrow func b/c "=>" does not have its own arguments
@@ -143,7 +161,6 @@ const parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], addit
 exports.parseFormattedCmdOutputIntoDB = parseFormattedCmdOutputIntoDB
 
 const secrets = require('../.secrets.json')
-const fs = require('fs')
 const {render} = require('mustache')
 const renderTmpl = file => {
   const tmpl = fs.readFileSync(file, {encoding: 'utf8'})
