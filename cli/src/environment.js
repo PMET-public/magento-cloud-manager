@@ -3,7 +3,6 @@ const moment = require('moment')
 const {writeFileSync} = require('fs')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../.secrets.json')
-const {setProjectInactive} = require('./project')
 
 const updateEnvironment = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
@@ -32,7 +31,7 @@ const updateEnvironment = async (project, environment = 'master') => {
       if (/Specified environment not found/.test(error.message)) {
         return setEnvironmentMissing(project, environment)
       } else if (/Specified project not found/.test(error.message)) {
-        return setProjectInactive(project)
+        return require('./project').setProjectInactive(project)
       }
       logger.mylog('error', error)
     })

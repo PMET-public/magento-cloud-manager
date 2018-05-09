@@ -22,7 +22,7 @@ const parseActivityList = activities => {
 }
 
 const getActivitiesFromApi = async (project, type) => {
-  const cmd = `${MC_CLI} activity:list -p ${project} -e master -a --type=environment.${type} --limit=9999 --format=tsv`
+  const cmd = `${MC_CLI} activity:list -p ${project} -e master -a ${type ? '--type=' + type : ''} --limit=9999 --format=tsv`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -42,6 +42,7 @@ const getActivitiesFromApi = async (project, type) => {
     })
   return result
 }
+exports.getActivitiesFromApi = getActivitiesFromApi
 
 const mergeMostRecentActivityResultByEnv = resultLists => {
   let combinedKeys = []
@@ -64,13 +65,13 @@ const mergeMostRecentActivityResultByEnv = resultLists => {
   return combinedResults
 }
 
- const searchActivitiesForFailures = async project => {
+const searchActivitiesForFailures = async project => {
   try {
     let fails = 0
     let successes = 0
-    const branchActivities = await getActivitiesFromApi(project, 'branch')
-    const pushActivities = await getActivitiesFromApi(project, 'push')
-    const redeployActivities = await getActivitiesFromApi(project, 'redeploy')
+    const branchActivities = await getActivitiesFromApi(project, 'environment.branch')
+    const pushActivities = await getActivitiesFromApi(project, 'environment.push')
+    const redeployActivities = await getActivitiesFromApi(project, 'environment.redeploy')
     const branchResults = parseActivityList(branchActivities)
     const pushResults = parseActivityList(pushActivities)
     const redeployResults = parseActivityList(redeployActivities)

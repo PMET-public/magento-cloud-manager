@@ -3,6 +3,7 @@ const {updateEnvironment, setEnvironmentMissing} = require('./environment')
 const {addCloudProjectKeyToGitlabKeys} = require('./gitlab')
 const {addUser, recordUsers} = require('./user')
 const {setVar} = require('./variable')
+const {getActivitiesFromApi} = require('./activity')
 const {defaultCloudUsers, defaultCloudVars} = require('../.secrets.json')
 
 const getProjectsFromApi = async () => {
@@ -113,8 +114,13 @@ const discoverEnvs = async project => {
           }
           // if master env and inactive, initialize project and 
           if (environment === 'master' && /inactive/i.test(status)) {
-            promises.push(initProject(project))
-            promises.push(addCloudProjectKeyToGitlabKeys(project))
+            promises.push((async () => {
+              const result = await getActivitiesFromApi(project, 'environment.variable.create')
+              if (!result) {
+                return initProject(project)
+              }
+              return true
+            })())
           }
         })
       if (dbEnvironments.length) {
@@ -133,6 +139,7 @@ const initProject = async project => {
   const promises = []
   Object.entries(defaultCloudVars).forEach(([name, value]) => promises.push(setVar(project, 'master', name, value)))
   Object.entries(defaultCloudUsers).forEach(([email, role]) => promises.push(addUser(project, 'master', email, role)))
+  promises.push(addCloudProjectKeyToGitlabKeys(project))
   const result = await Promise.all(promises)
   return result
 }

@@ -18,6 +18,15 @@ const addUser = async (project, environment, email, role) => {
 }
 exports.addUser = addUser
 
+
+const getUser = (project, email) => {
+  const sql = 'SELECT * FROM users WHERE project_id = ? and email = ?'
+  const result = db.prepare(sql).get(project, email)
+  logger.mylog('debug', result)
+  return result
+}
+exports.getUser = getUser
+
 const delUser = async (project, environment, email) => {
   const cmd = `${MC_CLI} user:delete -p ${project} ${email}`
   const result = exec(cmd)

@@ -19,8 +19,9 @@ const getVar = async (project, environment, name) => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
-      logger.mylog('info', `Value of ${name} is: ${stdout.trim()} on proj: ${project} env: ${environment}`)
-      return true
+      const val = stdout.trim()
+      logger.mylog('info', `Value of ${name} is: ${val} on proj: ${project} env: ${environment}`)
+      return val
     })
     .catch(error => {
       logger.mylog('error', error)
