@@ -1,0 +1,7 @@
+insert into projects_new (id, title, region, project_url, git_url, created_at, plan_size, allowed_environments, storage, user_licenses, active, client_ssh_key, timestamp) select * from projects;
+insert into hosts_states_new (id, project_id, environment_id, boot_time, total_memory, cpus, load_avg_1, load_avg_5, load_avg_15, ip, running_processes, total_processes, last_process_id, timestamp) select * from hosts_states;
+insert into users_new (project_id, email, role, timestamp) select * from users;
+insert into environments_new (id, title, project_id, machine_name, active, failure, missing, last_created_at, timestamp) select * from environments;
+insert into cert_expirations_new (host_name, expiration, timestamp) select * from cert_expirations;
+insert into matched_envs_hosts_new (proj_env_id, host_id) select * from matched_envs_hosts;
+insert into smoke_tests_new (id, project_id, environment_id, app_yaml_md5, ee_composer_version, composer_lock_md5, composer_lock_mtime, cumulative_cpu_percent, not_valid_index_count, catalog_product_entity_count, catalog_category_product_count, admin_user_count, store_count, order_count, cms_block_count, template_count, last_login_customer, last_login_admin, http_status, store_url_uncached, store_url_cached, cat_url, cat_url_product_count, cat_url_uncached, cat_url_partial_cache, cat_url_cached, german_check, venia_check, admin_check, error_logs, cpus, utilization_start, utilization_end, timestamp) select * from smoke_tests;
