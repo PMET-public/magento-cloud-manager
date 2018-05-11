@@ -1,6 +1,6 @@
 const {exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB} = require('./common')
 const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd} = require('./environment.js')
-const {magentoSIAdminUser, magentoSIAdminPassword} = require('../.secrets.json')
+const {defaultCloudVars, magentoSIAdminUser, magentoSIAdminPassword} = require('../.secrets.json')
 
 const smokeTestApp = async (project, environment = 'master') => {
   const sshCmd = await getSshCmd(project, environment)
@@ -20,6 +20,7 @@ const smokeTestApp = async (project, environment = 'master') => {
       " composer.lock | head -1)
     echo composer_lock_md5 $(md5sum composer.lock | sed "s/ .*//")
     echo composer_lock_mtime $(stat -t composer.lock | awk "{print \\$12}")
+    echo config_php_md5 $(md5sum app/etc/config.php | sed "s/ .*//")
     echo cumulative_cpu_percent $(ps -p 1 -o %cpu --cumulative --no-header)
     echo cpus $(nproc)
 
@@ -30,6 +31,7 @@ const smokeTestApp = async (project, environment = 'master') => {
     /\\[([^]]*)].*(CRITICAL|ERROR):? (.*)/ and print(str2time(\\$1) . \\" \\" . \\$ARGV . \\" \\" . \\$2 .\\" \\" . 
     \\$3)" ~/var/log/{debug,exception,support_report,system}.log \
     /var/log/{app,deploy,error}.log 2> /dev/null ; } | sort -k 3 -ru )
+    echo last_deploy_log $(ls app/etc/log/cloud.*.log 2> /dev/null | tail -1 | xargs tail | tr "\\n" "\\0")
 
     mysql main -sN -h database.internal -e "
       SELECT \\"not_valid_index_count\\", COUNT(*) FROM indexer_state WHERE status != \\"valid\\";
@@ -42,7 +44,7 @@ const smokeTestApp = async (project, environment = 'master') => {
       SELECT \\"template_count\\", COUNT(*) FROM gene_bluefoot_stage_template;
       SELECT \\"last_login_customer\\", UNIX_TIMESTAMP(last_login_at) FROM customer_log 
         ORDER BY last_login_at DESC limit 1;
-      SELECT \\"last_login_admin\\", UNIX_TIMESTAMP(logdate) FROM admin_user WHERE username != \\"${magentoSIAdminUser}\\"
+      SELECT \\"last_login_admin\\", UNIX_TIMESTAMP(logdate) FROM admin_user WHERE username != \\"${defaultCloudVars.ADMIN_USER}\\"
         ORDER BY logdate DESC limit 1;
     "
     # use curl -I for just headers using HTTP HEAD
@@ -66,6 +68,10 @@ const smokeTestApp = async (project, environment = 'master') => {
     php bin/magento cache:flush > /dev/null
     echo store_url_uncached $(curl $store_url -o /dev/null -s -w "%{time_total}")
     echo cat_url_partial_cache $(curl $cat_url -o /dev/null -s -w "%{time_total}")
+    search_url="\${store_url}catalogsearch/result/?q=accessory"
+    echo search_url $search_url
+    echo search_url_partial_cache $(curl $search_url -o /dev/null -s -w "%{time_total}")
+    echo search_url_product_count $(curl -s $search_url | grep "img.*class.*product-image-photo" | wc -l)
     echo german_check $(curl "$store_url?___store=luma_de&___from_store=default" -s | grep "baseUrl.*de_DE" | wc -l)
     echo venia_check $(curl "$store_url?___store=venia_us&___from_store=default" -s | grep "baseUrl.*venia" | wc -l)
     php bin/magento admin:user:unlock ${magentoSIAdminUser} > /dev/null
