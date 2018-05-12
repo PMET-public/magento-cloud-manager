@@ -31,7 +31,7 @@ const smokeTestApp = async (project, environment = 'master') => {
     /\\[([^]]*)].*(CRITICAL|ERROR):? (.*)/ and print(str2time(\\$1) . \\" \\" . \\$ARGV . \\" \\" . \\$2 .\\" \\" . 
     \\$3)" ~/var/log/{debug,exception,support_report,system}.log \
     /var/log/{app,deploy,error}.log 2> /dev/null ; } | sort -k 3 -ru )
-    echo last_deploy_log $(ls app/etc/log/cloud.*.log 2> /dev/null | tail -1 | xargs tail | tr "\\n" "\\0")
+    echo last_deploy_log $(ls app/etc/log/cloud.*.log 2> /dev/null | tail -1 | xargs tail | tr "\\n" "\\v")
 
     mysql main -sN -h database.internal -e "
       SELECT \\"not_valid_index_count\\", COUNT(*) FROM indexer_state WHERE status != \\"valid\\";
@@ -52,26 +52,12 @@ const smokeTestApp = async (project, environment = 'master') => {
     http_status=$(curl -sI localhost | sed -n "s/HTTP\\/1.1 \\([0-9]*\\).*/\\1/p")
     echo http_status $http_status
 
-    # --- any value below can NULL in the DB b/c we exit on invalid responses from the web server ---
-
+    # --- any value below can be NULL in the DB b/c we exit on invalid responses from the web server ---
     test $http_status -eq 302 || exit 0
     store_url=$(curl -sI localhost | sed -n "s/Location: \\(.*\\)?.*/\\1/p")
-    cat_url=$(curl -s $store_url | perl -ne "s/.*?class.*?nav-[12]-1.*?href=.([^ ]+.html).*/\\1/ and print")
-    # if no category url, skip the rest of the tests
-    test "$cat_url" = "" && exit 0
-    echo cat_url $cat_url
-    echo cat_url_product_count $(curl -s $cat_url | grep "img.*class.*product-image-photo" | wc -l)
-    echo cat_url_cached $(curl $cat_url -o /dev/null -s -w "%{time_total}")
+    store_html=$(curl -s $store_url)
     echo store_url_cached $(curl $store_url -o /dev/null -s -w "%{time_total}")
-    php bin/magento cache:flush > /dev/null
-    echo cat_url_uncached $(curl $cat_url -o /dev/null -s -w "%{time_total}")
-    php bin/magento cache:flush > /dev/null
-    echo store_url_uncached $(curl $store_url -o /dev/null -s -w "%{time_total}")
-    echo cat_url_partial_cache $(curl $cat_url -o /dev/null -s -w "%{time_total}")
-    search_url="\${store_url}catalogsearch/result/?q=accessory"
-    echo search_url $search_url
-    echo search_url_partial_cache $(curl $search_url -o /dev/null -s -w "%{time_total}")
-    echo search_url_product_count $(curl -s $search_url | grep "img.*class.*product-image-photo" | wc -l)
+
     echo german_check $(curl "$store_url?___store=luma_de&___from_store=default" -s | grep "baseUrl.*de_DE" | wc -l)
     echo venia_check $(curl "$store_url?___store=venia_us&___from_store=default" -s | grep "baseUrl.*venia" | wc -l)
     php bin/magento admin:user:unlock ${magentoSIAdminUser} > /dev/null
@@ -81,6 +67,27 @@ const smokeTestApp = async (project, environment = 'master') => {
     echo admin_check $(curl -sv -c /tmp/myc -b /tmp/myc -X POST -d \
       "login[username]=${magentoSIAdminUser}&login[password]=${magentoSIAdminPassword}&form_key=$form_key" $form_url 2>&1 |
       grep "Location.*admin/dashboard" | wc -l)
+
+    cat_url=$(curl -s $store_url | perl -ne "s/.*?class.*?nav-[12]-1.*?href=.([^ ]+.html).*/\\1/ and print")
+    if [ -n "$cat_url" ]; then
+      echo cat_url $cat_url
+      echo cat_url_product_count $(curl -s $cat_url | grep "img.*class.*product-image-photo" | wc -l)
+      echo cat_url_cached $(curl $cat_url -o /dev/null -s -w "%{time_total}")
+      php bin/magento cache:flush > /dev/null
+      echo cat_url_uncached $(curl $cat_url -o /dev/null -s -w "%{time_total}")
+    fi
+
+    php bin/magento cache:flush > /dev/null
+    echo store_url_uncached $(curl $store_url -o /dev/null -s -w "%{time_total}")
+    search_url="\${store_url}catalogsearch/result/?q=accessory"
+    echo search_url $search_url
+    echo search_url_partial_cache $(curl $search_url -o /dev/null -s -w "%{time_total}")
+    echo search_url_product_count $(curl -s $search_url | grep "img.*class.*product-image-photo" | wc -l)
+
+    if [ -n "$cat_url" ]; then
+      echo cat_url_partial_cache $(curl $cat_url -o /dev/null -s -w "%{time_total}")
+    fi
+
     echo utilization_end $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
       sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")
 '`

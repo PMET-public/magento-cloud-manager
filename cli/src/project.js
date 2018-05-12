@@ -97,6 +97,9 @@ const discoverEnvs = async project => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(async ({stdout, stderr}) => {
+      if (/An API error occurred./.test(stderr)) {
+        throw 'An API error occurred.'
+      }
       const promises = []
       const dbEnvironments = getEnvsFromDB(project).map(row => row.id)
       stdout

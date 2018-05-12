@@ -547,6 +547,12 @@ export default class extends Component {
                 maxWidth: calcWidth(5),
                 className: 'right',
                 filterable: false
+              },              {
+                Header: 'config.php MD5',
+                accessor: 'config_php_md5',
+                Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
+                maxWidth: calcWidth(4),
+                filterable: false
               }
             ]
           },
@@ -570,7 +576,7 @@ export default class extends Component {
                 )
               },
               {
-                Header: 'Not valid indexes',
+                Header: 'All indexes valid',
                 accessor: 'not_valid_index_count',
                 Cell: cell => this.validate(cell.value, v => v === 0, this.checkIcon, this.errorIcon),
                 maxWidth: calcWidth(2),
@@ -683,6 +689,22 @@ export default class extends Component {
                   const bLength = b ? b.trim().split(/ 1[45]\d{8} \//).length : 0
                   return bLength - aLength
                 }
+              },
+              {
+                Header: 'Deploy Log End',
+                accessor: 'last_deploy_log',
+                Cell: cell => {
+                  const list = cell.value
+                    ? cell.value
+                        .trim()
+                        .split('\v')
+                    : []
+                  return list.length ? <Dialog title="End of Last Deploy Log" className="compact">{list}</Dialog> : ''
+                },
+                maxWidth: calcWidth(5),
+                filterMethod: (filter, row, column) => {
+                  return new RegExp(filter.value, 'i').test(row[filter.id])
+                }
               }
             ]
           },
@@ -701,7 +723,7 @@ export default class extends Component {
               {
                 Header: 'Storefront (uncached)',
                 accessor: 'store_url_uncached',
-                Cell: cell => this.formatSecs(cell.value),
+                Cell: cell => (<a href={"https://" + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon,
@@ -710,7 +732,7 @@ export default class extends Component {
               {
                 Header: 'Storefront (cached)',
                 accessor: 'store_url_cached',
-                Cell: cell => this.formatSecs(cell.value),
+                Cell: cell => (<a href={"https://" + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon,
@@ -719,7 +741,7 @@ export default class extends Component {
               {
                 Header: 'Cat Page (uncached)',
                 accessor: 'cat_url_uncached',
-                Cell: cell => this.formatSecs(cell.value),
+                Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon,
@@ -728,7 +750,7 @@ export default class extends Component {
               {
                 Header: 'Cat Page (partial cache)',
                 accessor: 'cat_url_partial_cache',
-                Cell: cell => this.formatSecs(cell.value),
+                Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon,
@@ -737,7 +759,7 @@ export default class extends Component {
               {
                 Header: 'Cat Page (cached)',
                 accessor: 'cat_url_cached',
-                Cell: cell => this.formatSecs(cell.value),
+                Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
                 maxWidth: calcWidth(4.5),
                 className: 'right',
                 Filter: this.timerIcon,
@@ -757,20 +779,27 @@ export default class extends Component {
                 filterMethod: this.zeroIsFailing
               },
               {
-                Header: 'Cat Page',
-                accessor: 'cat_url',
-                Cell: cell => (cell.value || '').replace(/.*\//, ''),
-                maxWidth: 200,
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="">Show All</option>
-                    <UniqueOptions data={this.state.data} accessor={'cat_url'} />
-                  </select>
-                )
-              }
+                Header: 'Search Page (partial cache)',
+                accessor: 'search_url_partial_cache',
+                Cell: cell => this.formatSecs(cell.value),
+                maxWidth: calcWidth(4.5),
+                className: 'right',
+                Filter: this.timerIcon,
+                Footer: this.average
+              },
+              {
+                Header: 'Search Page Products',
+                accessor: 'search_url_product_count',
+                Cell: cell => (
+                  <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
+                    {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
+                  </Tooltip>
+                ),
+                maxWidth: calcWidth(2),
+                className: 'right',
+                Filter: this.passFailFilter,
+                filterMethod: this.zeroIsFailing
+              },
             ]
           },
           {

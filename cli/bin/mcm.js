@@ -456,7 +456,7 @@ yargs.command(
     verifyOneOf(argv, ['a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
     if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
+      pidEnvs = filterStillValidRuns(argv.time, discoverEnvs, pidEnvs)
     }
     pLimitForEachHandler(4, discoverEnvs, pidEnvs)
   }
@@ -507,7 +507,7 @@ yargs.command(
     verifyOneOf(argv, ['a', 'pid'])
     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
     if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
+      pidEnvs = filterStillValidRuns(argv.time, addUser, pidEnvs)
     }
     const additionalArgs = [argv.email, argv.role]
     pLimitForEachHandler(4, addUser, pidEnvs, additionalArgs)
