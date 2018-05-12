@@ -34,9 +34,8 @@ const updateProject = async project => {
 exports.updateProject = updateProject
 
 const setProjectInactive = project => {
-  const result = db
-    .prepare('UPDATE projects SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE id = ?')
-    .run(project)
+  const sql = 'UPDATE projects SET active = 0, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE id = ?'
+  const result = db.prepare(sql).run(project)
   logger.mylog('debug', result)
   logger.mylog('info', `Project: ${project} set to inactive.`)
   return result
@@ -60,7 +59,8 @@ const getProjectInfoFromApi = async project => {
       const allowedEnvs = projectInfo.replace(/[\s\S]*environments: ([^\n]*)[\s\S]*/, '$1')
       const storage = projectInfo.replace(/[\s\S]*storage: ([^\n]*)[\s\S]*/, '$1')
       const userLicenses = projectInfo.replace(/[\s\S]*user_licenses: ([^"]*)[\s\S]*/, '$1')
-      const sql = `INSERT OR REPLACE INTO projects (id, title, region, project_url, git_url, created_at, plan_size,
+      const sql = `INSERT OR REPLACE INTO projects 
+        (id, title, region, project_url, git_url, created_at, plan_size, 
         allowed_environments, storage, user_licenses, active, client_ssh_key) VALUES
         (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       const result = db

@@ -20,7 +20,7 @@ const {
   deleteEnv,
   execInEnv,
   redeployEnv,
-  checkCertificate,
+  checkHttps,
   getPathFromRemote,
   sendPathToRemoteTmpDir,
   getLiveEnvsAsPidEnvArr,
@@ -189,14 +189,14 @@ yargs
     coerce: coercer
   })
 
-yargs.command(['env:check-cert [pid:env...]', 'ec'], 'Check the https cert of env(s)', addSharedPidEnvOpts, 
+yargs.command(['env:check-web [pid:env...]', 'ec'], 'Check the https:// response of env(s)', addSharedPidEnvOpts,
   argv => {
     verifyOneOf(argv, ['i', 'a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
     if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, checkCertificate, pidEnvs)
+      pidEnvs = filterStillValidRuns(argv.time, checkHttps, pidEnvs)
     }
-    pLimitForEachHandler(6, checkCertificate, pidEnvs)
+    pLimitForEachHandler(6, checkHttps, pidEnvs)
   }
 )
 

@@ -15,13 +15,12 @@ const updateEnvironment = async (project, environment = 'master') => {
       const createdAt = Date.parse(stdout.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/, '$1')) / 1000
       // be careful to preserve 'failure' and 'cert_expiration' on existing envs when using INSERT OR REPLACE
       // however if the MC_CLI cmd succeeded the env is not missing (0)
+      const sql = `INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, last_created_at, missing, failure) 
+      VALUES (?, ?, ?, ?, ?, ?, 0,
+        (SELECT failure FROM environments WHERE id = ? and project_id = ?)
+      )`
       let result = db
-        .prepare(
-          `INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, last_created_at, missing, failure) 
-          VALUES (?, ?, ?, ?, ?, ?, 0,
-            (SELECT failure FROM environments WHERE id = ? and project_id = ?)
-          )`
-        )
+        .prepare(sql)
         .run(environment, project, title, machineName, active, createdAt, environment, project)
       logger.mylog('debug', result)
       logger.mylog('info', `Env: ${environment} of project: ${project} updated.`)
@@ -40,9 +39,8 @@ const updateEnvironment = async (project, environment = 'master') => {
 exports.updateEnvironment = updateEnvironment
 
 const setEnvironmentInactive = (project, environment) => {
-  const result = db
-    .prepare('UPDATE environments SET active = 0, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
-    .run(project, environment)
+  const sql = 'UPDATE environments SET active = 0, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?' 
+  const result = db.prepare(sql).run(project, environment)
   logger.mylog('debug', result)
   logger.mylog('info', `Env: ${environment} of project: ${project} set to inactive.`)
   return result
@@ -50,9 +48,8 @@ const setEnvironmentInactive = (project, environment) => {
 exports.setEnvironmentInactive = setEnvironmentInactive
 
 const setEnvironmentFailure = (project, environment, value) => {
-  const result = db
-    .prepare('UPDATE environments SET failure = ?, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
-    .run(value, project, environment)
+  const sql = 'UPDATE environments SET failure = ?, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?'
+  const result = db.prepare(sql).run(value, project, environment)
   logger.mylog('debug', result)
   logger.mylog('info', `Env: ${environment} of project: ${project} set failure: ${value}.`)
   return result
@@ -60,9 +57,8 @@ const setEnvironmentFailure = (project, environment, value) => {
 exports.setEnvironmentFailure = setEnvironmentFailure
 
 const setEnvironmentMissing = (project, environment) => {
-  const result = db
-    .prepare('UPDATE environments SET missing = 1, timestamp = CURRENT_TIMESTAMP WHERE project_id = ? AND id = ?')
-    .run(project, environment)
+  const sql = 'UPDATE environments SET missing = 1, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?'
+  const result = db.prepare(sql).run(project, environment)
   logger.mylog('debug', result)
   logger.mylog('info', `Env: ${environment} of project: ${project} set to missing.`)
   return result
@@ -172,16 +168,23 @@ const getExpiringPidEnvs = () => {
 }
 exports.getExpiringPidEnvs = getExpiringPidEnvs
 
-const checkCertificate = async (project, environment = 'master') => {
+const getAndRecordExpiration = response => {
+  const certificateInfo = response.connection.getPeerCertificate()
+  const expiration = Math.floor(new Date(certificateInfo.valid_to) / 1000)
+  const sql = 'INSERT OR REPLACE INTO cert_expirations (host_name, expiration) VALUES (?, ?)'
+  const result = db.prepare(sql).run(response.connection.servername, expiration)
+  logger.mylog('debug', result)
+  return expiration
+}
+
+
+const checkHttps = async (project, environment = 'master') => {
   try {
     const hostName = await getWebHostName(project, environment)
     const result = await new Promise((resolve, reject) => {
       const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, async response => {
-        const certificateInfo = response.connection.getPeerCertificate()
-        const expiration = Math.floor(new Date(certificateInfo.valid_to) / 1000)
-        const result = db
-          .prepare('INSERT OR REPLACE INTO cert_expirations (host_name, expiration) VALUES (?, ?)')
-          .run(hostName, expiration)
+        
+        const expiration = getAndRecordExpiration(response)
 
         if (response.statusCode === 403 || response.statusCode === 401) {
           // authorization required, SC likely disabled public access
@@ -238,7 +241,7 @@ const checkCertificate = async (project, environment = 'master') => {
     logger.mylog('error', error)
   }
 }
-exports.checkCertificate = checkCertificate
+exports.checkHttps = checkHttps
 
 const getEnvsFromApi = async project => {
   const cmd = `${MC_CLI} environments -p ${project} --pipe`
