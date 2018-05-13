@@ -20,7 +20,7 @@ const {
   deleteEnv,
   execInEnv,
   redeployEnv,
-  checkHttps,
+  checkWeb,
   getPathFromRemote,
   sendPathToRemoteTmpDir,
   getLiveEnvsAsPidEnvArr,
@@ -194,9 +194,9 @@ yargs.command(['env:check-web [pid:env...]', 'ec'], 'Check the https:// response
     verifyOneOf(argv, ['i', 'a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
     if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, checkHttps, pidEnvs)
+      pidEnvs = filterStillValidRuns(argv.time, checkWeb, pidEnvs)
     }
-    pLimitForEachHandler(6, checkHttps, pidEnvs)
+    pLimitForEachHandler(6, checkWeb, pidEnvs)
   }
 )
 

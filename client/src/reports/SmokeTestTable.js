@@ -459,7 +459,7 @@ export default class extends Component {
                 className: 'right'
               },
               {
-                Header: 'Cert Expiration',
+                Header: 'Cert Expires',
                 accessor: 'expiration',
                 Cell: cell => {
                   if (!cell.value) {

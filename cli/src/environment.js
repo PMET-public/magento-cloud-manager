@@ -168,80 +168,98 @@ const getExpiringPidEnvs = () => {
 }
 exports.getExpiringPidEnvs = getExpiringPidEnvs
 
-const getAndRecordExpiration = response => {
+const checkExpired = response => {
   const certificateInfo = response.connection.getPeerCertificate()
-  const expiration = Math.floor(new Date(certificateInfo.valid_to) / 1000)
-  const sql = 'INSERT OR REPLACE INTO cert_expirations (host_name, expiration) VALUES (?, ?)'
-  const result = db.prepare(sql).run(response.connection.servername, expiration)
+  const expirationDate = new Date(certificateInfo.valid_to)
+  const expirationSecs = Math.floor(expirationDate / 1000)
+  const sql = `INSERT OR REPLACE INTO cert_expirations (host_name, expiration) 
+    VALUES ('${response.connection.servername}', ${expirationSecs})`
+  const result = db.prepare(sql).run()
   logger.mylog('debug', result)
-  return expiration
+  return expirationDate < new Date()
+}
+exports.checkExpired = checkExpired
+
+const checkStatusCode = response => {
+  const result = {
+    logLevel: 'error',
+    msg: 'Unaccounted for response.',
+    updateEnvironment: false
+  }
+  
+  if (response.statusCode === 200) {
+    result.logLevel = 'debug'
+    result.msg = 'OK'
+  } else if (response.statusCode === 403 || response.statusCode === 401) {
+    result.logLevel = 'debug'
+    result.msg = 'Unauthorized response. Public access has been disabled.'
+  } else if (response.statusCode === 404) {
+    if (response.headers['set-cookie']) { // storefront exists but returning 404
+      result.msg = 'App found but returning 404.'
+    } else {
+      result.msg = 'App not found. Environment deleted?'
+      result.updateEnvironment = true
+    }
+  } 
+  return result
 }
 
+const checkBody = response => {
+  return new Promise((resolve, reject) => {
+    const url = 'https://' + response.connection.servername
+    let body = ''
+    response.on('data', chunk => (body += chunk))
+    response.on('end', () => {
+      if (/baseUrl.*magentosite.cloud/.test(body)) {
+        resolve(true) 
+      } else {
+        reject('Can not find base url in body for ' + url)
+      }
+    })
+  })
+}
 
-const checkHttps = async (project, environment = 'master') => {
+const checkWeb = async (project, environment = 'master') => {
   try {
     const hostName = await getWebHostName(project, environment)
+    const url = `https://${hostName}/`
     const result = await new Promise((resolve, reject) => {
-      const request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, async response => {
-        
-        const expiration = getAndRecordExpiration(response)
-
-        if (response.statusCode === 403 || response.statusCode === 401) {
-          // authorization required, SC likely disabled public access
-        } else if (response.statusCode === 404) {
-          if (response.headers['set-cookie']) {
-            // storefront exists but returning 404
-            logger.mylog(
-              'error',
-              `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
-                `https://${hostName}/ unexpected response`
-            )
-          } else {
-            // probably deleted env
-            logger.mylog(
-              'error',
-              `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
-                `https://${hostName}/ environment deleted?`
-            )
-            await updateEnvironment(project, environment)
-          }
-        } else if (response.statusCode == 302 && response.headers.location.indexOf(hostName) == 8) {
-          // valid response
+      let request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, async response => {
+        const isExpired = checkExpired(response)
+        const statusCodeResult = checkStatusCode(response)
+        logger.mylog(
+          statusCodeResult.logLevel,
+          `Status: ${response.statusCode} ${statusCodeResult.msg} Project: ${project} env: ${environment} ${url}`
+        )
+        if (statusCodeResult.updateEnvironment) {
+          await updateEnvironment(project, environment)
+        }
+        const bodyMatches = await checkBody(response)
+        if (bodyMatches) {
           logger.mylog(
             'debug',
-            `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
-              `https://${hostName}/ valid response`
+            `Response body matches base url. Project: ${project} env: ${environment} ${url}`
           )
-        } else {
-          let body = ''
-          response.on('data', chunk => (body += chunk))
-          response.on('end', () => {
-            // check if body contains baseUrl
-            if (!/baseUrl.*magentosite.cloud/.test(body)) {
-              logger.mylog(
-                'error',
-                `Status: ${response.statusCode} Project: ${project} env: ${environment} ` +
-                  `https://${hostName}/ unexpected response`
-              )
-            }
-          })
         }
-        resolve({...result, expiration: expiration, host: hostName})
-      })
-      request.end()
+        resolve(!isExpired && statusCodeResult.logLevel !== 'error' && bodyMatches)
+      }).setTimeout(2000, () => {
+        reject('Request timed out for ' + url)
+        request.abort()
+      }).on('error', (error) => {
+        if (error.code !== 'ECONNRESET') { // don't log our intentional abort
+          logger.mylog('error', error)
+        }
+      }).end()
     })
-    logger.mylog('debug', result)
-    logger.mylog(
-      'info',
-      `Expires: ${moment(result.expiration * 1000).format('YYYY-MM-DD')} ` +
-        `url: https://${result.host}/ env: ${project}:${environment}`
-    )
-    return await result
+    if (result) {
+      logger.mylog('info', `Web check passed. Project: ${project} env: ${environment} url: ${url}`)
+      return result
+    }
   } catch (error) {
     logger.mylog('error', error)
   }
 }
-exports.checkHttps = checkHttps
+exports.checkWeb = checkWeb
 
 const getEnvsFromApi = async project => {
   const cmd = `${MC_CLI} environments -p ${project} --pipe`
