@@ -216,48 +216,52 @@ const checkBody = response => {
         reject('Can not find base url in body for ' + url)
       }
     })
+  }).catch(error => {
+    logger.mylog('error', error)
   })
 }
 
 const checkWeb = async (project, environment = 'master') => {
-  try {
-    const hostName = await getWebHostName(project, environment)
-    const url = `https://${hostName}/`
-    const result = await new Promise((resolve, reject) => {
-      let request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, async response => {
-        const isExpired = checkExpired(response)
-        const statusCodeResult = checkStatusCode(response)
-        logger.mylog(
-          statusCodeResult.logLevel,
-          `Status: ${response.statusCode} ${statusCodeResult.msg} Project: ${project} env: ${environment} ${url}`
-        )
-        if (statusCodeResult.updateEnvironment) {
-          await updateEnvironment(project, environment)
-        }
-        const bodyMatches = await checkBody(response)
+  const hostName = await getWebHostName(project, environment)
+  const url = `https://${hostName}/`
+  return await new Promise((resolve, reject) => {
+    let request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, async response => {
+      const isExpired = checkExpired(response)
+      if (isExpired) {
+        logger.mylog('error', `Expired. Project: ${project} env: ${environment} ${url}`)
+      }
+      const statusCodeResult = checkStatusCode(response)
+      logger.mylog(
+        statusCodeResult.logLevel,
+        `Status: ${response.statusCode} ${statusCodeResult.msg} Project: ${project} env: ${environment} ${url}`
+      )
+      if (statusCodeResult.updateEnvironment) {
+        await updateEnvironment(project, environment)
+      }
+      let bodyMatches = false
+      if (response.statusCode === 200) {
+        bodyMatches = await checkBody(response)
         if (bodyMatches) {
-          logger.mylog(
-            'debug',
-            `Response body matches base url. Project: ${project} env: ${environment} ${url}`
-          )
+          logger.mylog('debug', `Response body matches base url. Project: ${project} env: ${environment} ${url}`)
         }
-        resolve(!isExpired && statusCodeResult.logLevel !== 'error' && bodyMatches)
-      }).setTimeout(2000, () => {
-        reject('Request timed out for ' + url)
-        request.abort()
-      }).on('error', (error) => {
-        if (error.code !== 'ECONNRESET') { // don't log our intentional abort
-          logger.mylog('error', error)
-        }
-      }).end()
-    })
+      }
+      resolve(!isExpired && statusCodeResult.logLevel !== 'error' && bodyMatches)
+    }).setTimeout(10000, () => {
+      reject('Request timed out for ' + url)
+      request.abort()
+    }).on('error', (error) => {
+      if (error.code !== 'ECONNRESET') { // don't log our intentional abort
+        logger.mylog('error', error)
+      }
+    }).end()
+  }).then(result => {
     if (result) {
       logger.mylog('info', `Web check passed. Project: ${project} env: ${environment} url: ${url}`)
       return result
     }
-  } catch (error) {
+  }).catch(error => {
     logger.mylog('error', error)
-  }
+  })
 }
 exports.checkWeb = checkWeb
 

@@ -319,7 +319,7 @@ lodash@^4.14.0:
   version "4.17.10"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.10.tgz#1b7793cf7259ea38fb3661d4d38b3260af8ae4e7"
 
-logform@^1.4.1:
+logform@^1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/logform/-/logform-1.6.0.tgz#1104c93af10269864f2d98e7661abbea3690d83f"
   dependencies:
@@ -550,7 +550,7 @@ text-hex@0.0.x:
   version "0.0.0"
   resolved "https://registry.yarnpkg.com/text-hex/-/text-hex-0.0.0.tgz#578fbc85a6a92636e42dd17b41d0218cce9eb2b3"
 
-triple-beam@^1.0.1, triple-beam@^1.2.0:
+triple-beam@^1.2.0:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/triple-beam/-/triple-beam-1.2.0.tgz#8b5c1f3d491229bf6ddcf721c0ba84cef5ab51fa"
 
@@ -568,22 +568,22 @@ which@^1.2.9:
   dependencies:
     isexe "^2.0.0"
 
-winston-transport@^3.1.0:
+winston-transport@^3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/winston-transport/-/winston-transport-3.2.1.tgz#5b79b294096b1a18bfe502e769491553a2cb1042"
 
-winston@^3.0.0-rc1:
+winston@pmet-public/winston#master:
   version "3.0.0-rc5"
-  resolved "https://registry.yarnpkg.com/winston/-/winston-3.0.0-rc5.tgz#bc383d32b0e774d387a66e77290fe78766468f34"
+  resolved "https://codeload.github.com/pmet-public/winston/tar.gz/282ac5531a016d83a8f3b727b4e4d48df65a7ed3"
   dependencies:
     async "^2.6.0"
     diagnostics "^1.0.1"
     is-stream "^1.1.0"
-    logform "^1.4.1"
+    logform "^1.6.0"
     one-time "0.0.4"
     stack-trace "0.0.x"
-    triple-beam "^1.0.1"
-    winston-transport "^3.1.0"
+    triple-beam "^1.2.0"
+    winston-transport "^3.2.1"
 
 wrap-ansi@^2.0.0:
   version "2.1.0"

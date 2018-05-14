@@ -4,15 +4,17 @@ const winston = require('winston')
 
 // need to create format to show timestamps? https://github.com/winstonjs/winston/issues/1175
 const myFormat = winston.format.printf(info => {
-  return `${info.timestamp} ${info.level}: ${info.message}`
+  return `${info.timestamp} ${info.level}: ${info.message}\n`
 })
 
 // create 2 active file loggers, 1 for just errors, 1 for debugging
 const logger = winston.createLogger({
   format: winston.format.combine(winston.format.timestamp(), myFormat),
   transports: [
-    new winston.transports.File({filename: `${__dirname}/../error.log`, level: 'error'}),
-    new winston.transports.File({filename: `${__dirname}/../debug.log`, level: 'debug'})
+    // new winston.transports.File({filename: `${__dirname}/../error.log`, level: 'error'})
+    //new winston.transports.File({filename: `${__dirname}/../combined.log`, level: 'debug'})
+    new winston.transports.Stream({stream: fs.createWriteStream(`${__dirname}/../error.log`, {flags: 'a'}), level: 'error'}),
+    new winston.transports.Stream({stream: fs.createWriteStream(`${__dirname}/../combined.log`, {flags: 'a'}), level: 'debug'})
   ]
 })
 
