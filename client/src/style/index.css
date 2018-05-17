@@ -164,6 +164,11 @@ a {
   max-width: 600px;
 }
 
+.compact li {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .gauge-wrapper {
   height: 5px;
   overflow: hidden;

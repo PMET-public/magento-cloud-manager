@@ -3,11 +3,8 @@ import ReactTable from 'react-table'
 import 'react-table/react-table.css'
 import Icon from 'material-ui/Icon'
 import {calcWidth, moment} from '../util/common'
-import UniqueOptions from '../util/UniqueOptions'
 import Dialog from '../util/Dialog'
-import Gauge from '../util/Gauge'
 import Tooltip from 'material-ui/Tooltip'
-import {stat} from 'fs'
 import checkboxHOC from 'react-table/lib/hoc/selectTable'
 import Clipboard from 'react-clipboard.js'
 
@@ -78,7 +75,7 @@ export default class extends Component {
         return val > 0
       case 'untested':
         return row[filter.id] === null
-      case 'default':
+      default:
         return true
     }
   }
@@ -92,7 +89,7 @@ export default class extends Component {
         return val === 0
       case 'untested':
         return row[filter.id] === null
-      case 'default':
+      default:
         return true
     }
   }
@@ -106,7 +103,9 @@ export default class extends Component {
         count++
       }
     })
-    return <span>{Math.round(sum * 10 / count) / 10}</span>
+    if (count) {
+      return <span>{Math.round(sum * 10 / count) / 10}</span>
+    }
   }
 
   formatDate = secSinceEpoch => {
@@ -127,52 +126,12 @@ export default class extends Component {
     }
   }
 
-  httpTestFilter = ({filter, onChange}) => (
-    <select
-      onChange={event => onChange(event.target.value)}
-      style={{width: '100%'}}
-      value={filter ? filter.value : 'all'}>
-      <option value="">Show All</option>
-      <optgroup>
-        <option key={'success'} value="1">
-          success
-        </option>
-        <option key={'failed'} value="0">
-          404
-        </option>
-        <option key={'untested'} value="">
-          untested
-        </option>
-      </optgroup>
-    </select>
-  )
-
-  passFailFilter = ({filter, onChange}) => (
-    <select
-      onChange={event => onChange(event.target.value)}
-      style={{width: '100%'}}
-      value={filter ? filter.value : 'all'}>
-      <option value="">Show All</option>
-      <optgroup>
-        <option key={'success'} value="passing">
-          passing
-        </option>
-        <option key={'failed'} value="failing">
-          failing
-        </option>
-        <option key={'untested'} value="untested">
-          untested
-        </option>
-      </optgroup>
-    </select>
-  )
-
   errorList = list => {
     if (/^1[45]/.test(list[0])) {
-      return list.map(li => {
+      return list.sort().map(li => {
         const [entireLi, secSinceEpoch, file, msg] = li.match(/(.*?) (.*?) (.*)/)
         return (
-          <div>
+          <div key={secSinceEpoch}>
             {new Date(secSinceEpoch * 1000).toISOString()}
             <b>{file}</b>
             {msg}
@@ -187,7 +146,6 @@ export default class extends Component {
   empty = () => {}
   checkIcon = () => <Icon>check</Icon>
   errorIcon = () => <Icon color="error">error_outline</Icon>
-  missingIcon = () => <Icon color="error">remove_circle</Icon>
   timerIcon = () => <Icon>timer</Icon>
 
   toggleSelection = (key, shift, row) => {
@@ -218,6 +176,10 @@ export default class extends Component {
     return this.state.selection.includes(key)
   }
 
+  deployCompleted = text => {
+    return /(Deployment|Branch) completed.\s*$/.test(text)
+  }
+
   selectInputComponent = props => {
     return (
       <div>
@@ -236,6 +198,140 @@ export default class extends Component {
       </div>
     )
   }
+
+  createFilterOptions = filters => {
+    const options = []
+    for (let i in filters) {
+      options.push(<option key={filters[i].key} value={filters[i].value}>{filters[i].label}</option>)
+    }
+    const filterOptions = ({filter, onChange}) => {
+      return (<select
+        onChange={event => onChange(event.target.value)}
+        style={{width: '100%'}}
+        value={filter ? filter.value : 'all'}>
+        <option value="">Show All</option>
+        <optgroup>
+        {options}
+        </optgroup>
+      </select>)
+    }
+    return filterOptions
+  }
+
+  createFilterOptionsFromAccessor = accessor => {
+    if (this.state.data) {
+      const accessorVals = [...new Set(this.state.data.map(x => x[accessor]).sort())]
+      const filters = []
+      for (let i in accessorVals) {
+        if (accessorVals[i] === null) {
+          filters.push(this.untestedFilter)
+        } else {
+          filters.push({
+            key: accessorVals[i],
+            label: accessorVals[i],
+            value: accessorVals[i]
+          })
+        }
+      }
+      return this.createFilterOptions(filters)
+    }
+  }
+
+  createFilterMethod = filters => {
+    const filterMethod = (filter, row) => {
+      for (let i in filters) {
+        if (filters[i].key === filter.value) {
+          return filters[i].test(filter,row)
+        }
+      }
+      return true
+    }
+    return filterMethod
+  }
+
+  untestedFilter = {
+    key: 'untested',
+    value: 'untested',
+    label: 'untested',
+    test: (filter, row) => {
+      return row[filter.id] === null
+    }
+  }
+
+  testedFilter = {
+    key: 'tested',
+    test: (filter, row) => {
+      return row[filter.id] !== null
+    }
+  }
+
+  httpTestFilters = [
+    {
+      key: 'success',
+      value: 1,
+      label: 'success'
+    },
+    {
+      key: 'failed',
+      value: 0,
+      label: '404'
+    },
+    this.untestedFilter
+  ]
+
+  passFailFilters = [
+    {
+      key: 'success',
+      value: 'passing',
+      label: 'passing'
+    },
+    {
+      key: 'failed',
+      value: 'failing',
+      label: 'failing'
+    },
+    this.untestedFilter
+  ]
+
+  expirationFilters = [
+    {
+      key: 'expired', 
+      value: new Date()/1000, 
+      label: 'expired',
+      test: (filter, row) => {
+        return row[filter.id] < this.value
+      }
+    },
+    {
+      key: '2wks', 
+      value: 2 * 7 * 24 * 60 * 60, 
+      label: '< 2 wks',
+      test: (filter, row) => {
+        return new Date(row[filter.id])/1000 < new Date()/1000 + this.value
+      }
+    },
+    this.untestedFilter
+  ]
+
+  deployLogFilters = [
+    {
+      key: 'complete',
+      value: 'complete',
+      label: 'complete',
+      test: (filter, row) => {
+        return row[filter.id] && this.deployCompleted(row[filter.id])
+      }
+    },
+    {
+      key: 'incomplete',
+      value: 'incomplete',
+      label: 'incomplete',
+      test: (filter, row) => {
+        return row[filter.id] && !this.deployCompleted(row[filter.id])
+      }
+    },
+    this.untestedFilter
+  ]
 
   render() {
     return (
@@ -365,15 +461,7 @@ export default class extends Component {
                 accessor: 'region',
                 className: 'right',
                 width: calcWidth(5),
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="all">Show All</option>
-                    <UniqueOptions data={this.state.data} accessor={'region'} />
-                  </select>
-                ),
+                Filter: this.createFilterOptionsFromAccessor('region'),
                 filterMethod: this.exactMatchRow
               },
               {
@@ -381,15 +469,7 @@ export default class extends Component {
                 accessor: 'proj_status',
                 className: 'right',
                 width: calcWidth(7),
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="all">Show All</option>
-                    <UniqueOptions data={this.state.data} accessor={'proj_status'} />
-                  </select>
-                ),
+                Filter: this.createFilterOptionsFromAccessor('proj_status'),
                 filterMethod: this.exactMatchRow
               },
               {
@@ -397,26 +477,14 @@ export default class extends Component {
                 accessor: 'env_status',
                 className: 'right',
                 width: calcWidth(7),
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="all">Show All</option>
-                    <UniqueOptions data={this.state.data} accessor={'env_status'} />
-                  </select>
-                ),
+                Filter: this.createFilterOptionsFromAccessor('env_status'),
                 filterMethod: this.exactMatchRow
-              }
-            ]
-          },
-          {
-            Header: 'Usage',
-            columns: [
+              },
               {
-                Header: 'Users',
+                Header: 'Users\' Emails',
                 accessor: 'user_list',
                 maxWidth: calcWidth(4),
+                className: 'right',
                 Cell: cell => {
                   const list = cell.value
                     ? cell.value
@@ -424,8 +492,9 @@ export default class extends Component {
                         .split(/,/)
                         .map(x => x.replace(/:(.*)/, ' ($1)'))
                     : []
-                  return list.length ? <Dialog title="Users (roles)">{list}</Dialog> : ''
+                  return list.length ? <Dialog title="Users (roles)" label={list.length}>{list}</Dialog> : ''
                 },
+                Filter: this.createFilterOptionsFromAccessor('user_list'),
                 filterMethod: (filter, row, column) => {
                   return new RegExp(filter.value, 'i').test(row[filter.id])
                 },
@@ -434,7 +503,12 @@ export default class extends Component {
                   const bLength = b ? b.trim().split(/,/).length : 0
                   return bLength - aLength
                 }
-              },
+              }
+            ]
+          },
+          {
+            Header: 'Usage',
+            columns: [
               {
                 Header: 'Created',
                 accessor: 'last_created_at',
@@ -442,7 +516,8 @@ export default class extends Component {
                   return moment(cell.value * 1000).fromNow()
                 },
                 maxWidth: calcWidth(5),
-                className: 'right'
+                className: 'right',
+                filterable: false
               },
               {
                 Header: 'Last Customer Login',
@@ -473,38 +548,21 @@ export default class extends Component {
                 },
                 maxWidth: calcWidth(5),
                 className: 'right',
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="">Show All</option>
-                    <optgroup>
-                      <option key={'0'} value="expired">
-                        expired
-                      </option>
-                      <option key={'2wks'} value="2wks">
-                        &lt; 2 wks
-                      </option>
-                      <option key={'untested'} value="untested">
-                        untested
-                      </option>
-                    </optgroup>
-                  </select>
-                ),
-                filterMethod: (filter, row) => {
-                  const expiryDate = new Date(row[filter.id] * 1000)
-                  switch (filter.value) {
-                    case 'expired':
-                      return row[filter.id] && expiryDate < new Date()
-                    case '2wks':
-                      return row[filter.id] && expiryDate >= new Date() && expiryDate/1000 < new Date()/1000 + 2 * 7 * 24 * 60 * 60
-                    case 'untested':
-                      return row[filter.id] === null
-                    case 'default':
-                      return true
-                  }
-                }
+                Filter: this.createFilterOptions(this.expirationFilters),
+                filterMethod: this.createFilterMethod(this.expirationFilters)
+                // (filter, row) => {
+                //   const expiryDate = new Date(row[filter.id] * 1000)
+                //   switch (filter.value) {
+                //     case 'untested':
+                //       return row[filter.id] === null
+                //     case 'expired':
+                //       return expiryDate < new Date()
+                //     case '2wks':
+                //       return expiryDate >= new Date() && expiryDate/1000 < new Date()/1000 + 2 * 7 * 24 * 60 * 60
+                //     default:
+                //       return true
+                //   }
+                // }
               }
             ]
           },
@@ -516,15 +574,7 @@ export default class extends Component {
                 accessor: 'ee_composer_version',
                 className: 'right',
                 width: calcWidth(10),
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="">Show All</option>
-                    <UniqueOptions data={this.state.data} accessor={'ee_composer_version'} />
-                  </select>
-                )
+                Filter: this.createFilterOptionsFromAccessor('ee_composer_version')
               },
               {
                 Header: 'app.yaml MD5',
@@ -565,15 +615,7 @@ export default class extends Component {
                 Cell: cell => this.validate(cell.value, v => v === 302, this.checkIcon, this.errorIcon),
                 maxWidth: calcWidth(3),
                 className: 'right',
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="">Show All</option>
-                    <UniqueOptions data={this.state.data} accessor={'http_status'} />
-                  </select>
-                )
+                Filter: this.createFilterOptionsFromAccessor('http_status'),
               },
               {
                 Header: 'All indexes valid',
@@ -581,7 +623,7 @@ export default class extends Component {
                 Cell: cell => this.validate(cell.value, v => v === 0, this.checkIcon, this.errorIcon),
                 maxWidth: calcWidth(2),
                 className: 'right',
-                Filter: this.passFailFilter,
+                Filter: this.createFilterOptions(this.passFailFilters),
                 filterMethod: this.zeroIsPassing
               },
               {
@@ -611,15 +653,7 @@ export default class extends Component {
                 Cell: cell => <div>{cell.value}</div>,
                 maxWidth: calcWidth(2),
                 className: 'right',
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="">Show All</option>
-                    <UniqueOptions data={this.state.data} accessor={'store_count'} />
-                  </select>
-                )
+                Filter: this.createFilterOptionsFromAccessor('store_count')
               },
               {
                 Header: 'Orders',
@@ -652,25 +686,26 @@ export default class extends Component {
                 accessor: 'german_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
                 maxWidth: calcWidth(1),
-                Filter: this.httpTestFilter
+                Filter: this.createFilterOptions(this.httpTestFilters)
               },
               {
                 Header: 'Venia',
                 accessor: 'venia_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
                 maxWidth: calcWidth(1),
-                Filter: this.httpTestFilter
+                Filter: this.createFilterOptions(this.httpTestFilters)
               },
               {
                 Header: 'Admin Login',
                 accessor: 'admin_check',
                 Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.errorIcon),
                 maxWidth: calcWidth(1),
-                Filter: this.httpTestFilter
+                Filter: this.createFilterOptions(this.httpTestFilters)
               },
               {
                 Header: 'Errors',
                 accessor: 'error_logs',
+                className: 'right',
                 Cell: cell => {
                   const list = cell.value
                     ? cell.value
@@ -678,7 +713,7 @@ export default class extends Component {
                         .replace(/ (1[45]\d{8} \/)/g, '\n$1')
                         .split('\n')
                     : []
-                  return list.length ? <Dialog title="Environmental Errors">{this.errorList(list)}</Dialog> : ''
+                  return list.length ? <Dialog title="Environmental Errors" label={list.length}>{this.errorList(list)}</Dialog> : ''
                 },
                 maxWidth: calcWidth(5),
                 filterMethod: (filter, row, column) => {
@@ -693,18 +728,24 @@ export default class extends Component {
               {
                 Header: 'Deploy Log End',
                 accessor: 'last_deploy_log',
+                className: 'right',
                 Cell: cell => {
                   const list = cell.value
                     ? cell.value
                         .trim()
                         .split('\v')
                     : []
-                  return list.length ? <Dialog title="End of Last Deploy Log" className="compact">{list}</Dialog> : ''
+                  if (!list.length) {
+                    return
+                  } else if (this.deployCompleted(list[list.length-1])) {
+                    return this.checkIcon()
+                  } else {
+                   return <Dialog title="End of Last Deploy Log" className="compact" label='!'>{list}</Dialog>
+                  }
                 },
                 maxWidth: calcWidth(5),
-                filterMethod: (filter, row, column) => {
-                  return new RegExp(filter.value, 'i').test(row[filter.id])
-                }
+                Filter: this.createFilterOptions(this.deployLogFilters),
+                filterMethod: this.createFilterMethod(this.deployLogFilters)
               }
             ]
           },
@@ -775,7 +816,7 @@ export default class extends Component {
                 ),
                 maxWidth: calcWidth(2),
                 className: 'right',
-                Filter: this.passFailFilter,
+                Filter: this.createFilterOptions(this.passFailFilters),
                 filterMethod: this.zeroIsFailing
               },
               {
@@ -797,7 +838,7 @@ export default class extends Component {
                 ),
                 maxWidth: calcWidth(2),
                 className: 'right',
-                Filter: this.passFailFilter,
+                Filter: this.createFilterOptions(this.passFailFilters),
                 filterMethod: this.zeroIsFailing
               },
             ]
@@ -806,23 +847,75 @@ export default class extends Component {
             Header: 'Test Info',
             columns: [
               {
-                Header: '% Load @ test start',
-                accessor: 'utilization_start',
-                Cell: cell => <Gauge data={cell.value} />,
-                maxWidth: calcWidth(7)
-              },
-              {
-                Header: '% Load @ test end',
-                accessor: 'utilization_end',
-                Cell: cell => <Gauge data={cell.value} />,
-                maxWidth: calcWidth(7)
+                Header: '% Load Change',
+                accessor: 'utilization_start_end',
+                className: 'right',
+                Cell: cell => {
+                  if (cell.value) {
+                    const vals = cell.value.split(',')
+                    return parseInt(vals[4],10) - parseInt(vals[1],10)
+                  }
+                },
+                maxWidth: calcWidth(4),
+                Filter: ({filter, onChange}) => (
+                  <select
+                    onChange={event => onChange(event.target.value)}
+                    style={{width: '100%'}}
+                    value={filter ? filter.value : 'all'}>
+                    <option value="">Show All</option>
+                    <optgroup>
+                    <option key={'significant'} value="significant">
+                        > ±10
+                      </option>
+                      <option key={'untested'} value="untested">
+                        untested
+                      </option>
+                    </optgroup>
+                  </select>
+                ),
+                filterMethod: (filter, row) => {
+                  switch (filter.value) {
+                    case 'untested':
+                      return row[filter.id] === null
+                    case 'significant':
+                      if (row[filter.id] === null) {
+                        return false
+                      }
+                      const vals = row[filter.id].split(',')
+                      return Math.abs(parseInt(vals[4],10) - parseInt(vals[1],10)) > 10
+                    default:
+                      return true
+                  }
+                },
+                sortMethod: (a, b) => {
+                  const parseDiff = x => {
+                    if (x === null || x === undefined) {
+                      return -Infinity
+                    } else {
+                      const vals = x.split(',')
+                      return parseInt(vals[4],10) - parseInt(vals[1],10)
+                    }
+                  }
+                  a = parseDiff(a)
+                  b = parseDiff(b)
+
+                  if (a > b) {
+                    return 1;
+                  }
+                  if (a < b) {
+                    return -1;
+                  }
+                  return 0;
+                }
               },
               {
                 Header: 'When',
                 accessor: 'timestamp',
-                Cell: cell => moment(new Date(cell.value * 1000)).fromNow(),
+                Cell: cell => cell.value ? moment(new Date(cell.value * 1000)).fromNow() : '',
                 maxWidth: calcWidth(5),
-                className: 'right'
+                className: 'right',
+                Filter: this.createFilterOptions([this.testedFilter, this.untestedFilter]),
+                filterMethod: this.createFilterMethod([this.testedFilter, this.untestedFilter])
               }
             ]
           }

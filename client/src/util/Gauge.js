@@ -10,8 +10,6 @@ export default function Gauge(props) {
 
   const [util1, util5, util15] = data.split(',')
 
-  const tt = `${util1}\n${util5}\n${util15}`
-
   const gauge = util => (
     <div className="gauge-wrapper" style={{width: util + '%'}}>
       <div className={'gauge'} style={{background: util > 100 ? `rgba(${155 + util % 100},0,0,1)` : ''}} />

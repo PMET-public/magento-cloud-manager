@@ -8,7 +8,7 @@ import {Link} from 'react-router-dom'
 
 class DrawerContent extends Component {
   render() {
-    const {classes, theme} = this.props
+    const {classes} = this.props
 
     return (
       <div>
