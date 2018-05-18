@@ -1,5 +1,5 @@
 const {exec, execOutputHandler, db, logger, parseFormattedCmdOutputIntoDB} = require('./common')
-const {getSshCmd, updateEnvironment} = require('./environment')
+const {getSshCmd, updateEnvironmentFromApi} = require('./environment')
 
 const updateHost = async (project, environment = 'master') => {
   const cmd = `${await getSshCmd(project, environment)} '
@@ -26,7 +26,7 @@ const updateHost = async (project, environment = 'master') => {
     })
     .catch(error => {
       if (/exist or you do not have access/.test(error.stderr)) {
-        return updateEnvironment(project, environment)
+        return updateEnvironmentFromApi(project, environment)
       }
       logger.mylog('error', error)
     })

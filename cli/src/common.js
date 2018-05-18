@@ -188,7 +188,6 @@ const showWhoAmI = async () => {
 }
 exports.showWhoAmI = showWhoAmI
 
-exports.disallowedCmdTxt = 'Are you crazy?!'
 exports.regexToMatchDisallowed = /Are you crazy/
 exports.allOpsSuccessTemplate = total => `All ${total} operations successful.`
 exports.regexToMatchAllOpsSuccess = /All.*operations successful./

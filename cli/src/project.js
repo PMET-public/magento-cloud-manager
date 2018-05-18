@@ -1,5 +1,5 @@
 const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
-const {updateEnvironment, setEnvironmentMissing} = require('./environment')
+const {updateEnvironmentFromApi, setEnvironmentMissing} = require('./environment')
 const {addCloudProjectKeyToGitlabKeys} = require('./gitlab')
 const {addUser, recordUsers} = require('./user')
 const {setVar} = require('./variable')
@@ -22,7 +22,8 @@ const updateProject = async project => {
   try {
     await getProjectInfoFromApi(project)
     await recordUsers(project)
-    logger.mylog('info', `Project: ${project} updated and users recorded.`)
+    await discoverEnvs(project)
+    logger.mylog('info', `Project: ${project}'s info, users, and envs updated.`)
     return true
   } catch (error) {
     if (error.message && /Specified project not found/.test(error.message)) {
@@ -85,8 +86,8 @@ const getProjectInfoFromApi = async project => {
   return result
 }
 
-const getEnvsFromDB = project => {
-  const sql = 'SELECT id FROM environments WHERE project_id = ?'
+const getProjEnvsFromDB = project => {
+  const sql = 'SELECT * FROM environments WHERE project_id = ?'
   const result = db.prepare(sql).all(project)
   logger.mylog('debug', result)
   return result
@@ -101,23 +102,30 @@ const discoverEnvs = async project => {
         throw 'An API error occurred.'
       }
       const promises = []
-      const dbEnvironments = getEnvsFromDB(project).map(row => row.id)
+      const projEnvsFromDB = getProjEnvsFromDB(project)
+      const projEnvIds = projEnvsFromDB.map(row => row.id)
       stdout
         .trim()
         .split('\n')
         .map(row => row.split('\t'))
-        .forEach(([environment, name, status]) => {
-
-          const index = dbEnvironments.indexOf(environment)
-          if (index > -1) { // in API & DB, remove from tracking list
-            dbEnvironments.splice(index, 1);
+        .forEach(([environment, name, active]) => {
+          active = active === 'Active' ? 1 : 0
+          const index = projEnvIds.indexOf(environment)
+          // in API & DB, remove from tracking list
+          if (index > -1) { 
+            projEnvIds.splice(index, 1);
+            // if active status doesn't match, update env
+            if (active !== projEnvsFromDB[index]['active']) {
+              promises.push(updateEnvironmentFromApi(project, environment))
+            }
           } else {
             // found in API but not DB -> run update env
-            promises.push(updateEnvironment(project, environment))
+            promises.push(updateEnvironmentFromApi(project, environment))
           }
           // if master env and inactive, initialize project and 
-          if (environment === 'master' && /inactive/i.test(status)) {
+          if (environment === 'master' && !active) {
             promises.push((async () => {
+              // check if previously initialized
               const result = await getActivitiesFromApi(project, 'environment.variable.create')
               if (!result) {
                 return initProject(project)
@@ -126,9 +134,9 @@ const discoverEnvs = async project => {
             })())
           }
         })
-      if (dbEnvironments.length) {
+      if (projEnvIds.length) {
         // in DB but not API -> set to missing
-        dbEnvironments.forEach(environment => setEnvironmentMissing(project, environment))
+        projEnvIds.forEach(environment => setEnvironmentMissing(project, environment))
       }
       const result = await Promise.all(promises)
       return result
@@ -136,7 +144,6 @@ const discoverEnvs = async project => {
     .catch(error => logger.mylog('error', error))
   return result
 }
-exports.discoverEnvs = discoverEnvs
 
 const initProject = async project => {
   const promises = []

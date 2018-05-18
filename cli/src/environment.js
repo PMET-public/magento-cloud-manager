@@ -4,7 +4,7 @@ const {writeFileSync} = require('fs')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../.secrets.json')
 
-const updateEnvironment = async (project, environment = 'master') => {
+const updateEnvironmentFromApi = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -36,7 +36,7 @@ const updateEnvironment = async (project, environment = 'master') => {
     })
   return result
 }
-exports.updateEnvironment = updateEnvironment
+exports.updateEnvironmentFromApi = updateEnvironmentFromApi
 
 const setEnvironmentInactive = (project, environment) => {
   const sql = 'UPDATE environments SET active = 0, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?' 
@@ -184,7 +184,7 @@ const checkStatusCode = response => {
   const result = {
     logLevel: 'error',
     msg: 'Unaccounted for response.',
-    updateEnvironment: false
+    updateEnvironmentFromApi: false
   }
   
   if (response.statusCode === 200) {
@@ -198,7 +198,7 @@ const checkStatusCode = response => {
       result.msg = 'App found but returning 404.'
     } else {
       result.msg = 'App not found. Environment deleted?'
-      result.updateEnvironment = true
+      result.updateEnvironmentFromApi = true
     }
   } 
   return result
@@ -235,8 +235,8 @@ const checkWeb = async (project, environment = 'master') => {
         statusCodeResult.logLevel,
         `Status: ${response.statusCode} ${statusCodeResult.msg} Project: ${project} env: ${environment} ${url}`
       )
-      if (statusCodeResult.updateEnvironment) {
-        await updateEnvironment(project, environment)
+      if (statusCodeResult.updateEnvironmentFromApi) {
+        await updateEnvironmentFromApi(project, environment)
       }
       let bodyMatches = false
       if (response.statusCode === 200) {
@@ -247,6 +247,8 @@ const checkWeb = async (project, environment = 'master') => {
       }
       resolve(!isExpired && statusCodeResult.logLevel !== 'error' && bodyMatches)
     })
+    // based on a report, request.abort was not a function in setTimeout when chained 
+    // so break chaining as possible solution and ensure assignment completion first
     request.setTimeout(10000, () => {
       reject('Request timed out for ' + url)
       request.abort()
@@ -377,7 +379,7 @@ const getMachineNameAndRegion = async (project, environment) => {
     let result = db.prepare(sql).get(project, environment)
     if (typeof result === 'undefined') {
       // possibly requesting an environment that hasn't been queried yet, so attempt to update and then return
-      result = await updateEnvironment(project, environment)
+      result = await updateEnvironmentFromApi(project, environment)
       if (result) {
         return await getMachineNameAndRegion(project, environment)
       } else {

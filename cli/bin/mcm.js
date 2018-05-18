@@ -8,14 +8,13 @@ const {readFileSync} = require('fs')
 // remember p-limit expects an async function or a function that returns a promise
 const pLimit = require('p-limit')
 
-const {logger, showWhoAmI, disallowedCmdTxt, allOpsSuccessTemplate, mixedSuccessTemplate} = require('../src/common')
+const {logger, showWhoAmI, allOpsSuccessTemplate, mixedSuccessTemplate} = require('../src/common')
 const {updateHost, getSampleEnvs, updateEnvHostRelationships} = require('../src/host')
-const {updateProject, getProjectsFromApi, discoverEnvs} = require('../src/project')
+const {updateProject, getProjectsFromApi} = require('../src/project')
 const {smokeTestApp} = require('../src/smoke-test')
 const {searchActivitiesForFailures} = require('../src/activity')
 const {addCloudProjectKeyToGitlabKeys} = require('../src/gitlab')
 const {
-  updateEnvironment,
   deleteInactiveEnvs,
   deleteEnv,
   execInEnv,
@@ -50,17 +49,19 @@ const defaultAllOptions = {
   coerce: coercer
 }
 
-const addSharedPidEnvOpts = () => {
+const addSharedPidEnvOpts = (hasAllOpt = true) => {
+  if (hasAllOpt) {
+    yargs.option('a', {
+      description: 'Apply to all active envs',
+      conflicts: 'pid:env',
+      ...defaultAllOptions
+    })
+  }
   yargs.positional('pid:env', {
     alias: 'pid',
     type: 'string',
     describe: 'A list of proj:env pairs. Omit ":env" if unneeded or to default to "master".',
     coerce: coercer
-  })
-  yargs.option('a', {
-    description: 'Apply to all active envs',
-    conflicts: 'pid:env',
-    ...defaultAllOptions
   })
   yargs.option('t', {
     alias: 'time',
@@ -189,6 +190,22 @@ yargs
     coerce: coercer
   })
 
+yargs.command(
+  ['env:backup [pid:env...]', 'eb'],
+  'Backup env(s)',
+  yargs => {
+    addSharedPidEnvOpts()
+  },
+  argv => {
+    verifyOneOf(argv, ['a', 'pid:env'])
+    let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, backup, pidEnvs)
+    }
+    pLimitForEachHandler(6, backup, pidEnvs)
+  }
+)
+  
 yargs.command(['env:check-web [pid:env...]', 'ec'], 'Check the https:// response of env(s)', addSharedPidEnvOpts,
   argv => {
     verifyOneOf(argv, ['i', 'a', 'pid:env'])
@@ -200,27 +217,15 @@ yargs.command(['env:check-web [pid:env...]', 'ec'], 'Check the https:// response
   }
 )
 
-
-yargs.command(
-  ['env:backup [pid:env]', 'eb'],
-  'Backup an env',
-  yargs => {
-    addSharedPidEnvOpts()
-  },
-  argv => {
-    backup(...argv['pid:env'].split(':'))
-  }
-)
-
 yargs.command(
   ['env:delete [pid:env...]'],
   'Delete environment(s)',
   yargs => {
-    addSharedPidEnvOpts()
+    addSharedPidEnvOpts(false)
     yargs.option('i', {
       alias: 'inactive',
       description: 'Delete all inactive envs across all projs',
-      conflicts: ['pid:env', 'a'],
+      conflicts: ['pid:env'],
       type: 'boolean',
       coerce: coercer
     })
@@ -231,10 +236,8 @@ yargs.command(
     })
   },
   async argv => {
-    verifyOneOf(argv, ['i', 'a', 'pid:env'])
-    if (argv.all) {
-      return console.log(errorTxt(disallowedCmdTxt))
-    } else if (argv.inactive) {
+    verifyOneOf(argv, ['i', 'pid:env'])
+    if (argv.inactive) {
       return pLimitForEachHandler(4, deleteInactiveEnvs, await getProjectsFromApi())
     } 
     let pidEnvs = new Set(argv['pid:env'])
@@ -263,7 +266,7 @@ yargs.command(
   ['env:deploy [tar-file] [pid:env...]'],
   'Deploy env(s) using the provided tar file as the new git head',
   yargs => {
-    addSharedPidEnvOpts()
+    addSharedPidEnvOpts(false)
     yargs.option('x', {
       alias: 'expiring',
       description: 'Redeploy envs with TLS certs that are about to expire (no other changes)',
@@ -296,11 +299,9 @@ yargs.command(
     })
   },
   argv => {
-    verifyOneOf(argv, ['x', 'a', 'pid:env'])
+    verifyOneOf(argv, ['x', 'pid:env'])
     const additionalArgs = [argv['tar-file'], argv.reset, argv.force]
-    if (argv.all) {
-      return console.log(errorTxt(disallowedCmdTxt))
-    } else if (argv.expiring) {
+    if (argv.expiring) {
       return pLimitForEachHandler(4, redeployEnv, getExpiringPidEnvs())
     }
     let pidEnvs = new Set(argv['pid:env'])
@@ -406,15 +407,6 @@ yargs.command(
   }
 )
 
-yargs.command(['env:update [pid:env...]', 'eu'], 'Query API about env(s)', addSharedPidEnvOpts, argv => {
-  verifyOneOf(argv, ['a', 'pid:env'])
-  let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
-  if (argv.time) {
-    pidEnvs = filterStillValidRuns(argv.time, updateEnvironment, pidEnvs)
-  }
-  pLimitForEachHandler(6, updateEnvironment, pidEnvs)
-})
-
 yargs.command(
   ['host:env-match', 'he'],
   'Match envs to hosts based on shared system attributes',
@@ -449,20 +441,6 @@ yargs.command(
 )
 
 yargs.command(
-  ['project:discover-envs [pid:env...]', 'pd'],
-  'Query API to find new (and missing) envs',
-  addSharedPidEnvOpts,
-  async argv => {
-    verifyOneOf(argv, ['a', 'pid:env'])
-    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
-    if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, discoverEnvs, pidEnvs)
-    }
-    pLimitForEachHandler(4, discoverEnvs, pidEnvs)
-  }
-)
-
-yargs.command(
   ['project:find-failures [pid:env...]', 'pf'],
   'Query activity API by proj(s) to find envs that failed to deploy',
   addSharedPidEnvOpts,
@@ -490,14 +468,17 @@ yargs.command(
   }
 )
 
-yargs.command(['project:update [pid:env...]', 'pu'], 'Query API about proj(s)', addSharedPidEnvOpts, async argv => {
-  verifyOneOf(argv, ['a', 'pid:env'])
-  let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
-  if (argv.time) {
-    pidEnvs = filterStillValidRuns(argv.time, updateProject, pidEnvs)
+yargs.command(['project:update [pid...]', 'pu'], 
+  'Update projects\' info, users, and envs', addSharedPidEnvOpts, 
+  async argv => {
+    verifyOneOf(argv, ['a', 'pid'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid'])
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, updateProject, pidEnvs)
+    }
+    pLimitForEachHandler(6, updateProject, pidEnvs)
   }
-  pLimitForEachHandler(6, updateProject, pidEnvs)
-})
+)
 
 yargs.command(
   ['user:add <email> <role> [pid...]', 'ua'],
@@ -505,7 +486,7 @@ yargs.command(
   addSharedPidEnvOpts,
   async argv => {
     verifyOneOf(argv, ['a', 'pid'])
-    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid'])
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, addUser, pidEnvs)
     }
@@ -520,7 +501,7 @@ yargs.command(
   addSharedPidEnvOpts,
   async argv => {
     verifyOneOf(argv, ['a', 'pid'])
-    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid'])
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, delUser, pidEnvs)
     }
@@ -535,7 +516,7 @@ yargs.command(
   addSharedPidEnvOpts,
   async argv => {
     verifyOneOf(argv, ['a', 'pid'])
-    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid'])
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, getVar, pidEnvs)
     }
@@ -550,7 +531,7 @@ yargs.command(
   addSharedPidEnvOpts,
   async argv => {
     verifyOneOf(argv, ['a', 'pid'])
-    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid'])
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, setVar, pidEnvs)
     }

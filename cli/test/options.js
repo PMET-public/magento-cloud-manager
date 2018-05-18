@@ -101,6 +101,7 @@ validSubCommands.forEach(subCmd => {
       pairsOfConflicts.forEach(pair => {
         it(`${pair[0]} and ${pair[1]} are mutually exclusive`, () => {
           const strCmd = `${subCmd.name} ${subCmd.requiresOneOf ? 'dummy-arg' : ''}` +
+            `${'dummy-arg '.repeat(subCmd.numOfRequiredNonListArgs)}` + 
             ` ${conflictToArg(subCmd.name, pair[0])} ${conflictToArg(subCmd.name, pair[1])}`
           return execCmd(strCmd).then(({stderr, stdout}) => {
             assert.match(stderr, /mutually exclusive/)

@@ -37,7 +37,8 @@ const allOpt = {name: 'all', alias: 'a'}
 const timeOpt = {name: 'time', alias: 't'}
 const commonValidOpts = [verboseOpt, quietOpt, helpOpt]
 const validSubCommands = [
-  {name: 'env:check-cert', alias: 'ec'},
+  {name: 'env:backup', alias: 'eb'},
+  {name: 'env:check-web', alias: 'ec'},
   {
     name: 'env:delete',
     validOpts: [{name: 'inactive', alias: 'i'}, {name: 'yes'}],
@@ -53,7 +54,6 @@ const validSubCommands = [
   {name: 'env:get', alias: 'eg', numOfRequiredNonListArgs: 1},
   {name: 'env:put', alias: 'ep', numOfRequiredNonListArgs: 1},
   {name: 'env:smoke-test', alias: 'es'},
-  {name: 'env:update', alias: 'eu'},
   {name: 'host:env-match', alias: 'he', numOfRequiredNonListArgs: 0},
   {
     name: 'host:update',
@@ -63,7 +63,11 @@ const validSubCommands = [
   },
   {name: 'project:find-failures', alias: 'pf'},
   {name: 'project:grant-gitlab', alias: 'pg'},
-  {name: 'project:update', alias: 'pu'}
+  {name: 'project:update', alias: 'pu'},
+  {name: 'user:add', alias: 'ua', numOfRequiredNonListArgs: 2},
+  {name: 'user:delete', alias: 'ud', numOfRequiredNonListArgs: 1},
+  {name: 'variable:get', alias: 'vg', numOfRequiredNonListArgs: 1},
+  {name: 'variable:set', alias: 'vs', numOfRequiredNonListArgs: 2}
 ]
 
 // add common opts
@@ -73,8 +77,13 @@ validSubCommands.forEach(subCmd => {
   subCmd.validOpts = subCmd.validOpts || []
   subCmd.validOpts.push(...commonValidOpts)
   if (subCmd.name !== 'host:env-match') {
-    subCmd.validOpts.push(allOpt, timeOpt)
-    subCmd.requiresOneOf = ['a', 'pid:env'].concat(subCmd.listOpts || [])
+    subCmd.validOpts.push(timeOpt)
+    if (!/env:delete|env:deploy/.test(subCmd.name)) {
+      subCmd.validOpts.push(allOpt)
+      subCmd.requiresOneOf = ['a', 'pid:env'].concat(subCmd.listOpts || [])
+    } else {
+      subCmd.requiresOneOf = ['pid:env'].concat(subCmd.listOpts || [])
+    }
     subCmd.eachConflicts.push(subCmd.requiresOneOf)
   }
 })
