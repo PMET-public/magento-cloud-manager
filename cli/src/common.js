@@ -11,6 +11,7 @@ const myFormat = winston.format.printf(info => {
 const logger = winston.createLogger({
   format: winston.format.combine(winston.format.timestamp(), myFormat),
   transports: [
+    // use "Stream" vs "File" until https://github.com/winstonjs/winston/issues/1194#issuecomment-386327916
     // new winston.transports.File({filename: `${__dirname}/../error.log`, level: 'error'})
     //new winston.transports.File({filename: `${__dirname}/../combined.log`, level: 'debug'})
     new winston.transports.Stream({stream: fs.createWriteStream(`${__dirname}/../error.log`, {flags: 'a'}), level: 'error'}),

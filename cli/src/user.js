@@ -28,7 +28,7 @@ const getUser = (project, email) => {
 exports.getUser = getUser
 
 const delUser = async (project, environment, email) => {
-  const cmd = `${MC_CLI} user:delete -p ${project} ${email}`
+  const cmd = `${MC_CLI} user:delete --no-wait --yes -p ${project} ${email}`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {

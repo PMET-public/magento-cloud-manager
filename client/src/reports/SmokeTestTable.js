@@ -237,6 +237,25 @@ export default class extends Component {
     }
   }
 
+  createUserFilterOptions = () => {
+    if (this.state.data) {
+      const users = Array.from(new Set(
+        [].concat(...this.state.data.map(x => 
+          x['user_list'].toLowerCase().replace(/:.*?(,|$)/g,' ').trim().split(' '))
+        ).sort()
+      ))
+      const filters = []
+      for (let i in users) {
+        filters.push({
+          key: users[i],
+          label: users[i],
+          value: users[i]
+        })
+      }
+      return this.createFilterOptions(filters)
+    }
+  }
+
   createFilterMethod = filters => {
     const filterMethod = (filter, row) => {
       for (let i in filters) {
@@ -260,6 +279,8 @@ export default class extends Component {
 
   testedFilter = {
     key: 'tested',
+    value: 'tested',
+    label: 'tested',
     test: (filter, row) => {
       return row[filter.id] !== null
     }
@@ -494,7 +515,7 @@ export default class extends Component {
                     : []
                   return list.length ? <Dialog title="Users (roles)" label={list.length}>{list}</Dialog> : ''
                 },
-                Filter: this.createFilterOptionsFromAccessor('user_list'),
+                Filter: this.createUserFilterOptions(),
                 filterMethod: (filter, row, column) => {
                   return new RegExp(filter.value, 'i').test(row[filter.id])
                 },

@@ -1,5 +1,4 @@
 const https = require('https')
-const moment = require('moment')
 const {writeFileSync} = require('fs')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../.secrets.json')

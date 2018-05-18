@@ -26,8 +26,8 @@ exports.choose2 = choose2
 
 const ms1min = 1 * 60 * 1000
 const ms5min = 5 * 60 * 1000
-const ms30min = 30 * 60 * 1000
-const ms2hrs = 120 * 60 * 1000
+// const ms30min = 30 * 60 * 1000
+// const ms2hrs = 120 * 60 * 1000
 
 // terminology https://stackoverflow.com/questions/36495669/difference-between-terms-option-argument-and-parameter
 const verboseOpt = {name: 'verbose', alias: 'v'}

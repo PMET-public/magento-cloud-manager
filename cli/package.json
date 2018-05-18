@@ -12,7 +12,7 @@
     "node-fetch": "^2.0.0",
     "p-limit": "^1.2.0",
     "sprintf-js": "^1.1.1",
-    "winston": "pmet-public/winston#master",
+    "winston": "^3.0.0-rc5",
     "yargs": "^11.0.0"
   },
   "bin": {
