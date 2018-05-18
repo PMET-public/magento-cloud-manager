@@ -6,6 +6,7 @@ const addUser = async (project, environment, email, role) => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
+      logger.mylog('info', `User: ${email} added to project: ${project} env: ${environment}`)
       return true
     })
     .catch(error => {
@@ -32,6 +33,8 @@ const delUser = async (project, environment, email) => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
+      logger.mylog('info', `User: ${email} deleted from project: ${project} env: ${environment}`)
+      return true
     })
     .catch(error => logger.mylog('error', error))
   return result

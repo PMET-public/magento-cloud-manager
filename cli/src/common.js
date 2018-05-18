@@ -121,7 +121,8 @@ const execOutputHandler = ({stdout, stderr}) => {
       /project.*successfully downloaded/i,
       /Everything up-to-date/i,
       /Activity.*succeeded/i,
-      /Variable.*already set as/i
+      /Variable.*already set as/i,
+      /Are you sure you want to delete the user/i
     ]
     const result = nonErrorRegexes.filter(regex => regex.test(stderr))
     if (result.length === 0) {
