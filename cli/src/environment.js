@@ -246,7 +246,8 @@ const checkWeb = async (project, environment = 'master') => {
         }
       }
       resolve(!isExpired && statusCodeResult.logLevel !== 'error' && bodyMatches)
-    }).setTimeout(10000, () => {
+    })
+    request.setTimeout(10000, () => {
       reject('Request timed out for ' + url)
       request.abort()
     }).on('error', (error) => {
