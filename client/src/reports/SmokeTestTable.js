@@ -29,6 +29,14 @@ moment.updateLocale('en', {
   }
 })
 
+const defaultFiltered = [{
+  id: 'proj_status',
+  value: 'active'
+}, {
+  id: 'env_status',
+  value: 'active'
+}]
+
 export default class extends Component {
   constructor(props) {
     super(props)
@@ -36,8 +44,8 @@ export default class extends Component {
       width: 0,
       height: 0,
       selection: [],
-      selectAll: false
-      // , filtered: []
+      selectAll: false,
+      filtered: defaultFiltered
     }
     this.updateWindowDimensions = this.updateWindowDimensions.bind(this)
   }
@@ -56,6 +64,9 @@ export default class extends Component {
   }
 
   matchRow = (filter, row) => {
+    if (filter.value === "untested") {
+      return row[filter.id] === null 
+    }
     return String(row[filter.id]).indexOf(filter.value) !== -1
   }
 
@@ -259,8 +270,8 @@ export default class extends Component {
   createFilterMethod = filters => {
     const filterMethod = (filter, row) => {
       for (let i in filters) {
-        if (filters[i].key === filter.value) {
-          return filters[i].test(filter,row)
+        if (filters[i].value === filter.value) {
+          return filters[i].test(filter, row)
         }
       }
       return true
@@ -289,12 +300,12 @@ export default class extends Component {
   httpTestFilters = [
     {
       key: 'success',
-      value: 1,
+      value: '1',
       label: 'success'
     },
     {
       key: 'failed',
-      value: 0,
+      value: '0',
       label: '404'
     },
     this.untestedFilter
@@ -314,24 +325,144 @@ export default class extends Component {
     this.untestedFilter
   ]
 
+  curDateInSecs = parseInt(new Date()/1000, 10)
+  secsIn1Day = 24 * 60 * 60
+  secsIn2Wk = 14 * this.secsIn1Day
+  secsIn1Mo = 30 * this.secsIn1Day
+  secsIn3Mo = 90 * this.secsIn1Day
+  secsIn6Mo = 180 * this.secsIn1Day
+  secsIn1Yr = 365 * this.secsIn1Day
+
+  lessThan2WkFilter = {
+    key: '< 2 wk', 
+    value: '< ' + this.secsIn2Wk, 
+    label: '< 2 wk',
+    test: (filter, row) => {
+      const retVal = row[filter.id] !== null && 
+        this.curDateInSecs - this.secsIn2Wk < new Date(row[filter.id] * 1000)/1000
+      return retVal
+    }
+  }
+
+  moreThan2WkFilter = {
+    key: '> 2 wk', 
+    value: '> ' + this.secsIn2Wk, 
+    label: '> 2 wk',
+    test: (filter, row) => {
+      const retVal = row[filter.id] !== null && 
+        new Date(row[filter.id] * 1000)/1000 > new Date()/1000 + this.secsIn2Wk
+      return retVal
+    }
+  }
+
+  lessThan1MoFilter = {
+    key: '< 1 mo', 
+    value: '> ' + this.secsIn1Mo,
+    label: '< 1 mo',
+    test: (filter, row) => {
+      const retVal = row[filter.id] !== null &&
+        this.curDateInSecs - this.secsIn1Mo < new Date(row[filter.id] * 1000)/1000
+      return retVal
+    }
+  }
+
+  lessThan3MoFilter = {
+    key: '< 3 mo', 
+    value: '> ' + this.secsIn3Mo,
+    label: '< 3 mo',
+    test: (filter, row) => {
+      const retVal = row[filter.id] !== null && 
+        this.curDateInSecs - this.secsIn3Mo < new Date(row[filter.id] * 1000)/1000
+      return retVal
+    }
+  }
+
+  lessThan6MoFilter = {
+    key: '< 6 mo', 
+    value: '< ' + this.secsIn6Mo,
+    label: '< 6 mo',
+    test: (filter, row) => {
+      const retVal = row[filter.id] !== null && 
+        this.curDateInSecs - this.secsIn6Mo < new Date(row[filter.id] * 1000)/1000
+      return retVal
+    }
+  }
+
+  lessThan1YrFilter = {
+    key: '< 1 yr', 
+    value: '< ' + this.secsIn1Yr,
+    label: '< 1 yr',
+    test: (filter, row) => {
+      const retVal = row[filter.id] !== null && 
+        this.curDateInSecs - this.secsIn1Yr < new Date(row[filter.id] * 1000)/1000
+      return retVal
+    }
+  }
+
+  moreThan1YrFilter = {
+    key: '> 1 yr', 
+    value: '> ' + this.secsIn1Yr,
+    label: '> 1 yr',
+    test: (filter, row) => {
+      const retVal = row[filter.id] !== null && 
+        this.curDateInSecs - this.secsIn1Yr > new Date(row[filter.id] * 1000)/1000
+      return retVal
+    }
+  }
+
+  neverFilter = {
+    key: 'never',
+    value: 'never',
+    label: 'never',
+    test: (filter, row) => {
+      return row[filter.id] === null
+    }
+  }
+
+  commonTimeBasedFilters = [
+    this.lessThan2WkFilter,
+    this.lessThan1MoFilter,
+    this.lessThan3MoFilter,
+    this.lessThan6MoFilter,
+    this.lessThan1YrFilter,
+    this.moreThan1YrFilter,
+  ]
+
+  commonTBFWithNever = this.commonTimeBasedFilters.concat([this.neverFilter])
+
   expirationFilters = [
     {
       key: 'expired', 
-      value: new Date()/1000, 
+      value: this.curDateInSecs.toString(), 
       label: 'expired',
       test: (filter, row) => {
-        return row[filter.id] < this.value
+        const retVal = row[filter.id] !== null && 
+          row[filter.id] < this.curDateInSecs
+        return retVal
+      }
+    },
+    this.lessThan2WkFilter,
+    this.moreThan2WkFilter,
+    this.untestedFilter
+  ]
+
+  masterEnvFilters = [
+    {
+      key: 'master',
+      label: 'master',
+      value: 'master',
+      test: (filter, row) => {
+        return row[filter.id] === 'master'
       }
     },
     {
-      key: '2wks', 
-      value: 2 * 7 * 24 * 60 * 60, 
-      label: '< 2 wks',
+      key: 'non-master',
+      label: 'non-master',
+      value: 'non-master',
       test: (filter, row) => {
-        return new Date(row[filter.id])/1000 < new Date()/1000 + this.value
+        return row[filter.id] !== 'master'
       }
-    },
-    this.untestedFilter
+    }
   ]
 
   deployLogFilters = [
@@ -354,594 +485,603 @@ export default class extends Component {
     this.untestedFilter
   ]
 
+  resetAllFilters = () => {
+    this.setState({filtered: defaultFiltered});
+  }
+
   render() {
     return (
-      <CheckboxTable
-        selectType="checkbox"
-        ref={r => (this.checkboxTable = r)}
-        selectAll={this.selectAll}
-        isSelected={this.isSelected}
-        toggleAll={this.toggleAll}
-        toggleSelection={this.toggleSelection}
-        SelectInputComponent={this.selectInputComponent}
-        SelectAllInputComponent={this.selectInputComponent}
-        data={this.state.data}
-        //filtered={this.state.filtered}
-        onFetchData={(state, instance) => {
-          this.setState({loading: true})
-          fetch('/smoke-tests')
-            .then(res => res.json())
-            .then(res => {
-              this.setState({
-                data: res.map(row => {
-                  row._id = row.project_id + ':' + row.environment_id
-                  return row
-                }),
-                loading: false
-                // , filtered: [{
-                //   id: 'status',
-                //   value: 'active'
-                // }]
+      <div>
+        <button onClick={this.resetAllFilters}>Reset All Filters</button>
+        <CheckboxTable
+          selectType="checkbox"
+          ref={r => (this.checkboxTable = r)}
+          selectAll={this.selectAll}
+          isSelected={this.isSelected}
+          toggleAll={this.toggleAll}
+          toggleSelection={this.toggleSelection}
+          SelectInputComponent={this.selectInputComponent}
+          SelectAllInputComponent={this.selectInputComponent}
+          data={this.state.data}
+          filtered={this.state.filtered}
+          onFilteredChange={(newFiltered) => {
+            this.setState({filtered: newFiltered, selection: []})
+          }}
+          onFetchData={(state, instance) => {
+            this.setState({loading: true})
+            fetch('/smoke-tests')
+              .then(res => res.json())
+              .then(res => {
+                this.setState({
+                  data: res.map(row => {
+                    row._id = row.project_id + ':' + row.environment_id
+                    return row
+                  })
+                  ,
+                  loading: false
+                })
               })
-            })
-        }}
-        minRows={0}
-        filterable
-        defaultPageSize={10}
-        defaultFilterMethod={this.matchRow}
-        className={'-striped -highlight rotated-headers'}
-        style={{
-          height: this.state.height - 165 + 'px'
-        }}
-        getTrProps={(state, rowInfo, column, instance) => {
-          return {
-            className: this.isSelected(rowInfo.row.id) ? '-selected' : undefined
+          }}
+          minRows={0}
+          filterable
+          defaultPageSize={10}
+          defaultFilterMethod={this.matchRow}
+          className={'-striped -highlight rotated-headers'}
+          style={{
+            height: this.state.height - 165 + 'px'
+          }}
+          getTrProps={(state, rowInfo, column, instance) => {
+            return {
+              className: this.isSelected(rowInfo.row.id) ? '-selected' : undefined
+            }
+          }}
+          getPaginationProps={
+            (state, rowInfo, column, instance) => {
+              return { style: {width: 'calc(100% - 240px)'}}
+            }
           }
-        }}
-        getPaginationProps={
-          (state, rowInfo, column, instance) => {
-            return { style: {width: 'calc(100% - 240px)'}}
-          }
-        }
-        columns={[
-          {
-            Header: 'Project Env Info',
-            columns: [
-              {
-                Header: 'Project Env',
-                accessor: 'id',
-                minWidth: 200,
-                maxWidth: 200,
-                headerClassName: 'adjacent-to-checkbox-column',
-                Cell: cell => (
-                  <div>
-                    <a
-                      target="_blank"
-                      href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${
-                        cell.original.environment_id
-                      }`}>
-                      <Icon color="secondary">cloud_download</Icon>
-                    </a>
-                    <a
-                      target="_blank"
-                      href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
-                        cell.original.region
-                      }.magentosite.cloud/`}>
-                      <Icon color="secondary">shopping_cart</Icon>
-                    </a>
-                    <a
-                      target="_blank"
-                      href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
-                        cell.original.region
-                      }.magentosite.cloud/admin/`}>
-                      <Icon color="secondary">dashboard</Icon>
-                    </a>
-                    <Clipboard
-                      data-clipboard-text={`~/.magento-cloud/bin/magento-cloud ssh -p ${cell.original.project_id} -e ${
-                        cell.original.environment_id
-                      }`}>
-                      <Icon color="secondary">code</Icon>
-                    </Clipboard> &nbsp;
-                    <a
-                      className=""
-                      target="_blank"
-                      href={`https://${cell.original.region}.magento.cloud/projects/${
-                        cell.original.project_id
-                      }/environments/${cell.original.environment_id}`}>
-                      {cell.original.project_title}<br/>
-                      {cell.original.environment_title} &nbsp;
-                      {cell.original.project_id}
-                    </a>
-                  </div>
-                ),
-                Filter: ({filter, onChange}) => (
-                  <div>
-                    <Clipboard
-                      className="checkbox-selection-to-clipboard-button"
-                      data-clipboard-text={this.state.selection.join(' ')}>
-                      <Icon color="secondary">code</Icon>
-                    </Clipboard>
-                    <input
-                      placeholder="Regex"
-                      type="text"
-                      onChange={event => onChange(event.target.value)}
-                      style={{width: '90%'}}
-                      value={filter && filter.value ? filter.value : ''}
-                    />
-                  </div>
-                ),
-                filterMethod: (filter, row, column) => {
-                  const o = row._original
-                  return new RegExp(filter.value, 'i').test(
-                    `${o.project_title} ${o.environment_title} ${o.project_id} ${o.environment_id}`
-                  )
+          columns={[
+            {
+              Header: 'Project Env Info',
+              columns: [
+                {
+                  Header: 'Project Env',
+                  accessor: 'id',
+                  minWidth: 200,
+                  maxWidth: 200,
+                  headerClassName: 'adjacent-to-checkbox-column',
+                  Cell: cell => (
+                    <div>
+                      <a
+                        target="_blank"
+                        href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${
+                          cell.original.environment_id
+                        }`}>
+                        <Icon color="secondary">cloud_download</Icon>
+                      </a>
+                      <a
+                        target="_blank"
+                        href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
+                          cell.original.region
+                        }.magentosite.cloud/`}>
+                        <Icon color="secondary">shopping_cart</Icon>
+                      </a>
+                      <a
+                        target="_blank"
+                        href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
+                          cell.original.region
+                        }.magentosite.cloud/admin/`}>
+                        <Icon color="secondary">dashboard</Icon>
+                      </a>
+                      <Clipboard
+                        data-clipboard-text={`~/.magento-cloud/bin/magento-cloud ssh -p ${cell.original.project_id} -e ${
+                          cell.original.environment_id
+                        }`}>
+                        <Icon color="secondary">code</Icon>
+                      </Clipboard> &nbsp;
+                      <a
+                        className=""
+                        target="_blank"
+                        href={`https://${cell.original.region}.magento.cloud/projects/${
+                          cell.original.project_id
+                        }/environments/${cell.original.environment_id}`}>
+                        {cell.original.project_title}<br/>
+                        {cell.original.environment_title} &nbsp;
+                        {cell.original.project_id}
+                      </a>
+                    </div>
+                  ),
+                  Filter: ({filter, onChange}) => (
+                    <div>
+                      <Clipboard
+                        className="checkbox-selection-to-clipboard-button"
+                        data-clipboard-text={this.state.selection.join(' ')}>
+                        <Icon color="secondary">code</Icon>
+                      </Clipboard>
+                      <input
+                        placeholder="Regex"
+                        type="text"
+                        onChange={event => onChange(event.target.value)}
+                        style={{width: '90%'}}
+                        value={filter && filter.value ? filter.value : ''}
+                      />
+                    </div>
+                  ),
+                  filterMethod: (filter, row, column) => {
+                    const o = row._original
+                    return new RegExp(filter.value, 'i').test(
+                      `${o.project_title} ${o.environment_title} ${o.project_id} ${o.environment_id}`
+                    )
+                  }
+                },
+                {
+                  Header: 'Master?',
+                  accessor: 'environment_id',
+                  className: 'right',
+                  width: calcWidth(3),
+                  Cell: cell => this.validate(cell.value, v => v === 'master', this.checkIcon, this.empty),
+                  Filter: this.createFilterOptions(this.masterEnvFilters),
+                  filterMethod: this.createFilterMethod(this.masterEnvFilters)
+                },
+                {
+                  Header: 'Region',
+                  accessor: 'region',
+                  className: 'right',
+                  width: calcWidth(5),
+                  Filter: this.createFilterOptionsFromAccessor('region'),
+                  filterMethod: this.exactMatchRow
+                },
+                {
+                  Header: 'Proj Status',
+                  accessor: 'proj_status',
+                  className: 'right',
+                  width: calcWidth(7),
+                  Filter: this.createFilterOptionsFromAccessor('proj_status'),
+                  filterMethod: this.exactMatchRow
+                },
+                {
+                  Header: 'Env Status',
+                  accessor: 'env_status',
+                  className: 'right',
+                  width: calcWidth(7),
+                  Filter: this.createFilterOptionsFromAccessor('env_status'),
+                  filterMethod: this.exactMatchRow
+                },
+                {
+                  Header: 'Users\' Emails',
+                  accessor: 'user_list',
+                  maxWidth: calcWidth(4),
+                  className: 'right',
+                  Cell: cell => {
+                    const list = cell.value
+                      ? cell.value
+                          .trim()
+                          .split(/,/)
+                          .map(x => x.replace(/:(.*)/, ' ($1)'))
+                      : []
+                    return list.length ? <Dialog title="Users (roles)" label={list.length}>{list}</Dialog> : ''
+                  },
+                  Filter: this.createUserFilterOptions(),
+                  filterMethod: (filter, row, column) => {
+                    return new RegExp(filter.value, 'i').test(row[filter.id])
+                  },
+                  sortMethod: (a, b) => {
+                    const aLength = a ? a.trim().split(/,/).length : 0
+                    const bLength = b ? b.trim().split(/,/).length : 0
+                    return bLength - aLength
+                  }
                 }
-              },
-              {
-                Header: 'Region',
-                accessor: 'region',
-                className: 'right',
-                width: calcWidth(5),
-                Filter: this.createFilterOptionsFromAccessor('region'),
-                filterMethod: this.exactMatchRow
-              },
-              {
-                Header: 'Proj Status',
-                accessor: 'proj_status',
-                className: 'right',
-                width: calcWidth(7),
-                Filter: this.createFilterOptionsFromAccessor('proj_status'),
-                filterMethod: this.exactMatchRow
-              },
-              {
-                Header: 'Env Status',
-                accessor: 'env_status',
-                className: 'right',
-                width: calcWidth(7),
-                Filter: this.createFilterOptionsFromAccessor('env_status'),
-                filterMethod: this.exactMatchRow
-              },
-              {
-                Header: 'Users\' Emails',
-                accessor: 'user_list',
-                maxWidth: calcWidth(4),
-                className: 'right',
-                Cell: cell => {
-                  const list = cell.value
-                    ? cell.value
-                        .trim()
-                        .split(/,/)
-                        .map(x => x.replace(/:(.*)/, ' ($1)'))
-                    : []
-                  return list.length ? <Dialog title="Users (roles)" label={list.length}>{list}</Dialog> : ''
+              ]
+            },
+            {
+              Header: 'Usage',
+              columns: [
+                {
+                  Header: 'Created',
+                  accessor: 'last_created_at',
+                  Cell: cell => {
+                    return moment(cell.value * 1000).fromNow()
+                  },
+                  maxWidth: calcWidth(5),
+                  className: 'right',
+                  Filter: this.createFilterOptions(this.commonTimeBasedFilters),
+                  filterMethod: this.createFilterMethod(this.commonTimeBasedFilters)
                 },
-                Filter: this.createUserFilterOptions(),
-                filterMethod: (filter, row, column) => {
-                  return new RegExp(filter.value, 'i').test(row[filter.id])
+                {
+                  Header: 'Last Customer Login',
+                  accessor: 'last_login_customer',
+                  Cell: cell => this.formatDate(cell.value),
+                  maxWidth: calcWidth(5),
+                  className: 'right',
+                  Filter: this.createFilterOptions(this.commonTBFWithNever),
+                  filterMethod: this.createFilterMethod(this.commonTBFWithNever)
                 },
-                sortMethod: (a, b) => {
-                  const aLength = a ? a.trim().split(/,/).length : 0
-                  const bLength = b ? b.trim().split(/,/).length : 0
-                  return bLength - aLength
+                {
+                  Header: 'Last Admin Login',
+                  accessor: 'last_login_admin',
+                  Cell: cell => this.formatDate(cell.value),
+                  maxWidth: calcWidth(5),
+                  className: 'right',
+                  Filter: this.createFilterOptions(this.commonTimeBasedFilters),
+                  filterMethod: this.createFilterMethod(this.commonTimeBasedFilters)
+                },
+                {
+                  Header: 'Cert Expires',
+                  accessor: 'expiration',
+                  Cell: cell => {
+                    if (!cell.value) {
+                      return cell.value
+                    }
+                    const expiryDate = new Date(cell.value * 1000)
+                    if (expiryDate < new Date()) {
+                      return 'Expired!'
+                    }
+                    return moment(expiryDate).fromNow()
+                  },
+                  maxWidth: calcWidth(5),
+                  className: 'right',
+                  Filter: this.createFilterOptions(this.expirationFilters),
+                  filterMethod: this.createFilterMethod(this.expirationFilters)
                 }
-              }
-            ]
-          },
-          {
-            Header: 'Usage',
-            columns: [
-              {
-                Header: 'Created',
-                accessor: 'last_created_at',
-                Cell: cell => {
-                  return moment(cell.value * 1000).fromNow()
+              ]
+            },
+            {
+              Header: 'Version',
+              columns: [
+                {
+                  Header: 'EE Version',
+                  accessor: 'ee_composer_version',
+                  className: 'right',
+                  width: calcWidth(10),
+                  Filter: this.createFilterOptionsFromAccessor('ee_composer_version')
                 },
-                maxWidth: calcWidth(5),
-                className: 'right',
-                filterable: false
-              },
-              {
-                Header: 'Last Customer Login',
-                accessor: 'last_login_customer',
-                Cell: cell => this.formatDate(cell.value),
-                maxWidth: calcWidth(5),
-                className: 'right'
-              },
-              {
-                Header: 'Last Admin Login',
-                accessor: 'last_login_admin',
-                Cell: cell => this.formatDate(cell.value),
-                maxWidth: calcWidth(5),
-                className: 'right'
-              },
-              {
-                Header: 'Cert Expires',
-                accessor: 'expiration',
-                Cell: cell => {
-                  if (!cell.value) {
-                    return cell.value
-                  }
-                  const expiryDate = new Date(cell.value * 1000)
-                  if (expiryDate < new Date()) {
-                    return 'Expired!'
-                  }
-                  return moment(expiryDate).fromNow()
+                {
+                  Header: 'app.yaml MD5',
+                  accessor: 'app_yaml_md5',
+                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
+                  maxWidth: calcWidth(4),
+                  Filter: this.createFilterOptionsFromAccessor('app_yaml_md5')
                 },
-                maxWidth: calcWidth(5),
-                className: 'right',
-                Filter: this.createFilterOptions(this.expirationFilters),
-                filterMethod: this.createFilterMethod(this.expirationFilters)
-                // (filter, row) => {
-                //   const expiryDate = new Date(row[filter.id] * 1000)
-                //   switch (filter.value) {
-                //     case 'untested':
-                //       return row[filter.id] === null
-                //     case 'expired':
-                //       return expiryDate < new Date()
-                //     case '2wks':
-                //       return expiryDate >= new Date() && expiryDate/1000 < new Date()/1000 + 2 * 7 * 24 * 60 * 60
-                //     default:
-                //       return true
-                //   }
-                // }
-              }
-            ]
-          },
-          {
-            Header: 'Version',
-            columns: [
-              {
-                Header: 'EE Version',
-                accessor: 'ee_composer_version',
-                className: 'right',
-                width: calcWidth(10),
-                Filter: this.createFilterOptionsFromAccessor('ee_composer_version')
-              },
-              {
-                Header: 'app.yaml MD5',
-                accessor: 'app_yaml_md5',
-                Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                maxWidth: calcWidth(4),
-                filterable: false
-              },
-              {
-                Header: 'composer.lock MD5',
-                accessor: 'composer_lock_md5',
-                Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                maxWidth: calcWidth(4),
-                filterable: false
-              },
-              {
-                Header: 'composer.lock Age',
-                accessor: 'composer_lock_mtime',
-                Cell: cell => this.formatDate(cell.value),
-                maxWidth: calcWidth(5),
-                className: 'right',
-                filterable: false
-              },              {
-                Header: 'config.php MD5',
-                accessor: 'config_php_md5',
-                Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                maxWidth: calcWidth(4),
-                filterable: false
-              }
-            ]
-          },
-          {
-            Header: 'Database Checks',
-            columns: [
-              {
-                Header: 'HTTP Status',
-                accessor: 'http_status',
-                Cell: cell => this.validate(cell.value, v => v === 302, this.checkIcon, this.errorIcon),
-                maxWidth: calcWidth(3),
-                className: 'right',
-                Filter: this.createFilterOptionsFromAccessor('http_status'),
-              },
-              {
-                Header: 'All indexes valid',
-                accessor: 'not_valid_index_count',
-                Cell: cell => this.validate(cell.value, v => v === 0, this.checkIcon, this.errorIcon),
-                maxWidth: calcWidth(2),
-                className: 'right',
-                Filter: this.createFilterOptions(this.passFailFilters),
-                filterMethod: this.zeroIsPassing
-              },
-              {
-                Header: 'Products',
-                accessor: 'catalog_product_entity_count',
-                Cell: cell => <div>{cell.value}</div>,
-                maxWidth: calcWidth(4),
-                className: 'right'
-              },
-              {
-                Header: 'Category Assignments',
-                accessor: 'catalog_category_product_count',
-                Cell: cell => <div>{cell.value}</div>,
-                maxWidth: calcWidth(5),
-                className: 'right'
-              },
-              {
-                Header: 'Admins',
-                accessor: 'admin_user_count',
-                Cell: cell => this.validate(cell.value, v => v > 0, cell.value, this.errorIcon),
-                maxWidth: calcWidth(2),
-                className: 'right'
-              },
-              {
-                Header: 'Stores',
-                accessor: 'store_count',
-                Cell: cell => <div>{cell.value}</div>,
-                maxWidth: calcWidth(2),
-                className: 'right',
-                Filter: this.createFilterOptionsFromAccessor('store_count')
-              },
-              {
-                Header: 'Orders',
-                accessor: 'order_count',
-                Cell: cell => <div>{cell.value}</div>,
-                maxWidth: calcWidth(4),
-                className: 'right'
-              },
-              {
-                Header: 'CMS Blocks',
-                accessor: 'cms_block_count',
-                Cell: cell => <div>{cell.value}</div>,
-                maxWidth: calcWidth(3),
-                className: 'right'
-              },
-              {
-                Header: 'Templates',
-                accessor: 'template_count',
-                Cell: cell => <div>{cell.value}</div>,
-                maxWidth: calcWidth(2),
-                className: 'right'
-              }
-            ]
-          },
-          {
-            Header: 'App Checks',
-            columns: [
-              {
-                Header: 'German',
-                accessor: 'german_check',
-                Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
-                maxWidth: calcWidth(1),
-                Filter: this.createFilterOptions(this.httpTestFilters)
-              },
-              {
-                Header: 'Venia',
-                accessor: 'venia_check',
-                Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
-                maxWidth: calcWidth(1),
-                Filter: this.createFilterOptions(this.httpTestFilters)
-              },
-              {
-                Header: 'Admin Login',
-                accessor: 'admin_check',
-                Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.errorIcon),
-                maxWidth: calcWidth(1),
-                Filter: this.createFilterOptions(this.httpTestFilters)
-              },
-              {
-                Header: 'Errors',
-                accessor: 'error_logs',
-                className: 'right',
-                Cell: cell => {
-                  const list = cell.value
-                    ? cell.value
-                        .trim()
-                        .replace(/ (1[45]\d{8} \/)/g, '\n$1')
-                        .split('\n')
-                    : []
-                  return list.length ? <Dialog title="Environmental Errors" label={list.length}>{this.errorList(list)}</Dialog> : ''
+                {
+                  Header: 'composer.lock MD5',
+                  accessor: 'composer_lock_md5',
+                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
+                  maxWidth: calcWidth(4),
+                  Filter: this.createFilterOptionsFromAccessor('composer_lock_md5')
                 },
-                maxWidth: calcWidth(5),
-                filterMethod: (filter, row, column) => {
-                  return new RegExp(filter.value, 'i').test(row[filter.id])
-                },
-                sortMethod: (a, b) => {
-                  const aLength = a ? a.trim().split(/ 1[45]\d{8} \//).length : 0
-                  const bLength = b ? b.trim().split(/ 1[45]\d{8} \//).length : 0
-                  return bLength - aLength
+                {
+                  Header: 'composer.lock Age',
+                  accessor: 'composer_lock_mtime',
+                  Cell: cell => this.formatDate(cell.value),
+                  maxWidth: calcWidth(5),
+                  className: 'right',
+                  Filter: this.createFilterOptionsFromAccessor('composer_lock_mtime')
+                },              {
+                  Header: 'config.php MD5',
+                  accessor: 'config_php_md5',
+                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
+                  maxWidth: calcWidth(4),
+                  Filter: this.createFilterOptionsFromAccessor('config_php_md5')
                 }
-              },
-              {
-                Header: 'Deploy Log End',
-                accessor: 'last_deploy_log',
-                className: 'right',
-                Cell: cell => {
-                  const list = cell.value
-                    ? cell.value
-                        .trim()
-                        .split('\v')
-                    : []
-                  if (!list.length) {
-                    return
-                  } else if (this.deployCompleted(list[list.length-1])) {
-                    return this.checkIcon()
-                  } else {
-                   return <Dialog title="End of Last Deploy Log" className="compact" label='!'>{list}</Dialog>
+              ]
+            },
+            {
+              Header: 'App Checks',
+              columns: [
+                {
+                  Header: 'HTTP Status',
+                  accessor: 'http_status',
+                  Cell: cell => this.validate(cell.value, v => v === 302, this.checkIcon, this.errorIcon),
+                  maxWidth: calcWidth(3),
+                  className: 'right',
+                  Filter: this.createFilterOptionsFromAccessor('http_status'),
+                },
+                {
+                  Header: 'All indexes valid',
+                  accessor: 'not_valid_index_count',
+                  Cell: cell => this.validate(cell.value, v => v === 0, this.checkIcon, this.errorIcon),
+                  maxWidth: calcWidth(2),
+                  className: 'right',
+                  Filter: this.createFilterOptions(this.passFailFilters),
+                  filterMethod: this.zeroIsPassing
+                },
+                {
+                  Header: 'German',
+                  accessor: 'german_check',
+                  Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
+                  maxWidth: calcWidth(1),
+                  Filter: this.createFilterOptions(this.httpTestFilters)
+                },
+                {
+                  Header: 'Venia',
+                  accessor: 'venia_check',
+                  Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.empty),
+                  maxWidth: calcWidth(1),
+                  Filter: this.createFilterOptions(this.httpTestFilters)
+                },
+                {
+                  Header: 'Admin Login',
+                  accessor: 'admin_check',
+                  Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.errorIcon),
+                  maxWidth: calcWidth(1),
+                  Filter: this.createFilterOptions(this.httpTestFilters)
+                },
+                {
+                  Header: 'Errors',
+                  accessor: 'error_logs',
+                  className: 'right',
+                  Cell: cell => {
+                    const list = cell.value
+                      ? cell.value
+                          .trim()
+                          .replace(/ (1[45]\d{8} \/)/g, '\n$1')
+                          .split('\n')
+                      : []
+                    return list.length ? <Dialog title="Environmental Errors" label={list.length}>{this.errorList(list)}</Dialog> : ''
+                  },
+                  maxWidth: calcWidth(5),
+                  filterMethod: (filter, row, column) => {
+                    return new RegExp(filter.value, 'i').test(row[filter.id])
+                  },
+                  sortMethod: (a, b) => {
+                    const aLength = a ? a.trim().split(/ 1[45]\d{8} \//).length : 0
+                    const bLength = b ? b.trim().split(/ 1[45]\d{8} \//).length : 0
+                    return bLength - aLength
                   }
                 },
-                maxWidth: calcWidth(5),
-                Filter: this.createFilterOptions(this.deployLogFilters),
-                filterMethod: this.createFilterMethod(this.deployLogFilters)
-              }
-            ]
-          },
-          {
-            Header: 'Performance',
-            columns: [
-              {
-                Header: 'Cumulative CPU',
-                accessor: 'cumulative_cpu_percent',
-                Cell: cell => (cell.value ? cell.value.toFixed(0) : ''),
-                maxWidth: calcWidth(4),
-                className: 'right',
-                Filter: '%',
-                Footer: this.average
-              },
-              {
-                Header: 'Storefront (uncached)',
-                accessor: 'store_url_uncached',
-                Cell: cell => (<a href={"https://" + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon,
-                Footer: this.average
-              },
-              {
-                Header: 'Storefront (cached)',
-                accessor: 'store_url_cached',
-                Cell: cell => (<a href={"https://" + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon,
-                Footer: this.average
-              },
-              {
-                Header: 'Cat Page (uncached)',
-                accessor: 'cat_url_uncached',
-                Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon,
-                Footer: this.average
-              },
-              {
-                Header: 'Cat Page (partial cache)',
-                accessor: 'cat_url_partial_cache',
-                Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon,
-                Footer: this.average
-              },
-              {
-                Header: 'Cat Page (cached)',
-                accessor: 'cat_url_cached',
-                Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon,
-                Footer: this.average
-              },
-              {
-                Header: 'Cat Page Products',
-                accessor: 'cat_url_product_count',
-                Cell: cell => (
-                  <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
-                    {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
-                  </Tooltip>
-                ),
-                maxWidth: calcWidth(2),
-                className: 'right',
-                Filter: this.createFilterOptions(this.passFailFilters),
-                filterMethod: this.zeroIsFailing
-              },
-              {
-                Header: 'Search Page (partial cache)',
-                accessor: 'search_url_partial_cache',
-                Cell: cell => this.formatSecs(cell.value),
-                maxWidth: calcWidth(4.5),
-                className: 'right',
-                Filter: this.timerIcon,
-                Footer: this.average
-              },
-              {
-                Header: 'Search Page Products',
-                accessor: 'search_url_product_count',
-                Cell: cell => (
-                  <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
-                    {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
-                  </Tooltip>
-                ),
-                maxWidth: calcWidth(2),
-                className: 'right',
-                Filter: this.createFilterOptions(this.passFailFilters),
-                filterMethod: this.zeroIsFailing
-              },
-            ]
-          },
-          {
-            Header: 'Test Info',
-            columns: [
-              {
-                Header: '% Load Change',
-                accessor: 'utilization_start_end',
-                className: 'right',
-                Cell: cell => {
-                  if (cell.value) {
-                    const vals = cell.value.split(',')
-                    return parseInt(vals[4],10) - parseInt(vals[1],10)
-                  }
-                },
-                maxWidth: calcWidth(4),
-                Filter: ({filter, onChange}) => (
-                  <select
-                    onChange={event => onChange(event.target.value)}
-                    style={{width: '100%'}}
-                    value={filter ? filter.value : 'all'}>
-                    <option value="">Show All</option>
-                    <optgroup>
-                    <option key={'significant'} value="significant">
-                        > ±10
-                      </option>
-                      <option key={'untested'} value="untested">
-                        untested
-                      </option>
-                    </optgroup>
-                  </select>
-                ),
-                filterMethod: (filter, row) => {
-                  switch (filter.value) {
-                    case 'untested':
-                      return row[filter.id] === null
-                    case 'significant':
-                      if (row[filter.id] === null) {
-                        return false
-                      }
-                      const vals = row[filter.id].split(',')
-                      return Math.abs(parseInt(vals[4],10) - parseInt(vals[1],10)) > 10
-                    default:
-                      return true
-                  }
-                },
-                sortMethod: (a, b) => {
-                  const parseDiff = x => {
-                    if (x === null || x === undefined) {
-                      return -Infinity
+                {
+                  Header: 'Deploy Log End',
+                  accessor: 'last_deploy_log',
+                  className: 'right',
+                  Cell: cell => {
+                    const list = cell.value
+                      ? cell.value
+                          .trim()
+                          .split('\v')
+                      : []
+                    if (!list.length) {
+                      return
+                    } else if (this.deployCompleted(list[list.length-1])) {
+                      return this.checkIcon()
                     } else {
-                      const vals = x.split(',')
+                    return <Dialog title="End of Last Deploy Log" className="compact" label='!'>{list}</Dialog>
+                    }
+                  },
+                  maxWidth: calcWidth(5),
+                  Filter: this.createFilterOptions(this.deployLogFilters),
+                  filterMethod: this.createFilterMethod(this.deployLogFilters)
+                }
+              ]
+            },
+            {
+              Header: 'Database Checks',
+              columns: [
+                {
+                  Header: 'Products',
+                  accessor: 'catalog_product_entity_count',
+                  Cell: cell => <div>{cell.value}</div>,
+                  maxWidth: calcWidth(4),
+                  className: 'right'
+                },
+                {
+                  Header: 'Category Assignments',
+                  accessor: 'catalog_category_product_count',
+                  Cell: cell => <div>{cell.value}</div>,
+                  maxWidth: calcWidth(5),
+                  className: 'right'
+                },
+                {
+                  Header: 'Admins',
+                  accessor: 'admin_user_count',
+                  Cell: cell => this.validate(cell.value, v => v > 0, cell.value, this.errorIcon),
+                  maxWidth: calcWidth(2),
+                  className: 'right',
+                  Filter: this.createFilterOptionsFromAccessor('admin_user_count')
+                },
+                {
+                  Header: 'Stores',
+                  accessor: 'store_count',
+                  Cell: cell => <div>{cell.value}</div>,
+                  maxWidth: calcWidth(2),
+                  className: 'right',
+                  Filter: this.createFilterOptionsFromAccessor('store_count')
+                },
+                {
+                  Header: 'Orders',
+                  accessor: 'order_count',
+                  Cell: cell => <div>{cell.value}</div>,
+                  maxWidth: calcWidth(4),
+                  className: 'right'
+                },
+                {
+                  Header: 'CMS Blocks',
+                  accessor: 'cms_block_count',
+                  Cell: cell => <div>{cell.value}</div>,
+                  maxWidth: calcWidth(3),
+                  className: 'right'
+                },
+                {
+                  Header: 'Templates',
+                  accessor: 'template_count',
+                  Cell: cell => <div>{cell.value}</div>,
+                  maxWidth: calcWidth(2),
+                  className: 'right'
+                }
+              ]
+            },
+            {
+              Header: 'Performance',
+              columns: [
+                {
+                  Header: 'Cumulative CPU',
+                  accessor: 'cumulative_cpu_percent',
+                  Cell: cell => (cell.value ? cell.value.toFixed(0) : ''),
+                  maxWidth: calcWidth(4),
+                  className: 'right',
+                  Filter: '%',
+                  Footer: this.average
+                },
+                {
+                  Header: 'Storefront (uncached)',
+                  accessor: 'store_url_uncached',
+                  Cell: cell => (<a href={"https://" + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
+                  maxWidth: calcWidth(4.5),
+                  className: 'right',
+                  Filter: this.timerIcon,
+                  Footer: this.average
+                },
+                {
+                  Header: 'Storefront (cached)',
+                  accessor: 'store_url_cached',
+                  Cell: cell => (<a href={"https://" + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
+                  maxWidth: calcWidth(4.5),
+                  className: 'right',
+                  Filter: this.timerIcon,
+                  Footer: this.average
+                },
+                {
+                  Header: 'Cat Page (uncached)',
+                  accessor: 'cat_url_uncached',
+                  Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
+                  maxWidth: calcWidth(4.5),
+                  className: 'right',
+                  Filter: this.timerIcon,
+                  Footer: this.average
+                },
+                {
+                  Header: 'Cat Page (partial cache)',
+                  accessor: 'cat_url_partial_cache',
+                  Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
+                  maxWidth: calcWidth(4.5),
+                  className: 'right',
+                  Filter: this.timerIcon,
+                  Footer: this.average
+                },
+                {
+                  Header: 'Cat Page (cached)',
+                  accessor: 'cat_url_cached',
+                  Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
+                  maxWidth: calcWidth(4.5),
+                  className: 'right',
+                  Filter: this.timerIcon,
+                  Footer: this.average
+                },
+                {
+                  Header: 'Cat Page Products',
+                  accessor: 'cat_url_product_count',
+                  Cell: cell => (
+                    <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
+                      {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
+                    </Tooltip>
+                  ),
+                  maxWidth: calcWidth(2),
+                  className: 'right',
+                  Filter: this.createFilterOptions(this.passFailFilters),
+                  filterMethod: this.zeroIsFailing
+                },
+                {
+                  Header: 'Search Page (partial cache)',
+                  accessor: 'search_url_partial_cache',
+                  Cell: cell => this.formatSecs(cell.value),
+                  maxWidth: calcWidth(4.5),
+                  className: 'right',
+                  Filter: this.timerIcon,
+                  Footer: this.average
+                },
+                {
+                  Header: 'Search Page Products',
+                  accessor: 'search_url_product_count',
+                  Cell: cell => (
+                    <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
+                      {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
+                    </Tooltip>
+                  ),
+                  maxWidth: calcWidth(2),
+                  className: 'right',
+                  Filter: this.createFilterOptions(this.passFailFilters),
+                  filterMethod: this.zeroIsFailing
+                },
+              ]
+            },
+            {
+              Header: 'Test Info',
+              columns: [
+                {
+                  Header: '% Load Change',
+                  accessor: 'utilization_start_end',
+                  className: 'right',
+                  Cell: cell => {
+                    if (cell.value) {
+                      const vals = cell.value.split(',')
                       return parseInt(vals[4],10) - parseInt(vals[1],10)
                     }
-                  }
-                  a = parseDiff(a)
-                  b = parseDiff(b)
+                  },
+                  maxWidth: calcWidth(4),
+                  Filter: ({filter, onChange}) => (
+                    <select
+                      onChange={event => onChange(event.target.value)}
+                      style={{width: '100%'}}
+                      value={filter ? filter.value : 'all'}>
+                      <option value="">Show All</option>
+                      <optgroup>
+                      <option key={'significant'} value="significant">
+                          > ±10
+                        </option>
+                        <option key={'untested'} value="untested">
+                          untested
+                        </option>
+                      </optgroup>
+                    </select>
+                  ),
+                  filterMethod: (filter, row) => {
+                    switch (filter.value) {
+                      case 'untested':
+                        return row[filter.id] === null
+                      case 'significant':
+                        if (row[filter.id] === null) {
+                          return false
+                        }
+                        const vals = row[filter.id].split(',')
+                        return Math.abs(parseInt(vals[4],10) - parseInt(vals[1],10)) > 10
+                      default:
+                        return true
+                    }
+                  },
+                  sortMethod: (a, b) => {
+                    const parseDiff = x => {
+                      if (x === null || x === undefined) {
+                        return -Infinity
+                      } else {
+                        const vals = x.split(',')
+                        return parseInt(vals[4],10) - parseInt(vals[1],10)
+                      }
+                    }
+                    a = parseDiff(a)
+                    b = parseDiff(b)
 
-                  if (a > b) {
-                    return 1;
+                    if (a > b) {
+                      return 1;
+                    }
+                    if (a < b) {
+                      return -1;
+                    }
+                    return 0;
                   }
-                  if (a < b) {
-                    return -1;
-                  }
-                  return 0;
+                },
+                {
+                  Header: 'When',
+                  accessor: 'timestamp',
+                  Cell: cell => cell.value ? moment(new Date(cell.value * 1000)).fromNow() : '',
+                  maxWidth: calcWidth(5),
+                  className: 'right',
+                  Filter: this.createFilterOptions([this.testedFilter, this.untestedFilter]),
+                  filterMethod: this.createFilterMethod([this.testedFilter, this.untestedFilter])
                 }
-              },
-              {
-                Header: 'When',
-                accessor: 'timestamp',
-                Cell: cell => cell.value ? moment(new Date(cell.value * 1000)).fromNow() : '',
-                maxWidth: calcWidth(5),
-                className: 'right',
-                Filter: this.createFilterOptions([this.testedFilter, this.untestedFilter]),
-                filterMethod: this.createFilterMethod([this.testedFilter, this.untestedFilter])
-              }
-            ]
-          }
-        ]}
-      />
+              ]
+            }
+          ]}
+        />
+      </div>
     )
   }
 }

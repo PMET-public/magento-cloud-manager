@@ -54,7 +54,7 @@ if [ $exit_status -ne 0 ]; then
 fi
 
 echo -n Checking web app ... 
-location=$(timeout 30 curl -sI localhost | sed -n "s/Location: \(.*SID=.*\)/\1/p")
+location=$(timeout 30 curl -sI localhost | sed -n 's/Location: \(.*SID=.*\)/\1/p')
 if [ $? -ne 0 ]; then
   (>&2 echo 'Web server error or did not respond in < 30 sec.')
   error=1
@@ -81,24 +81,24 @@ else
 fi
 
 # tmp mysql table creation
-echo -n Checking DB speed ... 
-copy_tbl_time=$({ /usr/bin/time -f "%e" mysql -h database.internal -u user -D main -e \
-  "CREATE TABLE core_config_data_tmp AS (SELECT * FROM core_config_data); DROP TABLE core_config_data_tmp;";} 2>&1)
-if [ "$copy_tbl_time" > 0.25 ]; then
-  (>&2 echo "DB performing slowly. $copy_tbl_time sec to clone tmp config table.")
-  error=1
-else
-  echo ' ok'
-fi
+# echo -n Checking DB speed ... 
+# copy_tbl_time=$({ /usr/bin/time -f "%e" mysql -h database.internal -u user -D main -e \
+#   "CREATE TABLE core_config_data_tmp AS (SELECT * FROM core_config_data); DROP TABLE core_config_data_tmp;";} 2>&1)
+# if [ "$copy_tbl_time" -gt 1 ]; then
+#   (>&2 echo "DB performing slowly. $copy_tbl_time sec to clone tmp config table.")
+#   error=1
+# else
+#   echo ' ok'
+# fi
 
-echo -n Checking utilization (loadavg / nproc) ...
-utilization=$(echo "print $(cat /proc/loadavg | awk '{print $1}') / $(nproc)" | perl)
-if [ "$utilization" > 2 ]; then
-  (>&2 echo "Current load avg is greater than twice # of cpus.")
-  error=1
-else
-  echo ' ok'
-fi
+# echo -n Checking utilization (loadavg / nproc) ...
+# utilization=$(echo "print $(cat /proc/loadavg | awk '{print $1}') / $(nproc)" | perl)
+# if [ "$utilization" -lt 2 ]; then
+#   (>&2 echo "Current load avg is greater than twice # of cpus.")
+#   error=1
+# else
+#   echo ' ok'
+# fi
 
 # current load avg (if under threshhold (eg. 1.2), try I/O test dd if= of=/)
 # get last log error/exception
