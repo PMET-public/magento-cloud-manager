@@ -1,7 +1,7 @@
 const {exec, execOutputHandler, MC_CLI, logger} = require('./common')
 
 const setVar = async (project, environment, name, value) => {
-  const cmd = `${MC_CLI} variable:set --no-wait -p ${project} -e ${environment} ${name} ${value}`
+  const cmd = `${MC_CLI} variable:set -p ${project} -e ${environment} ${name} ${value}`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {

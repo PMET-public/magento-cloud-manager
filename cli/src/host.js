@@ -59,7 +59,7 @@ const updateEnvHostRelationships = () => {
   const envHosts = {} // a dictionary to lookup each env's host
   let hostsEnvs = [] // list of envs associated with each host
 
-  let cotenantGroups = getCotenantGroups().map(row => row['cotenant_group'].split(','))
+  let cotenantGroups = getCotenantGroups().filter(row => row['cotenant_group'] !== null).map(row => row['cotenant_group'].split(','))
   // since hosts reboot and then are assigned new IPs, upsized, etc.,
   // groupings based on just those values (getCotenantGroups()) are incomplete
   // however, envs should not migrate from hosts often (ever?)

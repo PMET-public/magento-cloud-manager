@@ -127,7 +127,7 @@ const discoverEnvs = async project => {
             promises.push((async () => {
               // check if previously initialized
               const result = await getActivitiesFromApi(project, 'environment.variable.create')
-              if (!result) {
+              if (!result || (Array.isArray(result) && !result.length)) {
                 return initProject(project)
               }
               return true
@@ -147,9 +147,14 @@ const discoverEnvs = async project => {
 
 const initProject = async project => {
   const promises = []
-  Object.entries(defaultCloudVars).forEach(([name, value]) => promises.push(setVar(project, 'master', name, value)))
   Object.entries(defaultCloudUsers).forEach(([email, role]) => promises.push(addUser(project, 'master', email, role)))
   promises.push(addCloudProjectKeyToGitlabKeys(project))
+  // this iteration must be sequential b/c cloud has lock conflicts when vars are set too quickly
+  const cloudVars = Object.entries(defaultCloudVars)
+  for (let i = 0; i < cloudVars.length; i++) {
+    let [name, value] = cloudVars[i]
+    await setVar(project, 'master', name, value)
+  }
   const result = await Promise.all(promises)
   return result
 }

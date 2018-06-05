@@ -82,8 +82,8 @@ fi
 
 # tmp mysql table creation
 # echo -n Checking DB speed ... 
-# copy_tbl_time=$({ /usr/bin/time -f "%e" mysql -h database.internal -u user -D main -e \
-#   "CREATE TABLE core_config_data_tmp AS (SELECT * FROM core_config_data); DROP TABLE core_config_data_tmp;";} 2>&1)
+copy_tbl_time=$({ /usr/bin/time -f "%e" mysql -h database.internal -u user -D main -e \
+  "CREATE TABLE core_config_data_tmp AS (SELECT * FROM core_config_data); DROP TABLE core_config_data_tmp;";} 2>&1)
 # if [ "$copy_tbl_time" -gt 1 ]; then
 #   (>&2 echo "DB performing slowly. $copy_tbl_time sec to clone tmp config table.")
 #   error=1
