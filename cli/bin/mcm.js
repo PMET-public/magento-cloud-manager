@@ -24,6 +24,7 @@ const {
   sendPathToRemoteTmpDir,
   getLiveEnvsAsPidEnvArr,
   deployEnvFromTar,
+  rebuildAndRedeployUsingDummyFile,
   getExpiringPidEnvs,
   backup
 } = require('../src/environment')
@@ -97,6 +98,14 @@ const pLimitForEachHandler = async (limit, func, pidEnvs, additionalArgs = []) =
     const args = id.split(':')
     if (args.length === 1) {
       args.push('master')
+    }
+    if (!/^[a-z0-9]{13}$/.test(args[0])) {
+      logger.mylog('error', `Invalid project id: ${args[0]}`)
+      process.exit(1)
+    }
+    if (/[~^:?*[\\]/.test(args[1])) {
+      logger.mylog('error', `Invalid env id: ${args[1]}`)
+      process.exit(1)
     }
     if (additionalArgs.length) {
       args.push(...additionalArgs)
@@ -299,10 +308,13 @@ yargs.command(
     })
   },
   argv => {
-    verifyOneOf(argv, ['x', 'pid:env'])
+    verifyOneOf(argv, ['x', 'f', 'pid:env'])
     const additionalArgs = [argv['tar-file'], argv.reset, argv.force]
     if (argv.expiring) {
       return pLimitForEachHandler(4, redeployEnv, getExpiringPidEnvs())
+    }
+    if (argv.force) {
+      return pLimitForEachHandler(4, rebuildAndRedeployUsingDummyFile, pidEnvs)
     }
     let pidEnvs = new Set(argv['pid:env'])
     if (argv.time) {

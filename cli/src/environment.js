@@ -1,5 +1,6 @@
 const https = require('https')
-const {writeFileSync} = require('fs')
+const {existsSync, writeFileSync} = require('fs')
+const {execSync} = require('child_process')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../.secrets.json')
 
@@ -59,7 +60,9 @@ const setEnvironmentMissing = (project, environment) => {
   const sql = 'UPDATE environments SET missing = 1, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?'
   const result = db.prepare(sql).run(project, environment)
   logger.mylog('debug', result)
-  logger.mylog('info', `Env: ${environment} of project: ${project} set to missing.`)
+  if (result && result.changes) {
+    logger.mylog('info', `Env: ${environment} of project: ${project} set to missing.`)
+  }
   return result
 }
 exports.setEnvironmentMissing = setEnvironmentMissing
@@ -91,8 +94,9 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
   // split the cmd into separate parts to trap STDERR output from `MC_CLI get` that is not actually error
   // clone to nested tmp dir, discard all but the git dir and auth.json, mv git dir and tar file to parent dir
   // extract tar, commit, and push
-  const cmd = `mkdir -p "/tmp/${project}-${environment}"
-    ${MC_CLI} get --yes -e ${environment} ${project} "/tmp/${project}-${environment}/tmp"`
+  const path = `/tmp/${project}-${environment}-${new Date()/1000}`
+  const cmd = `mkdir -p "${path}"
+    ${MC_CLI} get --yes -e ${environment} ${project} "${path}/tmp"`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -107,7 +111,7 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
         rm "${basename}"
         git add -u
         git add .
-        # special case: 1st time auth.json explicitly added b/c of .gitignore. subsequent runs have no affect
+        # special case: 1st time auth.json forcefully added b/c of .gitignore. subsequent runs have no affect
         git add -f auth.json
         git commit -m "commit from tar file"
         git push -u $(git remote) ${environment}`
@@ -117,15 +121,10 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
           if (!stderr) {
             logger.mylog('info', `Env: ${environment} of project: ${project} deployed using ${tarFile}.`)
           } else if (/Everything up-to-date/.test(stderr) && forceRebuildRedeploy) {
-            writeFileSync(`/tmp/${project}-${environment}/.redeploy`, new Date().toLocaleString())
-            const cmd = `cd "/tmp/${project}-${environment}"; git add .redeploy; 
-              git commit -m "commit from tar file"; git push`
-            const result = exec(cmd)
-            return result
+            logger.mylog('error', 'Environment is up-to-date. Nothing to push.\n'+ 
+            'Use the "--force" option to rebuild & deploy an env with a dummy ".redeploy" file.')
           }
-        })
-        .then(() => {
-          const cmd = `rm -rf "/tmp/${project}-${environment}"`
+          const cmd = `rm -rf "${path}"`
           const result = exec(cmd)
           return result
         })
@@ -138,6 +137,22 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
   return result
 }
 exports.deployEnvFromTar = deployEnvFromTar
+
+
+const rebuildAndRedeployUsingDummyFile = (project, environment) => {
+  const epochTimeInSec = new Date()/1000
+  const path = `/tmp/${project}-${environment}-${epochTimeInSec}`
+  const cmd = `${MC_CLI} get --yes -e ${environment} ${project} "${path}"
+    echo ${epochTimeInSec} > ${path}/.redeploy
+    cd "${path}"
+    git add .redeploy
+    git commit -m "force rebuild & redeploy with .redeploy file"
+    git push
+    rm -rf "${path}"`
+  const result = exec(cmd)
+  return result
+}
+exports.rebuildAndRedeployUsingDummyFile = rebuildAndRedeployUsingDummyFile
 
 const redeployEnv = async (project, environment) => {
   const cmd = `${MC_CLI} redeploy -p ${project} -e ${environment} -y --no-wait`
@@ -159,7 +174,7 @@ const getExpiringPidEnvs = () => {
   const expirationIn2Wks = new Date() / 1000 + 24 * 60 * 60 * 7 * 2
   const expiringPidEnvs = []
   getAllLiveEnvsFromDB().forEach(({project_id, environment_id, expiration}) => {
-    if (expiration < expirationIn2Wks) {
+    if (expiration && expiration < expirationIn2Wks) {
       expiringPidEnvs.push(`${project_id}:${environment_id}`)
     }
   })
@@ -353,7 +368,10 @@ const execInEnv = async (project, environment, filePath) => {
     if (/\.tmpl\./.test(filePath)) {
       filePath = renderTmpl(filePath)
     }
-    const file = await sendPathToRemoteTmpDir(project, environment, filePath)
+    const file = await sendPathToRemoteTmpDir(project, environment, filePath, 'debug')
+    if (!file) {
+      throw (`File could not be transferred to project: ${project} environment: ${environment}`)
+    }
     const remoteCmd = /\.sql$/.test(file)
       ? `mysql main -vvv -h database.internal < "${file}"`
       : `chmod +x "${file}"; "${file}"`
@@ -361,7 +379,7 @@ const execInEnv = async (project, environment, filePath) => {
     const result = exec(cmd)
       .then(execOutputHandler)
       .then(({stdout, stderr}) => {
-        logger.mylog('info', `File: ${filePath} executed in env: ${environment} of project: ${project}.`)
+        logger.mylog('info', `Project: ${project} env: ${environment} output of ${filePath}:\n${stdout.trim()}`)
         return true
       })
     return await result
@@ -379,7 +397,7 @@ const getMachineNameAndRegion = async (project, environment) => {
     if (typeof result === 'undefined') {
       // possibly requesting an environment that hasn't been queried yet, so attempt to update and then return
       result = await updateEnvironmentFromApi(project, environment)
-      if (result) {
+      if (result && result.changes) {
         return await getMachineNameAndRegion(project, environment)
       } else {
         throw `Project: ${project}, env: ${environment} not found.`
@@ -398,7 +416,11 @@ const getWebHostName = async (project, environment) => {
 }
 
 const getSshUserAndHost = async (project, environment) => {
-  const {machineName, region} = await getMachineNameAndRegion(project, environment)
+  const result = await getMachineNameAndRegion(project, environment)
+  if (!result) {
+    throw 'Could not find project and env in db'
+  }
+  const {machineName, region} = result
   return `${project}-${machineName}--mymagento@ssh.${region}.magento${region === 'us' ? 'site' : ''}.cloud`
 }
 
@@ -415,7 +437,7 @@ const getSshCmd = async (project, environment) => {
 }
 exports.getSshCmd = getSshCmd
 
-const sendPathToRemoteTmpDir = async (project, environment, localPath) => {
+const sendPathToRemoteTmpDir = async (project, environment, localPath, logLevel = 'info') => {
   try {
     // create a unique remote tmp file
     const file = '/tmp/' + Math.floor(new Date() / 1000) + '-' + localPath.replace(/.*\//, '')
@@ -424,7 +446,7 @@ const sendPathToRemoteTmpDir = async (project, environment, localPath) => {
       .then(execOutputHandler)
       .then(() =>
         logger.mylog(
-          'info',
+          logLevel,
           `File: ${localPath} transferred to: ${file} in remote env: ${environment} of project: ${project}.`
         )
       )
