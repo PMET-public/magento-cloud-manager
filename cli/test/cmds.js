@@ -146,7 +146,7 @@ describe('test various batch and "--all" options', () => {
   //testCmd('env:check-web -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
   testCmd('env:delete -a', disallowedTester, disallowedTestMsg)
   testCmd('env:delete -i', multipleValidTester, validTestMsg, 1000 * 60 * 2)
-  testCmd('env:deploy -a dummy-tar-file', disallowedTester)
+  testCmd('env:deploy -a dummy-tar', disallowedTester)
   //testCmd('env:deploy -x', )
 
   testCmd(`env:exec -a ${tmpShFile}`, multipleValidTester, validTestMsg, 1000 * 60 * 60 * 2)

@@ -48,7 +48,7 @@ const validSubCommands = [
     name: 'env:deploy',
     validOpts: [{name: 'expiring', alias: 'x'}, {name: 'yes'}, {name: 'reset'}, {name: 'force'}],
     listOpts: ['x'],
-    firstConflictsWithRemaining: [['x', 'tar-file', 'reset', 'force']]
+    firstConflictsWithRemaining: [['x', 'tar', 'reset', 'force']]
   },
   {name: 'env:exec', alias: 'ee', numOfRequiredNonListArgs: 1},
   {name: 'env:get', alias: 'eg', numOfRequiredNonListArgs: 1},
