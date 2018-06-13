@@ -96,17 +96,22 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
   // extract tar, commit, and push
   const path = `/tmp/${project}-${environment}-${new Date()/1000}`
   const cmd = `mkdir -p "${path}"
-    ${MC_CLI} get --yes -e ${environment} ${project} "${path}/tmp"`
+    cd "${path}"
+    ${MC_CLI} get --yes -e ${environment} ${project} tmp`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       if (/InvalidArgumentException/.test(stderr)) {
         throw 'Project not found.'
       }
-      const cmd = `mv /tmp/${project}-${environment}/tmp/{.git,auth.json} /tmp/${project}-${environment}/ 2> /dev/null
-        cp ${tarFile} /tmp/${project}-${environment}/
-        rm -rf "/tmp/${project}-${environment}/tmp"
-        cd "/tmp/${project}-${environment}"
+      // running cmds on wrong path could be bad, sanity test:
+      if (!/\/.*[a-z0-9]{13}/.test(path)) {
+        throw 'Invalid path.'
+      }
+      const cmd = `mv ${path}/tmp/{.git,auth.json} ${path} 2> /dev/null
+        cp ${tarFile} ${path}
+        rm -rf "${path}/tmp"
+        cd "${path}"
         tar -xf "${basename}"
         rm "${basename}"
         git add -u
