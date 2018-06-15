@@ -679,9 +679,7 @@ export default class extends Component {
                 {
                   Header: 'Created',
                   accessor: 'last_created_at',
-                  Cell: cell => {
-                    return moment(cell.value * 1000).fromNow()
-                  },
+                  Cell: cell => this.formatDate(cell.value),
                   maxWidth: calcWidth(5),
                   className: 'right',
                   Filter: this.createFilterOptions(this.commonTimeBasedFilters),
@@ -755,8 +753,10 @@ export default class extends Component {
                   Cell: cell => this.formatDate(cell.value),
                   maxWidth: calcWidth(5),
                   className: 'right',
-                  Filter: this.createFilterOptionsFromAccessor('composer_lock_mtime')
-                },              {
+                  Filter: this.createFilterOptions(this.commonTimeBasedFilters),
+                  filterMethod: this.createFilterMethod(this.commonTimeBasedFilters)
+                },
+                {
                   Header: 'config.php MD5',
                   accessor: 'config_php_md5',
                   Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),

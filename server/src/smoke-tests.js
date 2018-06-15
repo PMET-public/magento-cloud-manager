@@ -8,18 +8,26 @@ module.exports = (req, res) => {
     s.id, s.app_yaml_md5, s.ee_composer_version, s.composer_lock_md5, s.config_php_md5,
     s.composer_lock_mtime, s.cumulative_cpu_percent, s.not_valid_index_count, s.catalog_product_entity_count,
     s.catalog_category_product_count, s.admin_user_count, s.store_count, s.order_count, s.cms_block_count,
-    s.template_count, s.last_login_customer, s.last_login_admin, s.http_status, s.store_url_uncached,
+    s.template_count, s.http_status, s.store_url_uncached,
     s.store_url_cached, s.cat_url, s.cat_url_product_count, s.cat_url_uncached, s.cat_url_partial_cache,
     s.cat_url_cached, s.search_url, s.search_url_partial_cache, s.search_url_product_count,
     s.german_check, s.venia_check, s.admin_check, s.error_logs, s.last_deploy_log, s.cpus, 
     s.utilization_start || ',' || s.utilization_end utilization_start_end, s.timestamp,
     e.project_id, e.id environment_id, e.title environment_title, machine_name, last_created_at,
+    case
+      when s.last_login_customer < last_created_at then null
+      else s.last_login_customer
+    end as last_login_customer,
+    case
+      when s.last_login_admin < last_created_at then null
+      else s.last_login_admin
+    end as last_login_admin,
     case 
-      when e.missing = 1 then 'missing' 
-      when e.failure = 1 then 'failure' 
-      when e.active = 1 then 'active' 
-      when e.active = 0 then 'inactive' 
-      else 'invalid' 
+      when e.missing = 1 then 'missing'
+      when e.failure = 1 then 'failure'
+      when e.active = 1 then 'active'
+      when e.active = 0 then 'inactive'
+      else 'invalid'
     end as env_status,
     p.region, p.title project_title, p.user_list, 
     case 

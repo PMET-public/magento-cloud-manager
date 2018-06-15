@@ -58,8 +58,8 @@ const smokeTestApp = async (project, environment = 'master') => {
     store_html=$(curl -s $store_url)
     echo store_url_cached $(curl $store_url -o /dev/null -s -w "%{time_total}")
 
-    echo german_check $(curl "$store_url?___store=luma_de&___from_store=default" -s | grep "baseUrl.*de_DE" | wc -l)
-    echo venia_check $(curl "$store_url?___store=venia_us&___from_store=default" -s | grep "baseUrl.*venia" | wc -l)
+    echo german_check $(curl "$store_url?___store=luma_de&___from_store=default" -s | grep " \\"baseUrl.*de_DE" | wc -l)
+    echo venia_check $(curl "$store_url?___store=venia_us&___from_store=default" -s | grep " \\"baseUrl.*venia" | wc -l)
     php bin/magento admin:user:unlock ${magentoSIAdminUser} > /dev/null
     rm /tmp/myc 2> /dev/null || : 
     read -r form_url form_key <<<$(curl -sL -c /tmp/myc -b /tmp/myc "$store_url/admin/" | 
@@ -107,7 +107,7 @@ const smokeTestApp = async (project, environment = 'master') => {
           setEnvironmentInactive(project, environment)
         }
       }
-      logger.mylog('error', error.stderr)
+      logger.mylog('error', error.stderr || error.message)
     })
   return await result
 }

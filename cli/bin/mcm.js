@@ -315,7 +315,7 @@ yargs.command(
       argv['tar'] = undefined
     }
     verifyOnlyOneOf(argv, ['x', 'force', 'tar'])
-    const additionalArgs = [argv['tar'], argv.reset]
+    const additionalArgs = [argv.tar, argv.reset]
     if (argv.expiring) {
       return pLimitForEachHandler(4, redeployEnv, getExpiringPidEnvs())
     }
@@ -325,6 +325,10 @@ yargs.command(
     }
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, deployEnvFromTar, pidEnvs, additionalArgs)
+    }
+    if (argv.tar && !require('fs').existsSync(argv.tar)) {
+      console.error(errorTxt(`Could not find file: ${argv.tar}`))
+      process.exit(1)
     }
     if (argv.yes) {
       pLimitForEachHandler(4, deployEnvFromTar, pidEnvs, additionalArgs)
