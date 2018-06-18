@@ -134,7 +134,7 @@ const pLimitForEachHandler = async (limit, func, pidEnvs, additionalArgs = []) =
 
 const filterStillValidRuns = (time, func, pidEnvs, additionalArgs = []) => {
   const args = additionalArgs.length ? ', ' + additionalArgs.join(', ') : ''
-  const regex = new RegExp(`^(20.*) debug: result of ${func.name}\\\(([^)]+${args})\\\)`)
+  const regex = new RegExp(`^(20.*) debug: result of ${func.name}\\\(([^)]+${args})\\\)`) // eslint-disable-line
   const lines = readFileSync(`${__dirname}/../combined.log`, {encoding:'utf8'}).split('\n')
   let origSize = pidEnvs.size
   for (let line of lines) {

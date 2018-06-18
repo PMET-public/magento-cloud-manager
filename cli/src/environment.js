@@ -1,6 +1,4 @@
 const https = require('https')
-const {existsSync, writeFileSync} = require('fs')
-const {execSync} = require('child_process')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../.secrets.json')
 

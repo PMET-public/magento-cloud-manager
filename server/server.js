@@ -1,5 +1,4 @@
 const express = require('express')
-const db = require('./util/common')
 const app = express()
 
 app.set('port', process.env.PORT || 3001)
