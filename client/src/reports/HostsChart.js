@@ -69,7 +69,7 @@ export default class extends Component {
   titles = {}
 
   fetchData = days => {
-    fetch('/hosts-states-historic?days=' + days)
+    fetch('/hosts-states-historic?days=' + days, {credentials: 'same-origin'})
       .then(res => res.json())
       .then(
         res => {

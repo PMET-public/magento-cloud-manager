@@ -67,7 +67,7 @@ export default class extends Component {
   titles = {}
 
   fetchData = () => {
-    fetch('/response-times')
+    fetch('/response-times', {credentials: 'same-origin'})
       .then(res => res.json())
       .then(
         res => {
