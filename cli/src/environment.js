@@ -322,8 +322,8 @@ const deleteInactiveEnvs = async project => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .catch(error => {
-      if (/No inactive environments found/.test(error.stderr)) {
-        // this should not be considered an error, but the CLI has a non-zero exit status
+      if (/No inactive environments found|The master environment cannot be deleted/.test(error.stderr)) {
+        // not real errors: 1) no inactive envs 2) master inactive b/c not initialized w/ app
         // log the "error" for verbose mode and return
         logger.mylog('debug', error.stderr)
         return true
