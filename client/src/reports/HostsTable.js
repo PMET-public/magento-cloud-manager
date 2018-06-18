@@ -31,7 +31,7 @@ export default class extends Component {
             })
         }}
         minRows={0}
-        defaultPageSize={50}
+        defaultPageSize={10}
         filterable
         defaultFilterMethod={this.matchRow}
         className={'-striped -highlight hosts-current-table'}
@@ -47,11 +47,14 @@ export default class extends Component {
           {
             Header: 'Cotenants',
             accessor: 'cotenants',
-            Cell: cell => (
-              <div>
-                <Dialog title="Cotenants">{cell.value.split(/,/)}</Dialog>
-              </div>
-            ),
+            Cell: cell => {
+              const list = cell.value.split(/,/)
+              return (
+                <div>
+                  <Dialog title="Cotenants" label={list.length}>{list}</Dialog>
+                </div>
+              )
+            },
             maxWidth: calcWidth(10),
             className: 'right'
           },
@@ -72,14 +75,6 @@ export default class extends Component {
             ),
             maxWidth: calcWidth(6),
             className: 'right'
-          },
-          {
-            Header: 'Load',
-            accessor: 'load_avg_15',
-            filterable: false,
-            maxWidth: calcWidth(5),
-            className: 'right',
-            Cell: cell => Math.round(cell.value)
           },
           {
             Header: 'CPUs',
