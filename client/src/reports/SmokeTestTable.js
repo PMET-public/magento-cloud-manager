@@ -804,7 +804,8 @@ export default class extends Component {
                   accessor: 'admin_check',
                   Cell: cell => this.validate(cell.value, v => v === 1, this.checkIcon, this.errorIcon),
                   maxWidth: calcWidth(1),
-                  Filter: this.createFilterOptions(this.httpTestFilters)
+                  Filter: this.createFilterOptions(this.passFailFilters),
+                  filterMethod: this.zeroIsFailing
                 },
                 {
                   Header: 'Errors',
