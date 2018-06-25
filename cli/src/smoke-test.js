@@ -1,5 +1,5 @@
 const {exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB} = require('./common')
-const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd, checkWeb} = require('./environment.js')
+const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd, checkPublicUrlForExpectedAppResponse} = require('./environment.js')
 const {defaultCloudVars, magentoSIAdminUser, magentoSIAdminPassword} = require('../.secrets.json')
 
 const smokeTestApp = async (project, environment = 'master') => {
@@ -95,7 +95,7 @@ const smokeTestApp = async (project, environment = 'master') => {
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'smoke_tests', ['project_id', 'environment_id'], [project, environment])
-      checkWeb(project, environment)
+      checkPublicUrlForExpectedAppResponse(project, environment)
       logger.mylog('info', `Smoke test of env: ${environment} of project: ${project} completed.`)
       return true
     })

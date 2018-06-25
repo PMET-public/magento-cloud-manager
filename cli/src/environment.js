@@ -238,7 +238,7 @@ const checkBody = response => {
   })
 }
 
-const checkWeb = async (project, environment = 'master') => {
+const checkPublicUrlForExpectedAppResponse = async (project, environment = 'master') => {
   const hostName = await getWebHostName(project, environment)
   const url = `https://${hostName}/`
   return await new Promise((resolve, reject) => {
@@ -283,7 +283,7 @@ const checkWeb = async (project, environment = 'master') => {
     logger.mylog('error', error)
   })
 }
-exports.checkWeb = checkWeb
+exports.checkPublicUrlForExpectedAppResponse = checkPublicUrlForExpectedAppResponse
 
 const getEnvsFromApi = async project => {
   const cmd = `${MC_CLI} environments -p ${project} --pipe`

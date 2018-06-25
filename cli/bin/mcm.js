@@ -19,7 +19,7 @@ const {
   deleteEnv,
   execInEnv,
   redeployEnv,
-  checkWeb,
+  checkPublicUrlForExpectedAppResponse,
   getPathFromRemote,
   sendPathToRemoteTmpDir,
   getLiveEnvsAsPidEnvArr,
@@ -215,14 +215,14 @@ yargs.command(
   }
 )
   
-yargs.command(['env:check-web [pid:env...]', 'ec'], 'Check the https:// response of env(s)', addSharedPidEnvOpts,
+yargs.command(['env:check-public-url [pid:env...]', 'ec'], 'Check the public url of env(s) for expected app response', addSharedPidEnvOpts,
   argv => {
     verifyOnlyOneOf(argv, ['i', 'a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
     if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, checkWeb, pidEnvs)
+      pidEnvs = filterStillValidRuns(argv.time, checkPublicUrlForExpectedAppResponse, pidEnvs)
     }
-    pLimitForEachHandler(6, checkWeb, pidEnvs)
+    pLimitForEachHandler(6, checkPublicUrlForExpectedAppResponse, pidEnvs)
   }
 )
 
