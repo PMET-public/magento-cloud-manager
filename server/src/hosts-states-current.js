@@ -16,14 +16,14 @@ module.exports = (req, res) => {
   //     GROUP BY host_id
   //     ORDER BY timestamp ASC)
   //   ORDER BY region`
-  const sql = `SELECT m.host_id, region, GROUP_CONCAT(m.proj_env_id) cotenants, hs.cpus, hs.load_avg_15, 
+  const sql = `SELECT m.host_id, region, GROUP_CONCAT(m.proj_env_id) cotenants, hs.cpus, hs.boot_time, hs.ip, hs.load_avg_15, 
   cast (hs.load_avg_15 * 100 / hs.cpus as int) utilization, max(hs.timestamp) timestamp
 FROM matched_envs_hosts m
 LEFT JOIN
 
 (SELECT hs.*, pe.region FROM
 /* the most recent query from each env in hs */
-( SELECT project_id || ':' || environment_id proj_env_id, cpus, load_avg_15, max(timestamp) timestamp 
+( SELECT project_id || ':' || environment_id proj_env_id, cpus, boot_time, ip, load_avg_15, max(timestamp) timestamp 
 FROM hosts_states
 GROUP BY project_id, environment_id ORDER BY timestamp DESC) hs
 LEFT JOIN 
