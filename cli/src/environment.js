@@ -276,7 +276,7 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
     }).end()
   }).then(result => {
     if (result) {
-      logger.mylog('info', `Web check passed. Project: ${project} env: ${environment} url: ${url}`)
+      logger.mylog('info', `Public url returning expected app response. Project: ${project} env: ${environment} url: ${url}`)
       return result
     }
   }).catch(error => {
