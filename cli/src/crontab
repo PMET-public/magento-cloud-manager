@@ -14,7 +14,6 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 
 # more daily off peak tests spread over time
 20 0 * * * perl -le 'sleep rand 900' && $MCM_PATH pu -qa
-40 0 * * * perl -le 'sleep rand 900' && $MCM_PATH eu -qa
 
 # check certs & redeploy expiring on Sat
 0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH ec -qa
@@ -24,4 +23,4 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 0 1 * * * perl -le 'sleep rand 900' && $MCM_PATH env:delete -qi
 
 # find failures every day
-40 1 * * * perl -le 'sleep rand 900' && $MCM_PATH af -q
+40 1 * * * perl -le 'sleep rand 900' && $MCM_PATH pf -q
