@@ -147,7 +147,12 @@ const discoverEnvs = async project => {
 
 const initProject = async project => {
   const promises = []
-  Object.entries(defaultCloudUsers).forEach(([email, role]) => promises.push(addUser(project, 'master', email, role)))
+  // attempt sequential iteration b/c cloud appears to misss users if calls are too quick
+  const cloudUsers = Object.entries(defaultCloudUsers)
+  for (let i = 0; i < cloudUsers.length; i++) {
+    let [email, role] = cloudUsers[i]
+    await addUser(project, 'master', email, role)
+  }
   promises.push(addCloudProjectKeyToGitlabKeys(project))
   // this iteration must be sequential b/c cloud has lock conflicts when vars are set too quickly
   const cloudVars = Object.entries(defaultCloudVars)
