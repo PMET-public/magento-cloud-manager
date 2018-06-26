@@ -95,10 +95,10 @@ const smokeTestApp = async (project, environment = 'master') => {
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       parseFormattedCmdOutputIntoDB(stdout, 'smoke_tests', ['project_id', 'environment_id'], [project, environment])
-      checkPublicUrlForExpectedAppResponse(project, environment)
       logger.mylog('info', `Smoke test of env: ${environment} of project: ${project} completed.`)
       return true
     })
+    .then(() => checkPublicUrlForExpectedAppResponse(project, environment))
     .catch(error => {
       if (typeof error.stderr !== 'undefined') {
         if (/Specified environment not found|you successfully connected, but the service/.test(error.stderr)) {
