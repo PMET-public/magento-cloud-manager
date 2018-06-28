@@ -15,6 +15,18 @@ export default class extends Component {
     return String(row[filter.id]).indexOf(filter.value) !== -1
   }
 
+  countCSV = ({data, column}) => {
+    let sum = 0
+    data.forEach(v => {
+      if (v[column.id] !== null) {
+        sum += v[column.id].split(',').length
+      }
+    })
+    if (sum) {
+      return <span>{sum}</span>
+    }
+  }
+
   render() {
     return (
       <ReactTable
@@ -56,7 +68,8 @@ export default class extends Component {
               )
             },
             maxWidth: calcWidth(10),
-            className: 'right'
+            className: 'right',
+            Footer: this.countCSV
           },
           {
             Header: 'Region',
