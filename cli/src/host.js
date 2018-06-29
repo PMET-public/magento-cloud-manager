@@ -123,10 +123,9 @@ const getCotenantGroups = () => {
   // identify cotenants - envs on the same host when they were last checked since
   // their boot time, # cpus, & ip address were the same at that time.
   // (ordered by region to keep hosts in the same region together when enumerated)
-  const sql = `SELECT m.host_id, region, GROUP_CONCAT(m.proj_env_id) cotenants, hs.cpus, hs.boot_time, hs.ip, hs.load_avg_15, 
+  const sql = `SELECT region, GROUP_CONCAT(hs.proj_env_id) cotenants, hs.cpus, hs.boot_time, hs.ip, hs.load_avg_15, 
   cast (hs.load_avg_15 * 100 / hs.cpus as int) utilization, max(hs.timestamp) timestamp
-FROM matched_envs_hosts m
-LEFT JOIN
+FROM 
 
 (SELECT hs.*, pe.region FROM
 /* the most recent query from each env in hs */
@@ -145,9 +144,9 @@ LEFT JOIN
 ON pe.project_id || ':' || pe.environment_id = proj_env_id
 WHERE pe.region is not null) hs
 
-ON hs.proj_env_id = m.proj_env_id
 WHERE timestamp is not null
-GROUP BY host_id`
+GROUP BY boot_time, cpus, ip
+ORDER BY region, cotenants`
 
   const cotenantGroups = db.prepare(sql).all()
   logger.mylog('debug', cotenantGroups)
