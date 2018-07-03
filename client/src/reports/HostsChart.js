@@ -4,6 +4,31 @@ import {Scatter, defaults} from 'react-chartjs-2'
 defaults.global.animation = false
 //defaults.global.tooltips.backgroundColor = 'rgba(200,200,200,0.8)'
 
+
+const getNthRGBTriple = (startTriple, endTriple, size, index) => {
+  // validate index < size && all numbers are ints 0 <= x <=255 
+  const isIntBetween0and255 = val => Number.isInteger(val) && val > -1 && val < 256
+  if (!( index < size &&
+    startTriple.concat(endTriple, size, index).reduce((acc, val) => acc && isIntBetween0and255(val), true))) {
+      throw 'Failed input validation.'
+    }
+  const [startR, startG, startB] = startTriple
+  const [endR, endG, endB] = endTriple
+
+  const getStep = (start, end, size) => (end - start) / (size - 1)
+  const stepR = getStep(startR, endR, size)
+  const stepG = getStep(startG, endG, size)
+  const stepB = getStep(startB, endB, size)
+  
+  const getNthVal = (start, step, index) => start + parseInt(step * index, 10)
+  return [
+    getNthVal(startR, stepR, index),
+    getNthVal(startG, stepG, index),
+    getNthVal(startB, stepB, index)
+  ]
+
+}
+
 export default class extends Component {
   constructor(props) {
     super(props)
@@ -61,19 +86,43 @@ export default class extends Component {
   msInDay = 1000 * 24 * 60 * 60
   randomRange = (min, max) => Math.random() * (max - min) + min
   randomRangeInt = (min, max) => Math.floor(Math.random() * (max - min) + min)
-  regionColors1 = () =>
-    `rgba(244,${this.randomRangeInt(100, 200)},${this.randomRangeInt(0, 100)},${this.randomRange(0.5, 1)}`
-  regionColors2 = () =>
-    `rgba(${this.randomRangeInt(0, 100)},${this.randomRangeInt(100, 200)},244,${this.randomRange(0.5, 1)}`
+  labels = {}
   regions = {}
-  titles = {}
+  regionColors = {
+    'apac-3': { // bluish
+      start: [0, 0, 204], 
+      end: [102, 204, 255],
+      size: 0
+    },
+    'demo' : { // greenish
+      start: [0, 82, 0], 
+      end: [204, 255, 153],
+      size: 0
+    },
+    'eu-3' : { // purplish
+      start: [153, 0, 204], 
+      end: [204, 204, 255],
+      size: 0
+    },
+    'us' : { // orange
+      start: [204, 122, 0], 
+      end: [255, 224, 179],
+      size: 0
+    },
+    'us-3' : { // redish
+      start: [153, 0, 0], 
+      end: [255, 128, 128],
+      size: 0
+    }
+  }
 
   fetchData = days => {
     fetch('/hosts-states-historic?days=' + days, {credentials: 'same-origin'})
       .then(res => res.json())
       .then(
         res => {
-          const hostData = {}
+          const hostsData = {}
+          const hosts = {}
           const data = {
             labels: ['Historic Host 15 min load avg'],
             datasets: []
@@ -82,27 +131,34 @@ export default class extends Component {
           let maxY = 0
           // group rows by host
           res.forEach(row => {
-            if (typeof hostData[row.host_id] === 'undefined') {
-              hostData[row.host_id] = []
+            if (typeof hostsData[row.host_id] === 'undefined') {
+              hostsData[row.host_id] = []
+              const nthInRegion = this.regionColors[row.region].size
+              hosts[row.host_id] = {
+                label: row.region + " " + row.host_id,
+                region: row.region,
+                nthInRegion: nthInRegion
+              }
+              this.regionColors[row.region].size = nthInRegion + 1
             }
             // convert timestamp into "days ago"
             // use Math.round(x * 100) / 100 for 2 decimal places
-            let x = Math.round((new Date(row.timestamp * 1000) - new Date()) * 100 / this.msInDay) / 100
-            let y = Math.round(row.load_avg_15 * 100 / row.cpus) / 100
+            const x = Math.round((new Date(row.timestamp * 1000) - new Date()) * 100 / this.msInDay) / 100
+            const y = Math.round(row.load_avg_15 * 100 / row.cpus) / 100
             minX = x < minX ? x : minX
             maxY = y > maxY ? y : maxY
-            hostData[row.host_id].push({x: x, y: y})
-            this.regions[row.host_id] = row.region
-            this.titles[row.host_id] = row.host_id
+            hostsData[row.host_id].push({x: x, y: y})
           })
 
-          Object.entries(hostData).forEach(([key, val]) => {
-            const c = this.regions[key] === 'us-3' ? this.regionColors1() : this.regionColors2()
+          Object.entries(hostsData).forEach(([key, val], index) => {
+            const host = hosts[key]
+            const rc = this.regionColors[host.region]
+            const c = getNthRGBTriple(rc.start, rc.end, rc.size, host.nthInRegion)
             data.datasets.push({
-              label: `${this.titles[key]}`,
+              label: host.label,
               fill: false,
-              borderColor: c,
-              backgroundColor: c,
+              borderColor: 'rgba(' + c.join(',') + ',1)',
+              backgroundColor: 'rgba(' + c.join(',') + ',1)',
               pointBorderColor: 'rgba(0,100,100,1)',
               //pointBackgroundColor: '#fff',
               pointBorderWidth: 1,
