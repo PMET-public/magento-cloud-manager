@@ -1,4 +1,4 @@
-const {exec, execOutputHandler, logger, parseFormattedCmdOutputIntoDB} = require('./common')
+const {exec, execOutputHandler, db, logger, parseFormattedCmdOutputIntoDB} = require('./common')
 const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd, checkPublicUrlForExpectedAppResponse} = require('./environment.js')
 const {defaultCloudVars, magentoSIAdminUser, magentoSIAdminPassword} = require('../.secrets.json')
 
@@ -112,3 +112,21 @@ const smokeTestApp = async (project, environment = 'master') => {
   return await result
 }
 exports.smokeTestApp = smokeTestApp
+
+const getUntestedEnvs = () => {
+  // live envs w/o entries in smoke_tests
+  const sql = `SELECT e.project_id || ':' || e.id proj_env_id FROM
+	(SELECT *
+	  FROM environments e 
+    LEFT JOIN projects p ON e.project_id = p.id
+	  WHERE e.active = 1 AND p.active = 1 AND e.missing = 0 AND (e.failure = 0 OR e.failure IS NULL)) e
+  LEFT JOIN smoke_tests s ON e.id = s.environment_id AND e.project_id = s.project_id 
+  WHERE s.id IS NULL`
+  const result = db
+    .prepare(sql)
+    .all()
+    .map(row => row.proj_env_id)
+  logger.mylog('debug', result)
+  return result
+}
+exports.getUntestedEnvs = getUntestedEnvs

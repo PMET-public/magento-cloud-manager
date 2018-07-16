@@ -11,7 +11,7 @@ const pLimit = require('p-limit')
 const {logger, showWhoAmI, allOpsSuccessTemplate, mixedSuccessTemplate} = require('../src/common')
 const {updateHost, getSampleEnvs, updateEnvHostRelationships} = require('../src/host')
 const {updateProject, getProjectsFromApi} = require('../src/project')
-const {smokeTestApp} = require('../src/smoke-test')
+const {smokeTestApp, getUntestedEnvs} = require('../src/smoke-test')
 const {searchActivitiesForFailures} = require('../src/activity')
 const {addCloudProjectKeyToGitlabKeys} = require('../src/gitlab')
 const {
@@ -418,10 +418,17 @@ yargs.command(
   'Run smoke tests in env(s)',
   yargs => {
     addSharedPidEnvOpts()
+    yargs.option('u', {
+      alias: 'untested',
+      description: 'Only test previously untested envs',
+      conflicts: ['pid:env', 'a'],
+      type: 'boolean',
+      coerce: coercer
+    })
   },
   argv => {
-    verifyOnlyOneOf(argv, ['a', 'pid:env'])
-    let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
+    verifyOnlyOneOf(argv, ['u', 'a', 'pid:env'])
+    let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv.untested ? getUntestedEnvs() : argv['pid:env'])
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, smokeTestApp, pidEnvs)
     }
