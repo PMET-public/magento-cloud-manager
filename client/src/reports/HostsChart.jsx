@@ -8,10 +8,9 @@ defaults.global.animation = false
 const getNthRGBTriple = (startTriple, endTriple, size, index) => {
   // validate index < size && all numbers are ints 0 <= x <=255 
   const isIntBetween0and255 = val => Number.isInteger(val) && val > -1 && val < 256
-  if (!( index < size &&
-    startTriple.concat(endTriple, size, index).reduce((acc, val) => acc && isIntBetween0and255(val), true))) {
-      throw 'Failed input validation.'
-    }
+  if (!( index < size && startTriple.concat(endTriple, size, index).reduce((acc, val) => acc && isIntBetween0and255(val), true))) {
+    throw 'Failed input validation.'
+  }
   const [startR, startG, startB] = startTriple
   const [endR, endG, endB] = endTriple
 
@@ -83,36 +82,46 @@ export default class extends Component {
   }
 
   maxDays = 10000
+  dayOpts = [1, 7, 14, 30, 180]
   msInDay = 1000 * 24 * 60 * 60
   randomRange = (min, max) => Math.random() * (max - min) + min
   randomRangeInt = (min, max) => Math.floor(Math.random() * (max - min) + min)
   labels = {}
-  regions = {}
-  regionColors = {
-    'apac-3': { // bluish
-      start: [0, 0, 204], 
-      end: [102, 204, 255],
-      size: 0
+  regions = {
+    'ap-3': {
+      'color': { // bluish
+        start: [0, 0, 204],
+        end: [102, 204, 255],
+        size: 0
+      }
     },
-    'demo' : { // greenish
-      start: [0, 82, 0], 
-      end: [204, 255, 153],
-      size: 0
+    'demo': {
+      color: { // greenish
+        start: [0, 82, 0],
+        end: [204, 255, 153],
+        size: 0
+      }
     },
-    'eu-3' : { // purplish
-      start: [153, 0, 204], 
-      end: [204, 204, 255],
-      size: 0
+    'eu-3': {
+      color: { // purplish
+        start: [153, 0, 204],
+        end: [204, 204, 255],
+        size: 0
+      }
     },
-    'us' : { // orange
-      start: [204, 122, 0], 
-      end: [255, 224, 179],
-      size: 0
+    'us': {
+      color: { // orange
+        start: [204, 122, 0],
+        end: [255, 224, 179],
+        size: 0
+      }
     },
-    'us-3' : { // redish
-      start: [153, 0, 0], 
-      end: [255, 128, 128],
-      size: 0
+    'us-3': {
+      color: { // redish
+        start: [153, 0, 0],
+        end: [255, 128, 128],
+        size: 0
+      }
     }
   }
 
@@ -129,17 +138,18 @@ export default class extends Component {
           }
           let minX = 0
           let maxY = 0
+
           // group rows by host
           res.forEach(row => {
             if (typeof hostsData[row.host_id] === 'undefined') {
               hostsData[row.host_id] = []
-              const nthInRegion = this.regionColors[row.region].size
+              const nthInRegion = this.regions[row.region].color.size
               hosts[row.host_id] = {
-                label: row.region + " " + row.host_id,
+                label: row.region + ' ' + row.host_id,
                 region: row.region,
                 nthInRegion: nthInRegion
               }
-              this.regionColors[row.region].size = nthInRegion + 1
+              this.regions[row.region].color.size = nthInRegion + 1
             }
             // convert timestamp into "days ago"
             // use Math.round(x * 100) / 100 for 2 decimal places
@@ -152,7 +162,7 @@ export default class extends Component {
 
           Object.entries(hostsData).forEach(([key, val], index) => {
             const host = hosts[key]
-            const rc = this.regionColors[host.region]
+            const rc = this.regions[host.region].color
             const c = getNthRGBTriple(rc.start, rc.end, rc.size, host.nthInRegion)
             data.datasets.push({
               label: host.label,
@@ -171,6 +181,7 @@ export default class extends Component {
               data: val
             })
           })
+
           // create a line at 1 to color the area underneath
           data.datasets.push({
             data: [{x: 0, y: 1}, {x: minX, y: 1}],
@@ -203,7 +214,7 @@ export default class extends Component {
   }
 
   componentDidMount() {
-    this.fetchData()
+    this.fetchData(7)
     this.forceUpdate()
   }
 
