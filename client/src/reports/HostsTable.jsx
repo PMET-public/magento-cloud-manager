@@ -5,7 +5,7 @@ import {calcWidth, moment} from '../util/common'
 import UniqueOptions from '../util/UniqueOptions'
 import Dialog from '../util/Dialog'
 
-export default class extends Component {
+export default class extends Component { // eslint-disable-line react/display-name
   constructor(props) {
     super(props)
     this.state = {}
