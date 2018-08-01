@@ -494,6 +494,7 @@ exports.getPathFromRemote = getPathFromRemote
 
 const backup = async (project, environment) => {
   const sshCmd = await getSshCmd(project, environment)
+  // backup the composer file, the envionment specific media (what's different from master), and the database
   const cmd = `${sshCmd} '
     tarfile=/tmp/$(date "+%y-%m-%d-%H-%M")-${project}-${environment}-backup.tar
     sqlfile=$(php ~/bin/magento setup:backup --db | sed -n "s/.*path: //p")
