@@ -20,8 +20,8 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH env:check-public-url --quiet --all
 0 2 * * 6 perl -le 'sleep rand 900' && $MCM_PATH env:deploy --quiet --expiring
 
-# delete inactive every day
-0 1 * * * perl -le 'sleep rand 900' && $MCM_PATH env:delete --quiet --inactive
+# delete inactive every Sunday
+0 1 * * 0 perl -le 'sleep rand 900' && $MCM_PATH env:delete --quiet --inactive
 
 # find failures every day
 40 1 * * * perl -le 'sleep rand 900' && $MCM_PATH project:find-failures --queit --all
