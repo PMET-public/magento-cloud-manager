@@ -1,20 +1,29 @@
 {
   "env": {
-    "es6": true,
-    "node": true
+    "browser": true,
+    "es6": true
   },
-  "extends": "eslint:recommended",
+  "parser": "babel-eslint",
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended"
+  ],
   "parserOptions": {
-    "sourceType": "script",
+    "sourceType": "module",
     "ecmaFeatures": {
-      "experimentalObjectRestSpread": true
-    },
-    "ecmaVersion": 2017
+      "experimentalObjectRestSpread": true,
+      "jsx": true
+    }
   },
+  "plugins": [
+    "react"
+  ],
   "rules": {
+    "react/jsx-filename-extension": [1, { "extensions": [".js", ".jsx"] }],
     "indent": [
       "error",
-      2
+      2,
+      {"SwitchCase": 1}
     ],
     "linebreak-style": [
       "error",
