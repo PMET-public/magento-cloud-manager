@@ -64,7 +64,7 @@ export default class extends Component {
   }
 
   matchRow = (filter, row) => {
-    if (filter.value === "untested") {
+    if (filter.value === 'untested') {
       return row[filter.id] === null 
     }
     return String(row[filter.id]).indexOf(filter.value) !== -1
@@ -222,7 +222,7 @@ export default class extends Component {
         value={filter ? filter.value : 'all'}>
         <option value="">Show All</option>
         <optgroup>
-        {options}
+          {options}
         </optgroup>
       </select>)
     }
@@ -655,7 +655,7 @@ export default class extends Component {
                   Cell: cell => {
                     const list = cell.value
                       ? cell.value
-                          .trim()
+                      .trim()
                           .split(/,/)
                           .map(x => x.replace(/:(.*)/, ' ($1)'))
                       : []
@@ -845,7 +845,7 @@ export default class extends Component {
                     } else if (this.deployCompleted(list[list.length-1])) {
                       return this.checkIcon()
                     } else {
-                    return <Dialog title="End of Last Deploy Log" className="compact" label='!'>{list}</Dialog>
+                      return <Dialog title="End of Last Deploy Log" className="compact" label='!'>{list}</Dialog>
                     }
                   },
                   maxWidth: calcWidth(5),
@@ -925,7 +925,7 @@ export default class extends Component {
                 {
                   Header: 'Storefront (uncached)',
                   accessor: 'store_url_uncached',
-                  Cell: cell => (<a href={"https://" + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
+                  Cell: cell => (<a href={'https://' + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
                   maxWidth: calcWidth(4.5),
                   className: 'right',
                   Filter: this.timerIcon,
@@ -934,7 +934,7 @@ export default class extends Component {
                 {
                   Header: 'Storefront (cached)',
                   accessor: 'store_url_cached',
-                  Cell: cell => (<a href={"https://" + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
+                  Cell: cell => (<a href={'https://' + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
                   maxWidth: calcWidth(4.5),
                   className: 'right',
                   Filter: this.timerIcon,
