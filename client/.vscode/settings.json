@@ -1,0 +1,7 @@
+{
+    "eslint.provideLintTask": true,
+    "eslint.options": {
+        "ext": ".jsx"
+    },
+    "eslint.workingDirectories": ["./src"]
+}
