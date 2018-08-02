@@ -3,3 +3,4 @@ id_rsa.magento
 node_modules
 *.bak
 *.db
+.DS_Store
