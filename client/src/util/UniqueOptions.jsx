@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 
 export default function UniqueOptions(props) {
   const {data, accessor} = props
@@ -15,4 +16,9 @@ export default function UniqueOptions(props) {
   }
 
   return <optgroup>{options}</optgroup>
+}
+
+UniqueOptions.propTypes = {
+  data: PropTypes.object.isRequired,
+  accessor: PropTypes.string
 }

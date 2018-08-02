@@ -140,7 +140,7 @@ export default class extends Component {
   errorList = list => {
     if (/^1[45]/.test(list[0])) {
       return list.sort().map(li => {
-        const [entireLi, secSinceEpoch, file, msg] = li.match(/(.*?) (.*?) (.*)/)
+        const [entireLiIgnoreMe, secSinceEpoch, file, msg] = li.match(/(.*?) (.*?) (.*)/)
         return (
           <div key={secSinceEpoch}>
             {new Date(secSinceEpoch * 1000).toISOString()}
@@ -553,21 +553,21 @@ export default class extends Component {
                   Cell: cell => (
                     <div>
                       <a
-                        target="_blank"
+                        target="_blank" rel="noopener noreferrer"
                         href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${
                           cell.original.environment_id
                         }`}>
                         <Icon color="secondary">cloud_download</Icon>
                       </a>
                       <a
-                        target="_blank"
+                        target="_blank" rel="noopener noreferrer"
                         href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
                           cell.original.region
                         }.magentosite.cloud/`}>
                         <Icon color="secondary">shopping_cart</Icon>
                       </a>
                       <a
-                        target="_blank"
+                        target="_blank" rel="noopener noreferrer"
                         href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
                           cell.original.region
                         }.magentosite.cloud/admin/`}>
@@ -581,7 +581,7 @@ export default class extends Component {
                       </Clipboard> &nbsp;
                       <a
                         className=""
-                        target="_blank"
+                        target="_blank" rel="noopener noreferrer"
                         href={`https://${cell.original.region}.magento.cloud/projects/${
                           cell.original.project_id
                         }/environments/${cell.original.environment_id}`}>
@@ -655,7 +655,7 @@ export default class extends Component {
                   Cell: cell => {
                     const list = cell.value
                       ? cell.value
-                      .trim()
+                          .trim()
                           .split(/,/)
                           .map(x => x.replace(/:(.*)/, ' ($1)'))
                       : []
@@ -837,8 +837,8 @@ export default class extends Component {
                   Cell: cell => {
                     const list = cell.value
                       ? cell.value
-                          .trim()
-                          .split('\v')
+                        .trim()
+                        .split('\v')
                       : []
                     if (!list.length) {
                       return
@@ -1025,8 +1025,8 @@ export default class extends Component {
                       value={filter ? filter.value : 'all'}>
                       <option value="">Show All</option>
                       <optgroup>
-                      <option key={'significant'} value="significant">
-                          > ±10
+                        <option key={'significant'} value="significant">
+                          ±10
                         </option>
                         <option key={'untested'} value="untested">
                           untested
@@ -1035,6 +1035,7 @@ export default class extends Component {
                     </select>
                   ),
                   filterMethod: (filter, row) => {
+                    let vals
                     switch (filter.value) {
                       case 'untested':
                         return row[filter.id] === null
@@ -1042,7 +1043,7 @@ export default class extends Component {
                         if (row[filter.id] === null) {
                           return false
                         }
-                        const vals = row[filter.id].split(',')
+                        vals = row[filter.id].split(',')
                         return Math.abs(parseInt(vals[4],10) - parseInt(vals[1],10)) > 10
                       default:
                         return true
@@ -1052,10 +1053,9 @@ export default class extends Component {
                     const parseDiff = x => {
                       if (x === null || x === undefined) {
                         return -Infinity
-                      } else {
-                        const vals = x.split(',')
-                        return parseInt(vals[4],10) - parseInt(vals[1],10)
                       }
+                      const vals = x.split(',')
+                      return parseInt(vals[4],10) - parseInt(vals[1],10)
                     }
                     a = parseDiff(a)
                     b = parseDiff(b)

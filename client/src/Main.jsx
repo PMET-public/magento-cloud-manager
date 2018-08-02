@@ -1,4 +1,5 @@
 import React, {Component} from 'react'
+import PropTypes from 'prop-types'
 import {Route} from 'react-router-dom'
 import {withStyles} from 'material-ui/styles'
 import styles from './style/mui-styles'
@@ -9,10 +10,10 @@ import SmokeTestTable from './reports/SmokeTestTable'
 
 class Main extends Component {
   render() {
-    const {classes, theme} = this.props
+    const {classes, themeIgnoreMe} = this.props
 
     return (
-      <main className={classes.content + " main-content"} >
+      <main className={classes.content + ' main-content'} >
         {/* <div className={classes.toolbar} /> */}
         <Route path={'/hosts-table'} component={HostsTable} />
         <Route path={'/hosts-chart'} component={HostsChart} />
@@ -24,3 +25,8 @@ class Main extends Component {
 }
 
 export default withStyles(styles, {withTheme: true})(Main)
+
+Main.propTypes = {
+  classes: PropTypes.string,
+  themeIgnoreMe: PropTypes.string
+}

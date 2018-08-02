@@ -1,5 +1,6 @@
 import React from 'react'
-import Tooltip from 'material-ui/Tooltip'
+// import Tooltip from 'material-ui/Tooltip'
+import PropTypes from 'prop-types'
 
 export default function Gauge(props) {
   const {data} = props
@@ -23,4 +24,8 @@ export default function Gauge(props) {
       {gauge(util15)}
     </div>
   )
+}
+
+Gauge.propTypes = {
+  data: PropTypes.object.isRequired
 }

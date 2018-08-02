@@ -1,4 +1,5 @@
 import React, {Component} from 'react'
+import PropTypes from 'prop-types'
 import {withStyles} from 'material-ui/styles'
 import {ListItemIcon, ListItemText} from 'material-ui/List'
 import styles from './style/mui-styles'
@@ -62,3 +63,7 @@ class DrawerContent extends Component {
 }
 
 export default withStyles(styles, {withTheme: true})(DrawerContent)
+
+DrawerContent.propTypes = {
+  classes: PropTypes.object
+}

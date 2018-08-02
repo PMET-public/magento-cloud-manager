@@ -28,7 +28,9 @@ class SimpleDialog extends React.Component {
 }
 
 SimpleDialog.propTypes = {
-  classes: PropTypes.object.isRequired
+  classes: PropTypes.object,
+  children: PropTypes.object,
+  title: PropTypes.string
 }
 
 const SimpleDialogWrapped = withStyles(styles)(SimpleDialog)
@@ -44,7 +46,7 @@ class SimpleDialogDemo extends React.Component {
     })
   }
 
-  handleClose = value => {
+  handleClose = () => {
     this.setState({open: false})
   }
 
@@ -63,3 +65,10 @@ class SimpleDialogDemo extends React.Component {
 }
 
 export default SimpleDialogDemo
+
+SimpleDialogDemo.propTypes = {
+  className: PropTypes.string,
+  children: PropTypes.object,
+  label: PropTypes.string,
+  title: PropTypes.string,
+}
