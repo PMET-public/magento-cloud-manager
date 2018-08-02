@@ -49,6 +49,7 @@ const getAllDeployKeysFromGitlab = () => {
   return apiGet('deploy_keys')
 }
 
+// eslint-disable-next-line no-unused-vars
 const getGitlabProjectDeployKeys = gitlabProjectId => {
   return apiGet(`projects/${gitlabProjectId}/deploy_keys`)
 }

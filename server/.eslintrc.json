@@ -27,7 +27,9 @@
     "no-unused-vars": [
       "warn",
       {
-        "args": "none"
+        "args": "none",
+        "ignoreRestSiblings": true,
+        "varsIgnorePattern": "[Ii]gnoreMe"
       }
     ],
     "no-var": "error",
