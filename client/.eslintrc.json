@@ -1,7 +1,8 @@
 {
   "env": {
     "browser": true,
-    "es6": true
+    "es6": true,
+    "node": true
   },
   "parser": "babel-eslint",
   "extends": [
@@ -23,7 +24,8 @@
     "indent": [
       "error",
       2,
-      {"SwitchCase": 1}
+      {"SwitchCase": 1,
+      "MemberExpression": "off"}
     ],
     "linebreak-style": [
       "error",
@@ -36,7 +38,9 @@
     "no-unused-vars": [
       "warn",
       {
-        "args": "none"
+        "args": "none",
+        "ignoreRestSiblings": true,
+        "varsIgnorePattern": "[Ii]gnoreMe"
       }
     ],
     "no-var": "error",
