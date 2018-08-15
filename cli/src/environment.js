@@ -148,7 +148,7 @@ const rebuildAndRedeployUsingDummyFile = (project, environment) => {
   const cmd = `${MC_CLI} get --yes -e ${environment} ${project} "${path}"
     echo ${epochTimeInSec} > ${path}/.redeploy
     cd "${path}"
-    git add .redeploy
+    git add -f .redeploy
     git commit -m "force rebuild & redeploy with .redeploy file"
     git push
     rm -rf "${path}"`
