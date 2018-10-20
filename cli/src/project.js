@@ -115,7 +115,7 @@ const discoverEnvs = async project => {
           if (index > -1) { 
             projEnvIds.splice(index, 1);
             // if active status doesn't match, update env
-            if (active !== projEnvsFromDB[index]['active']) {
+            if (active !== projEnvsFromDB.find(obj => obj.id === environment).active) {
               promises.push(updateEnvironmentFromApi(project, environment))
             }
           } else {
