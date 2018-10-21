@@ -1,5 +1,5 @@
 const {exec, execOutputHandler, db, logger, parseFormattedCmdOutputIntoDB} = require('./common')
-const {setEnvironmentMissing, setEnvironmentInactive, getSshCmd, checkPublicUrlForExpectedAppResponse} = require('./environment.js')
+const {execInEnv, setEnvironmentMissing, setEnvironmentInactive, getSshCmd, checkPublicUrlForExpectedAppResponse} = require('./environment.js')
 const {defaultCloudVars, magentoSIAdminUser, magentoSIAdminPassword} = require('../.secrets.json')
 
 const smokeTestApp = async (project, environment = 'master') => {
@@ -7,6 +7,10 @@ const smokeTestApp = async (project, environment = 'master') => {
   if (typeof sshCmd === 'undefined') {
     return
   }
+
+  logger.mylog('info', `Before smoke test, ensure SI admin user exists in env: ${environment} of project: ${project}.`)
+  await execInEnv(project, environment, `${__dirname}/../bin/env-scripts/add-separate-admin-user.tmpl.sh`)
+
   const cmd = `${sshCmd} '
     # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
     echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
