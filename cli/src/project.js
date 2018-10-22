@@ -26,7 +26,7 @@ const updateProject = async project => {
     logger.mylog('info', `Project: ${project}'s info, users, and envs updated.`)
     return true
   } catch (error) {
-    if (error.message && /Specified project not found/.test(error.message)) {
+    if (error.message && /Specified project not found|title.*Forbidden/.test(error.message)) {
       return setProjectInactive(project)
     }
     logger.mylog('error', error)
