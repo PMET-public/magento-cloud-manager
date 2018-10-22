@@ -108,8 +108,8 @@ const discoverEnvs = async project => {
         .trim()
         .split('\n')
         .map(row => row.split('\t'))
-        .forEach(([environment, name, active]) => {
-          active = active === 'Active' || active === '"In progress"' ? 1 : 0
+        .forEach(([environment, name, status]) => {
+          active = status === 'Active' || status === '"In progress"' ? 1 : 0
           const index = projEnvIds.indexOf(environment)
           // in API & DB, remove from tracking list
           if (index > -1) { 
