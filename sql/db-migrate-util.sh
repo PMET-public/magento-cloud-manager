@@ -24,8 +24,8 @@ echo -n "Backing up db ... "
 cp cloud.db cloud.bak.db
 echo -e "ok.\n"
 
-echo -e "Modify \e[92m$dir/1-create-new-tables.sql\e[0m with your changes and then run:"
-echo -e "  \e[32mcat $dir/*-new-tables.sql | sqlite3 cloud.db; sqlite3 cloud.db 'VACUUM;'\e[0m\n"
+echo -e "Modify \033[92m$dir/1-create-new-tables.sql\033[0m with your changes and then run:"
+echo -e "  \033[32mcat $dir/*-new-tables.sql | sqlite3 cloud.db; sqlite3 cloud.db 'VACUUM;'\033[0m\n"
 echo "If you're satisfied with the changes, commit the updated schema output from"
-echo -e " \e[32msqlite3 cloud.db .schema > cloud.sql\e[0m"
-echo -e "and the \e[92m$dir/*.sql\e[0m files.\n"
+echo -e " \033[32msqlite3 cloud.db .schema > cloud.sql\033[0m"
+echo -e "and the \033[92m$dir/*.sql\033[0m files.\n"
