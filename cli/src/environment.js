@@ -11,15 +11,16 @@ const updateEnvironmentFromApi = async (project, environment = 'master') => {
       const machineName = stdout.replace(/[\s\S]*machine_name\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const active = /\nstatus\s+(active|dirty)/.test(stdout) ? 1 : 0
       const createdAt = Date.parse(stdout.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/, '$1')) / 1000
-      // be careful to preserve 'failure' and 'cert_expiration' on existing envs when using INSERT OR REPLACE
+      // be careful to preserve 'failure' and 'branch_level' on existing envs when using INSERT OR REPLACE
       // however if the MC_CLI cmd succeeded the env is not missing (0)
-      const sql = `INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, last_created_at, missing, failure) 
+      const sql = `INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, last_created_at, missing, failure, branch_level) 
       VALUES (?, ?, ?, ?, ?, ?, 0,
-        (SELECT failure FROM environments WHERE id = ? and project_id = ?)
+        (SELECT failure FROM environments WHERE id = ? and project_id = ?),
+        (SELECT branch_level FROM environments WHERE id = ? and project_id = ?)
       )`
       let result = db
         .prepare(sql)
-        .run(environment, project, title, machineName, active, createdAt, environment, project)
+        .run(environment, project, title, machineName, active, createdAt, environment, project, environment, project)
       logger.mylog('debug', result)
       logger.mylog('info', `Env: ${environment} of project: ${project} updated.`)
       return result
@@ -35,6 +36,15 @@ const updateEnvironmentFromApi = async (project, environment = 'master') => {
   return result
 }
 exports.updateEnvironmentFromApi = updateEnvironmentFromApi
+
+const setEnvironmentBranchLevel = (project, environment, value) => {
+  const sql = 'UPDATE environments SET branch_level = ?, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?'
+  const result = db.prepare(sql).run(value, project, environment)
+  logger.mylog('debug', result)
+  logger.mylog('info', `Env: ${environment} of project: ${project} set branch level: ${value}.`)
+  return result
+}
+exports.setEnvironmentBranchLevel = setEnvironmentBranchLevel
 
 const setEnvironmentInactive = (project, environment) => {
   const sql = 'UPDATE environments SET active = 0, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?' 

@@ -1,5 +1,5 @@
 const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
-const {updateEnvironmentFromApi, setEnvironmentMissing} = require('./environment')
+const {updateEnvironmentFromApi, setEnvironmentMissing, setEnvironmentBranchLevel} = require('./environment')
 const {addCloudProjectKeyToGitlabKeys} = require('./gitlab')
 const {addUser, recordUsers} = require('./user')
 const {setVar} = require('./variable')
@@ -94,7 +94,7 @@ const getProjEnvsFromDB = project => {
 }
 
 const discoverEnvs = async project => {
-  const cmd = `${MC_CLI} environment:list -p ${project} --format=tsv | sed '1d'`
+  const cmd = `${MC_CLI} environment:list -p ${project} 2>/dev/null | sed '1,3d;$d'`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(async ({stdout, stderr}) => {
@@ -107,21 +107,35 @@ const discoverEnvs = async project => {
       stdout
         .trim()
         .split('\n')
-        .map(row => row.split('\t'))
-        .forEach(([environment, name, status]) => {
+        .map(row => row.split('|'))
+        .forEach(([empty1, environment, name, status, empty2]) => {
+          name = name.trim()
+          status = status.trim()
+          const preceedingSpaces = environment.search(/\S/)
+          environment = environment.trim()
+          const branchLevel = environment === 'master' ? 0 : Math.floor(preceedingSpaces/3) + 1
+          const envFromDB = projEnvsFromDB.find(obj => obj.id === environment)
           const active = status === 'Active' || status === '"In progress"' ? 1 : 0
           const index = projEnvIds.indexOf(environment)
           // in API & DB, remove from tracking list
           if (index > -1) { 
             projEnvIds.splice(index, 1);
-            // if active status doesn't match, update env
-            if (active !== projEnvsFromDB.find(obj => obj.id === environment).active) {
+            // if branch level value does't match, update branch level
+            if (typeof envFromDB !== 'undefined' && envFromDB.branchLevel !== branchLevel) {
+              setEnvironmentBranchLevel(project, environment, branchLevel)
+            }
+            // active status doesn't match, update env
+            if (active !== envFromDB.active) {
               promises.push(updateEnvironmentFromApi(project, environment))
             }
           } else {
-            // found in API but not DB -> run update env
-            promises.push(updateEnvironmentFromApi(project, environment))
+            // found in API but not DB -> run update env to add new env; then update branch level
+            promises.push((async () => {
+              await updateEnvironmentFromApi(project, environment)
+              return setEnvironmentBranchLevel(project, environment, branchLevel)
+            })())
           }
+
           // if master env and inactive, initialize project and 
           if (environment === 'master' && !active) {
             promises.push((async () => {

@@ -1,4 +1,4 @@
-CREATE TABLE "projects" (
+CREATE TABLE IF NOT EXISTS "projects" (
 	`id`	TEXT NOT NULL,
 	`title`	TEXT NOT NULL,
 	`region`	TEXT NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE "projects" (
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
 	PRIMARY KEY(`id`)
 );
-CREATE TABLE "hosts_states" (
+CREATE TABLE IF NOT EXISTS "hosts_states" (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
 	`environment_id`	TEXT NOT NULL,
@@ -30,13 +30,14 @@ CREATE TABLE "hosts_states" (
 	`last_process_id`	INTEGER NOT NULL,
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
-CREATE TABLE "users" (
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE TABLE IF NOT EXISTS "users" (
 	`project_id`	TEXT NOT NULL,
 	`email`	TEXT NOT NULL,
 	`role`	TEXT NOT NULL,
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
-CREATE TABLE "environments" (
+CREATE TABLE IF NOT EXISTS "environments" (
 	`id`	TEXT NOT NULL,
 	`title`	TEXT NOT NULL,
 	`project_id`	TEXT NOT NULL,
@@ -45,21 +46,22 @@ CREATE TABLE "environments" (
 	`failure`	BOOLEAN CHECK(failure in ( 0 , 1 )),
 	`missing`	BOOLEAN CHECK(missing in ( 0 , 1 )),
 	`last_created_at`	INTEGER NOT NULL,
+	`branch_level`		INTEGER,
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
 	PRIMARY KEY(`id`,`project_id`)
 );
-CREATE TABLE "cert_expirations" (
+CREATE TABLE IF NOT EXISTS "cert_expirations" (
 	`host_name`	TEXT NOT NULL,
 	`expiration`	INTEGER NOT NULL,
 	`timestamp`	INTEGER NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
 	PRIMARY KEY(`host_name`)
 );
-CREATE TABLE "matched_envs_hosts" (
+CREATE TABLE IF NOT EXISTS "matched_envs_hosts" (
 	`proj_env_id`	TEXT NOT NULL,
 	`host_id`	INTEGER NOT NULL,
 	PRIMARY KEY(`proj_env_id`)
 );
-CREATE TABLE "smoke_tests" (
+CREATE TABLE IF NOT EXISTS "smoke_tests" (
 	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
 	`environment_id`	TEXT NOT NULL,

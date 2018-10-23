@@ -74,6 +74,9 @@ export default class extends Component {
     if (filter.value === 'all') {
       return true
     }
+    if (filter.value === 'untested') {
+      return row[filter.id] === null
+    }
     return String(row[filter.id]) === filter.value
   }
 
@@ -158,6 +161,7 @@ export default class extends Component {
   checkIcon = () => <Icon>check</Icon>
   errorIcon = () => <Icon color="error">error_outline</Icon>
   timerIcon = () => <Icon>timer</Icon>
+  starIcon = () => <Icon>star</Icon>
 
   toggleSelection = (key, shift, row) => {
     let selection = [...this.state.selection]
@@ -247,6 +251,31 @@ export default class extends Component {
       return this.createFilterOptions(filters)
     }
   }
+
+  createBranchLevelFilterOptions = () => {
+    if (this.state.data) {
+      const branchLevelVals = [...new Set(this.state.data.map(x => x['branch_level']).sort())]
+      const filters = []
+      for (let i in branchLevelVals) {
+        if (branchLevelVals[i] === null) {
+          filters.push(this.untestedFilter)
+        } else {
+          filters.push({
+            key: branchLevelVals[i],
+            label: branchLevelVals[i] === 0 ? 'master' : branchLevelVals[i],
+            value: branchLevelVals[i]
+          })
+        }
+      }
+      filters.push({
+        key: 'nonmaster',
+        label: 'nonmaster',
+        value: 'nonmaster'
+      })
+      return this.createFilterOptions(filters)
+    }
+  }
+
 
   createUserFilterOptions = () => {
     if (this.state.data) {
@@ -446,25 +475,6 @@ export default class extends Component {
     this.untestedFilter
   ]
 
-  masterEnvFilters = [
-    {
-      key: 'master',
-      label: 'master',
-      value: 'master',
-      test: (filter, row) => {
-        return row[filter.id] === 'master'
-      }
-    },
-    {
-      key: 'non-master',
-      label: 'non-master',
-      value: 'non-master',
-      test: (filter, row) => {
-        return row[filter.id] !== 'master'
-      }
-    }
-  ]
-
   deployLogFilters = [
     {
       key: 'complete',
@@ -615,13 +625,23 @@ export default class extends Component {
                   }
                 },
                 {
-                  Header: 'Master?',
-                  accessor: 'environment_id',
+                  Header: 'Branch Level',
+                  accessor: 'branch_level',
                   className: 'right',
                   width: calcWidth(3),
-                  Cell: cell => this.validate(cell.value, v => v === 'master', this.checkIcon, this.empty),
-                  Filter: this.createFilterOptions(this.masterEnvFilters),
-                  filterMethod: this.createFilterMethod(this.masterEnvFilters)
+                  Cell: cell => this.validate(cell.value, v => v === 0, this.starIcon, cell.value),
+                  Filter: this.createBranchLevelFilterOptions(),
+                  filterMethod: (filter, row, column) => {
+                    if (filter.value === 'all') {
+                      return true
+                    } else if (filter.value === 'untested') {
+                      return row[filter.id] === null
+                    } else if (filter.value === 'nonmaster') {
+                      return row[filter.id] !== 0
+                    } else {
+                      return String(row[filter.id]) === filter.value
+                    }
+                  }
                 },
                 {
                   Header: 'Region',
