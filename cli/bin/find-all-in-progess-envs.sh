@@ -1,6 +1,6 @@
 #!/bin/bash
 
-~/.magento-cloud/bin/magento-cloud multi -p (mc projects --pipe | perl -pe 's/\n/,/' | perl -pe 's/,$//') environments >/tmp/env-list.txt 2>&1
+~/.magento-cloud/bin/magento-cloud multi -p $(~/.magento-cloud/bin/magento-cloud projects --pipe | perl -pe 's/\n/,/' | perl -pe 's/,$//') environments >/tmp/env-list.txt 2>&1
 
 perl -i.1 -ne '/Project:|In progress/ and print' /tmp/env-list.txt
 
