@@ -19,6 +19,7 @@ const {
   deleteEnv,
   execInEnv,
   redeployEnv,
+  syncEnv,
   checkPublicUrlForExpectedAppResponse,
   getPathFromRemote,
   sendPathToRemoteTmpDir,
@@ -433,6 +434,22 @@ yargs.command(
       pidEnvs = filterStillValidRuns(argv.time, smokeTestApp, pidEnvs)
     }
     pLimitForEachHandler(2, smokeTestApp, pidEnvs)
+  }
+)
+
+yargs.command(
+  ['env:sync [pid:env...]'],
+  'Sync code with parent. N/A for master envs.',
+  yargs => {
+    addSharedPidEnvOpts(false)
+  },
+  argv => {
+    // remove master envs
+    let pidEnvs = new Set(argv['pid:env'].filter(x => !(!/:/.test(x) || /:master$/.test(x))))
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, syncEnv, pidEnvs)
+    }
+    pLimitForEachHandler(4, syncEnv, pidEnvs)
   }
 )
 

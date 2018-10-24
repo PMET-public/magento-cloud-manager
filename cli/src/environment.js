@@ -183,6 +183,22 @@ const redeployEnv = async (project, environment) => {
 }
 exports.redeployEnv = redeployEnv
 
+const syncEnv = async (project, environment) => {
+  const cmd = `${MC_CLI} sync code -p ${project} -e ${environment} -y --no-wait`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .then(({stdout, stderr}) => {
+      if (/Failed to identify project/.test(stderr)) {
+        throw 'Project not found.'
+      }
+      logger.mylog('info', `Env: ${environment} of project: ${project} redeployed.`)
+      return true
+    })
+    .catch(error => logger.mylog('error', error))
+  return result
+}
+exports.syncEnv = syncEnv
+
 const getExpiringPidEnvs = () => {
   const expirationIn2Wks = new Date() / 1000 + 24 * 60 * 60 * 7 * 2
   const expiringPidEnvs = []
