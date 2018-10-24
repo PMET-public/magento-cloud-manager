@@ -117,6 +117,7 @@ const discoverEnvs = async project => {
           const envFromDB = projEnvsFromDB.find(obj => obj.id === environment)
           const active = status === 'Active' || status === '"In progress"' ? 1 : 0
           const index = projEnvIds.indexOf(environment)
+          setEnvironmentMissing(project, environment, 0)
           // in API & DB, remove from tracking list
           if (index > -1) { 
             projEnvIds.splice(index, 1);

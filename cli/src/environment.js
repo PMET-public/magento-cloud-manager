@@ -64,12 +64,12 @@ const setEnvironmentFailure = (project, environment, value) => {
 }
 exports.setEnvironmentFailure = setEnvironmentFailure
 
-const setEnvironmentMissing = (project, environment) => {
-  const sql = 'UPDATE environments SET missing = 1, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?'
-  const result = db.prepare(sql).run(project, environment)
+const setEnvironmentMissing = (project, environment, missing = 1) => {
+  const sql = 'UPDATE environments SET missing = ?, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?'
+  const result = db.prepare(sql).run(missing, project, environment)
   logger.mylog('debug', result)
   if (result && result.changes) {
-    logger.mylog('info', `Env: ${environment} of project: ${project} set to missing.`)
+    logger.mylog('info', `Env: ${environment} of project: ${project} set to missing: ${missing}.`)
   }
   return result
 }
