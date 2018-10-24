@@ -556,19 +556,19 @@ export default class extends Component {
               columns: [
                 {
                   Header: 'Project Env',
-                  accessor: 'id',
+                  accessor: 'project_environment_id',
                   minWidth: 200,
                   maxWidth: 200,
                   headerClassName: 'adjacent-to-checkbox-column',
                   Cell: cell => (
                     <div>
-                      <a
+                      {/* <a
                         target="_blank" rel="noopener noreferrer"
                         href={`http://localhost:3001/commands?p=${cell.original.project_id}&e=${
                           cell.original.environment_id
                         }`}>
                         <Icon color="secondary">cloud_download</Icon>
-                      </a>
+                      </a> */}
                       <a
                         target="_blank" rel="noopener noreferrer"
                         href={`https://${cell.original.machine_name}-${cell.original.project_id}.${

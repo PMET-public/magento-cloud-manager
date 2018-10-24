@@ -14,6 +14,7 @@ module.exports = (req, res) => {
     s.german_check, s.venia_check, s.admin_check, s.error_logs, s.last_deploy_log, s.cpus, 
     s.utilization_start || ',' || s.utilization_end utilization_start_end, s.timestamp,
     e.project_id, e.id environment_id, e.title environment_title, e.branch_level, machine_name, last_created_at,
+    e.project_id || '-' || e.id project_environment_id,
     case
       when s.last_login_customer < last_created_at then null
       else s.last_login_customer
