@@ -945,7 +945,7 @@ export default class extends Component {
                 {
                   Header: 'Storefront (uncached)',
                   accessor: 'store_url_uncached',
-                  Cell: cell => (<a href={'https://' + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
+                  Cell: cell => (<a target="_blank" rel="noopener noreferrer" href={'https://' + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
                   maxWidth: calcWidth(4.5),
                   className: 'right',
                   Filter: this.timerIcon,
@@ -954,7 +954,7 @@ export default class extends Component {
                 {
                   Header: 'Storefront (cached)',
                   accessor: 'store_url_cached',
-                  Cell: cell => (<a href={'https://' + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
+                  Cell: cell => (<a target="_blank" rel="noopener noreferrer" href={'https://' + cell.original.host_name}>{this.formatSecs(cell.value)}</a>),
                   maxWidth: calcWidth(4.5),
                   className: 'right',
                   Filter: this.timerIcon,
@@ -963,7 +963,7 @@ export default class extends Component {
                 {
                   Header: 'Cat Page (uncached)',
                   accessor: 'cat_url_uncached',
-                  Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
+                  Cell: cell => (<a target="_blank" rel="noopener noreferrer" href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
                   maxWidth: calcWidth(4.5),
                   className: 'right',
                   Filter: this.timerIcon,
@@ -972,7 +972,7 @@ export default class extends Component {
                 {
                   Header: 'Cat Page (partial cache)',
                   accessor: 'cat_url_partial_cache',
-                  Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
+                  Cell: cell => (<a target="_blank" rel="noopener noreferrer" href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
                   maxWidth: calcWidth(4.5),
                   className: 'right',
                   Filter: this.timerIcon,
@@ -981,7 +981,7 @@ export default class extends Component {
                 {
                   Header: 'Cat Page (cached)',
                   accessor: 'cat_url_cached',
-                  Cell: cell => (<a href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
+                  Cell: cell => (<a target="_blank" rel="noopener noreferrer" href={cell.original.cat_url}>{this.formatSecs(cell.value)}</a>),
                   maxWidth: calcWidth(4.5),
                   className: 'right',
                   Filter: this.timerIcon,
