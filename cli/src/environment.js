@@ -183,8 +183,8 @@ const redeployEnv = async (project, environment) => {
 }
 exports.redeployEnv = redeployEnv
 
-const syncEnv = async (project, environment) => {
-  const cmd = `${MC_CLI} sync code -p ${project} -e ${environment} -y --no-wait`
+const syncEnv = async (project, environment, syncData = false) => {
+  const cmd = `${MC_CLI} sync code ${syncData ? 'data' : ''} -p ${project} -e ${environment} -y --no-wait`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {

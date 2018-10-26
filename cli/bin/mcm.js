@@ -442,14 +442,20 @@ yargs.command(
   'Sync code with parent. N/A for master envs.',
   yargs => {
     addSharedPidEnvOpts(false)
+    yargs.option('data', {
+      description: 'Sync data, too. OLD DATA WILL BE LOST.',
+      type: 'boolean',
+      coerce: coercer
+    })
   },
   argv => {
     // remove master envs
     let pidEnvs = new Set(argv['pid:env'].filter(x => !(!/:/.test(x) || /:master$/.test(x))))
+    const additionalArgs = [argv.data]
     if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, syncEnv, pidEnvs)
+      pidEnvs = filterStillValidRuns(argv.time, syncEnv, pidEnvs, additionalArgs)
     }
-    pLimitForEachHandler(4, syncEnv, pidEnvs)
+    pLimitForEachHandler(4, syncEnv, pidEnvs, additionalArgs)
   }
 )
 
@@ -548,10 +554,10 @@ yargs.command(
   async argv => {
     verifyOnlyOneOf(argv, ['a', 'pid'])
     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid'])
-    if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, delUser, pidEnvs)
-    }
     const additionalArgs = [argv.email]
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, delUser, pidEnvs, additionalArgs)
+    }
     pLimitForEachHandler(4, delUser, pidEnvs, additionalArgs)
   }
 )
