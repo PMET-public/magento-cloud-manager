@@ -1,6 +1,7 @@
 const https = require('https')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../.secrets.json')
+const {updateProject} = require('./project')
 
 const updateEnvironmentFromApi = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
@@ -424,7 +425,8 @@ const getMachineNameAndRegion = async (project, environment) => {
       WHERE p.id = ? AND e.id = ?`
     let result = db.prepare(sql).get(project, environment)
     if (typeof result === 'undefined') {
-      // possibly requesting an environment that hasn't been queried yet, so attempt to update and then return
+      // possibly requesting an environment or project that hasn't been queried yet, so attempt to update and then return
+      result = await updateProject(project)
       result = await updateEnvironmentFromApi(project, environment)
       if (result && result.changes) {
         return await getMachineNameAndRegion(project, environment)
