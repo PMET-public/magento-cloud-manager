@@ -1,0 +1,453 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Host update on project yye7pupverdpa (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "host:update",
+        "yye7pupverdpa:twe",
+        "-v"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Host update an invalid project (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "host:update",
+        "pid:env",
+        "-v"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Host update sample (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "host:update",
+        "-vs"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Match hosts and envs",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "host:env-match",
+        "-v"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Smoke test all applications (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:smoke-test",
+        "-av"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Smoke test untested applications (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:smoke-test",
+        "-uv"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Smoke test sample demo project (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:smoke-test",
+        "-v",
+        "apwjqamdbjquw:b2bwithalgolia",
+        "-t",
+        "0"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Back up env (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:backup",
+        "-v",
+        "p3ajtccyn5j3w:Demo"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Check web for all envs (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:check-web",
+        "-a"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Check web for sample envs (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:check-web",
+        "-v",
+        "u4rn4e7jke2ao:erp-integration", //gdprlmsp3syac:sales-demo
+        "-t",
+        "0"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Update sample project",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "project:update",
+        "-v",
+        "exkfyxnbu3zke",
+        "-t",
+        "0"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Update all projects",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "project:update",
+        "-va"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Exec a sample script in a sample env",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "cwd": "${workspaceFolder}/cli",
+      "args": [
+        "env:exec",
+        "-v",
+        "./bin/env-scripts/what-is-my-external-ip.sh",
+        "apwjqamdbjquw:maa"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Exec a sample sql in a sample env",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "cwd": "${workspaceFolder}/cli",
+      "args": [
+        "env:exec",
+        "-v",
+        "./bin/env-scripts/shopial.sql",
+        "qcfa655arkgce"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "mcm no args",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Exec a sample SQL file in a sample env",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:exec",
+        "-v",
+        "/tmp/hello-world.sql"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Get a sample file env",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:get",
+        "-v",
+        "/tmp/khb",
+        "2ld3hijuc7lve",
+        "v5mgc5i33x26m"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Redeploy a sample env with no changes (forced)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:deploy",
+        "--force",
+        "apwjqamdbjquw"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Redeploy a sample env using tar file",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "cwd": "/Users/kbentrup/Documents/ese/mc/b2b1.the1umastory.com/",
+      "args": [
+        "env:deploy",
+        "b2b.tar",
+        "b66cyazlbp6dk",
+        "-v",
+        "--reset",
+        "--yes"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Redeploy expiring envs",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:deploy",
+        "-vx"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Sync envs",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:sync",
+        "xy4itwbmg2khk",
+        "xy4itwbmg2khk:master",
+        "xy4itwbmg2khk:test2",
+        "xy4itwbmg2khk:test3"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Find all activities failures (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "project:find-failures",
+        "-va"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Find activities failures on invalid pid (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "project:find-failures",
+        "-v",
+        "invalid-pid"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Find activities failures on valid pid (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "project:find-failures",
+        "-v",
+        "j7mn26kjab6my"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Grant all gitlab keys access to all configured gitlab projects(verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "project:grant-gitlab",
+        "-va"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Grant cloud project access to all configured gitlab projects (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "project:grant-gitlab",
+        "-v",
+        "ugwphl3msex5e"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Delete inactive envs",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:delete",
+        "-vi"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Check web of sample pid(s)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:check-web",
+        "-v",
+        "-t 0",
+        "rft4g4olbri4q:sprint-3",
+        "73xge34nt3ft4:dave"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "User add",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "user:add",
+        "-v",
+        "kbentrup@magento.com",
+        "admin",
+        "a6terwtbk67os",
+        "vjacyav2sflo6"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "User delete",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "user:delete",
+        "-v",
+        "skukla@magento.com",
+        "36fjujtek7d7m"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Variable set",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "variable:set",
+        "-v",
+        "ADMIN_EMAIL",
+        "kbentrup@magento.com",
+        "a6terwtbk67os",
+        "vjacyav2sflo6"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Variable get",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "variable:get",
+        "-v",
+        "ADMIN_EMAIL",
+        "a6terwtbk67os",
+        "vjacyav2sflo6"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Run mocha",
+      "cwd": "${workspaceFolder}/cli",
+      "program": "${workspaceFolder}/cli/node_modules/mocha/bin/_mocha",
+      "args": [
+        "-b",
+        "--timeout",
+        "15000"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to debugging server process",
+      "stopOnEntry": false,
+      "port": 9229,
+      "address": "localhost",
+      "restart": false,
+      "sourceMaps": false,
+      "outFiles": [],
+      "localRoot": "${workspaceRoot}/server",
+      "remoteRoot": null
+    },
+    {
+      "name": "Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceRoot}/client/src",
+      "userDataDir": "/Users/kbentrup/Library/Application Support/Google/Chrome/Profile 1"
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "del me",
+      "program": "${workspaceFolder}/cli/bin/mcm2",
+      "args": [
+        "c1",
+        "should cause failure"
+      ]
+    },
+  ]
+}
