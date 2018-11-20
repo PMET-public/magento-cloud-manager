@@ -539,7 +539,7 @@ const backup = async (project, environment) => {
     .then(execOutputHandler)
     .then(async ({stdout, stderr}) => {
       console.log(stdout, stderr)
-      getPathFromRemote(project, environment, stdout.replace(/[\s\S*]tarfile (.*)/,'$1'))
+      getPathFromRemote(project, environment, stdout.replace(/[\s\S]*tarfile (.*)/,'$1').trim())
     })
     .catch(error => {
       logger.mylog('error', error)
