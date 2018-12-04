@@ -86,7 +86,7 @@ const addCloudProjectKeyToGitlabKeys = async cloudProject => {
     const sql = 'SELECT client_ssh_key FROM projects WHERE id = ?'
     let result = db.prepare(sql).get(cloudProject)
     if (typeof result == 'undefined') {
-      throw 'Row not found.'
+      throw 'Could not find project. Run project:update to discover new projects and insert them into local DB.'
     }
     const clientSshKey = result.client_ssh_key
     const keyId = (await getAllDeployKeysFromGitlab())
