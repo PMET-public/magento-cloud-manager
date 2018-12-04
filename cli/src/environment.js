@@ -1,7 +1,6 @@
 const https = require('https')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath} = require('../.secrets.json')
-const {updateProject} = require('./project')
 
 const updateEnvironmentFromApi = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
@@ -421,12 +420,19 @@ exports.execInEnv = execInEnv
 
 const getMachineNameAndRegion = async (project, environment) => {
   try {
-    const sql = `SELECT machine_name, region FROM environments e LEFT JOIN projects p ON p.id = e.project_id 
-      WHERE p.id = ? AND e.id = ?`
-    let result = db.prepare(sql).get(project, environment)
+    // verify project exists first & error if not
+    // we can not directly query and update project for now 
+    // w/o creating a circulary dependency between project.js <-> environment.js
+    let sql = 'SELECT id FROM projects p where p.id = ?'
+    let result = db.prepare(sql).get(project)
     if (typeof result === 'undefined') {
-      // possibly requesting an environment or project that hasn't been queried yet, so attempt to update and then return
-      result = await updateProject(project)
+      throw `Project: ${project} not found. Please run project:update [pid] cmd first.`
+    }
+    sql = `SELECT machine_name, region FROM environments e LEFT JOIN projects p ON p.id = e.project_id 
+      WHERE p.id = ? AND e.id = ?`
+    result = db.prepare(sql).get(project, environment)
+    if (typeof result === 'undefined') {
+      // possibly requesting an environment that hasn't been queried yet, so attempt to update and then return
       result = await updateEnvironmentFromApi(project, environment)
       if (result && result.changes) {
         return await getMachineNameAndRegion(project, environment)
