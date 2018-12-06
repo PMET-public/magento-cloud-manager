@@ -68,9 +68,9 @@ const smokeTestApp = async (project, environment = 'master') => {
     rm /tmp/myc 2> /dev/null || : 
     read -r form_url form_key <<<$(curl -sL -c /tmp/myc -b /tmp/myc "$store_url/admin/" | 
       perl -ne "chomp; s/.*var BASE_URL.*(https.*\\/).*/\\1 / and print;s/.*var FORM_KEY = .(.*).;.*/\\1/ and print")
-    echo admin_check $(curl -sv -c /tmp/myc -b /tmp/myc -X POST -d \
+    echo admin_check $(curl -sLv --max-redirs 1 -c /tmp/myc -b /tmp/myc -X POST -d \
       "login[username]=${magentoSIAdminUser}&login[password]=${magentoSIAdminPassword}&form_key=$form_key" $form_url 2>&1 |
-      grep "Location.*admin/dashboard" | wc -l)
+      grep -i "Location.*admin/dashboard" | wc -l)
 
     cat_url=$(curl -s $store_url | perl -ne "s/.*?class.*?nav-[12]-1.*?href=.([^ ]+.html).*/\\1/ and print")
     if [ -n "$cat_url" ]; then
