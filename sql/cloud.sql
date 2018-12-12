@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS "hosts_states" (
 	`last_process_id`	INTEGER NOT NULL,
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
-CREATE TABLE sqlite_sequence(name,seq);
+
 CREATE TABLE IF NOT EXISTS "users" (
 	`project_id`	TEXT NOT NULL,
 	`email`	TEXT NOT NULL,
