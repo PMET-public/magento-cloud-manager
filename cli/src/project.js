@@ -57,8 +57,8 @@ const getProjectInfoFromApi = async project => {
       const createdAt = Date.parse(projectInfo.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/, '$1')) / 1000
       const clientSshKey = projectInfo.replace(/[\s\S]*client_ssh_key: '([^']*)[\s\S]*/, '$1')
       const planSize = projectInfo.replace(/[\s\S]*plan: ([^\s]*)[\s\S]*/, '$1')
-      const allowedEnvs = projectInfo.replace(/[\s\S]*environments: ([^\n]*)[\s\S]*/, '$1')
-      const storage = projectInfo.replace(/[\s\S]*storage: ([^\n]*)[\s\S]*/, '$1')
+      const allowedEnvs = projectInfo.replace(/[\s\S]*environments: ([^\s]*)[\s\S]*/, '$1')
+      const storage = projectInfo.replace(/[\s\S]*storage: ([^\s]*)[\s\S]*/, '$1')
       const userLicenses = projectInfo.replace(/[\s\S]*user_licenses: ([^"]*)[\s\S]*/, '$1')
       const sql = `INSERT OR REPLACE INTO projects 
         (id, title, region, project_url, git_url, created_at, plan_size, 

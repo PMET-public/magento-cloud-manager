@@ -7,8 +7,8 @@ const updateEnvironmentFromApi = async (project, environment = 'master') => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
-      const title = stdout.replace(/[\s\S]*title\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
-      const machineName = stdout.replace(/[\s\S]*machine_name\s*([^\n]+)[\s\S]*/, '$1').replace(/"/g, '')
+      const title = stdout.replace(/[\s\S]*title\s*([^\r\n]+)[\s\S]*/, '$1').replace(/"/g, '')
+      const machineName = stdout.replace(/[\s\S]*machine_name\s*([^\r\n]+)[\s\S]*/, '$1').replace(/"/g, '')
       const active = /\nstatus\s+(active|dirty)/.test(stdout) ? 1 : 0
       const createdAt = Date.parse(stdout.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/, '$1')) / 1000
       // be careful to preserve 'failure' and 'branch_level' on existing envs when using INSERT OR REPLACE
