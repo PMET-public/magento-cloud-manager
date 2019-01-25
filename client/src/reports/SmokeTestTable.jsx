@@ -1,10 +1,10 @@
 import React, {Component} from 'react'
 import ReactTable from 'react-table'
 import 'react-table/react-table.css'
-import Icon from 'material-ui/Icon'
+import Icon from '@material-ui/core/Icon'
 import {calcWidth, moment} from '../util/common'
 import Dialog from '../util/Dialog'
-import Tooltip from 'material-ui/Tooltip'
+import Tooltip from '@material-ui/core/Tooltip'
 import checkboxHOC from 'react-table/lib/hoc/selectTable'
 import Clipboard from 'react-clipboard.js'
 

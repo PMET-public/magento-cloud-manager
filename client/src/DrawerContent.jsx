@@ -1,10 +1,12 @@
 import React, {Component} from 'react'
 import PropTypes from 'prop-types'
-import {withStyles} from 'material-ui/styles'
-import {ListItemIcon, ListItemText} from 'material-ui/List'
+import {withStyles} from '@material-ui/core/styles'
+import ListItemIcon from '@material-ui/core/ListItemIcon'
+import ListItemText from '@material-ui/core/ListItemText'
 import styles from './style/mui-styles'
-import {MenuList, MenuItem} from 'material-ui/Menu'
-import Icon from 'material-ui/Icon'
+import MenuList from '@material-ui/core/MenuList'
+import MenuItem from '@material-ui/core/MenuItem'
+import Icon from '@material-ui/core/Icon'
 import {Link} from 'react-router-dom'
 
 class DrawerContent extends Component {

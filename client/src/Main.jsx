@@ -1,7 +1,7 @@
 import React, {Component} from 'react'
 import PropTypes from 'prop-types'
 import {Route} from 'react-router-dom'
-import {withStyles} from 'material-ui/styles'
+import {withStyles} from '@material-ui/core/styles'
 import styles from './style/mui-styles'
 import HostsTable from './reports/HostsTable'
 import HostsChart from './reports/HostsChart'
