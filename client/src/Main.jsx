@@ -10,7 +10,7 @@ import SmokeTestTable from './reports/SmokeTestTable'
 
 class Main extends Component {
   render() {
-    const {classes, themeIgnoreMe} = this.props
+    const {classes} = this.props
 
     return (
       <main className={classes.content + ' main-content'} >
@@ -27,6 +27,5 @@ class Main extends Component {
 export default withStyles(styles, {withTheme: true})(Main)
 
 Main.propTypes = {
-  classes: PropTypes.string,
-  themeIgnoreMe: PropTypes.string
+  classes: PropTypes.object
 }
