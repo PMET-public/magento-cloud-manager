@@ -4,10 +4,14 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import {withStyles} from '@material-ui/core/styles'
 import Button from '@material-ui/core/Button'
-import List, {ListItem, ListItemText} from '@material-ui/core/List'
-import Dialog, {DialogTitle} from '@material-ui/core/Dialog'
 import styles from '../style/mui-styles'
 import Icon from '@material-ui/core/Icon'
+import List from '@material-ui/core/List'
+import ListItem from '@material-ui/core/ListItem'
+import ListItemText from '@material-ui/core/ListItemText'
+import DialogTitle from '@material-ui/core/DialogTitle'
+import Dialog from '@material-ui/core/Dialog'
+
 
 class SimpleDialog extends React.Component {
   render() {
