@@ -4,24 +4,24 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 # 900 s = 15 min, 7200 s = 2hrs, 14000 s ~ 4 hrs
 
 # sample all envs' hosts for perf metrics 3x a wk
-0 0 * * 1,3,5 perl -le 'sleep rand 900' && $MCM_PATH host:update --quiet --all
+0 0 * * 1,3,5 perl -le 'sleep rand 900' && $MCM_PATH host:update --quiet --all -t 0
 
 # every hr, sample a subset of envs (1 per host)
-0 * * * * perl -le 'sleep rand 900' && $MCM_PATH host:update --quiet --sample
+0 * * * * perl -le 'sleep rand 900' && $MCM_PATH host:update --quiet --sample -t 0
 
 # in case of env migration, rematch env and hosts every day
-50 23 * * * perl -le 'sleep rand 14000' && $MCM_PATH host:env-match --quiet 
+50 23 * * * perl -le 'sleep rand 14000' && $MCM_PATH host:env-match --quiet -t 0
 
 # more daily off peak tests spread over time
-20 0 * * * perl -le 'sleep rand 900' && $MCM_PATH project:update --quiet --all
-40 0 * * * perl -le 'sleep rand 900' && $MCM_PATH env:smoke-test --quiet --untested
+20 0 * * * perl -le 'sleep rand 900' && $MCM_PATH project:update --quiet --all -t 0
+40 0 * * * perl -le 'sleep rand 900' && $MCM_PATH env:smoke-test --quiet --untested -t 0
 
 # check certs & redeploy expiring on Sat
-0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH env:check-public-url --quiet --all
-0 2 * * 6 perl -le 'sleep rand 900' && $MCM_PATH env:deploy --quiet --expiring
+0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH env:check-public-url --quiet --all -t 0
+0 2 * * 6 perl -le 'sleep rand 900' && $MCM_PATH env:deploy --quiet --expiring -t 0
 
-# delete inactive every Sunday
-0 1 * * 0 perl -le 'sleep rand 900' && $MCM_PATH env:delete --quiet --inactive
+# delete inactive every day
+0 1 * * 0 perl -le 'sleep rand 900' && $MCM_PATH env:delete --quiet --inactive -t 0
 
 # find failures every day
-40 1 * * * perl -le 'sleep rand 900' && $MCM_PATH project:find-failures --queit --all
+40 1 * * * perl -le 'sleep rand 900' && $MCM_PATH project:find-failures --quiet --all -t 0
