@@ -6,7 +6,7 @@ module.exports = (req, res) => {
   // this could create inaccurate historic charts but hopefully is rare especially for masters
   // which can not be deleted
   const days = isNaN(req.query.days) ? 1 : req.query.days
-  const sql = `SELECT host_id, region, cpus, load_avg_15, timestamp
+  const sql = `SELECT m.host_id, hs.region, hs.cpus, hs.load_avg_15, hs.timestamp
     FROM
       (
       SELECT project_id || ':' || environment_id proj_env_id, region, boot_time, cpus, ip, load_avg_15, hs.timestamp
