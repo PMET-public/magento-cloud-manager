@@ -12,6 +12,7 @@ module.exports = (req, res) => {
       SELECT project_id || ':' || environment_id proj_env_id, region, boot_time, cpus, ip, load_avg_15, hs.timestamp
       FROM hosts_states hs 
       LEFT JOIN projects p ON p.id = hs.project_id
+      WHERE p.active = 1
       ) hs
     LEFT JOIN matched_envs_hosts m ON m.proj_env_id = hs.proj_env_id
     WHERE timestamp > (strftime('%s','now') - ${days}*24*60*60)`
