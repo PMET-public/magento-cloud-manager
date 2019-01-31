@@ -10,7 +10,7 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 0 * * * * perl -le 'sleep rand 900' && $MCM_PATH host:update --quiet --sample -t 0
 
 # in case of env migration, rematch env and hosts every day
-50 23 * * * perl -le 'sleep rand 14000' && $MCM_PATH host:env-match --quiet -t 0
+50 23 * * * perl -le 'sleep rand 14000' && $MCM_PATH host:env-match --quiet
 
 # more daily off peak tests spread over time
 20 0 * * * perl -le 'sleep rand 900' && $MCM_PATH project:update --quiet --all -t 0
