@@ -97,8 +97,8 @@ export default class extends Component {
     },
     'demo': {
       color: { // greenish
-        start: [0, 82, 0],
-        end: [204, 255, 153],
+        start: [100, 50, 0],
+        end: [255, 204, 50],
         size: 0
       }
     },
@@ -163,12 +163,17 @@ export default class extends Component {
           Object.entries(hostsData).forEach(([key, val], index) => {
             const host = hosts[key]
             const rc = this.regions[host.region].color
-            const c = getNthRGBTriple(rc.start, rc.end, rc.size, host.nthInRegion)
+            // color algorithm change based on
+            // https://stackoverflow.com/questions/10014271/generate-random-color-distinguishable-to-humans
+            //const c = getNthRGBTriple(rc.start, rc.end, rc.size, host.nthInRegion)
+            const c = host.nthInRegion * (360 / (rc.size < 1 ? 1 : rc.size)) % 360
             data.datasets.push({
               label: host.label,
               fill: false,
-              borderColor: 'rgba(' + c.join(',') + ',1)',
-              backgroundColor: 'rgba(' + c.join(',') + ',1)',
+              //borderColor: 'rgba(' + c.join(',') + ',1)',
+              borderColor: 'hsl(' + c + ', 70%, 50%)',
+              //backgroundColor: 'rgba(' + c.join(',') + ',1)',
+              backgroundColor: 'hsl(' + c + ', 70%, 50%)',
               pointBorderColor: 'rgba(0,100,100,1)',
               //pointBackgroundColor: '#fff',
               pointBorderWidth: 1,
