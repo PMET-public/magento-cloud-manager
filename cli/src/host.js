@@ -35,13 +35,17 @@ const updateHost = async (project, environment = 'master') => {
 exports.updateHost = updateHost
 
 const getSampleEnvs = () => {
-  // prefer master envs b/c masters can not be deleted and so can't be recreated on new host
+  // prefer master envs (and ensure active projects) b/c masters can not be deleted and so can't be recreated on new host
   // can still be rebalanced/migrated to another host though
   // length col accounts for rare case where env name begins with substring "master"
-  const sql = `SELECT proj_env_id FROM 
-      (SELECT proj_env_id, host_id, instr(proj_env_id, ':master') is_master, length(proj_env_id) length
-      FROM matched_envs_hosts ORDER BY is_master ASC, length DESC) 
-    GROUP BY host_id`
+  const sql = `SELECT pe.proj_env_id FROM
+      (SELECT proj_env_id, substr(proj_env_id, 0, instr(proj_env_id,':')) pid FROM 
+          (SELECT proj_env_id, host_id, instr(proj_env_id, ':master') is_master, length(proj_env_id) length
+          FROM matched_envs_hosts ORDER BY is_master ASC, length DESC) 
+        GROUP BY host_id) pe
+    INNER JOIN projects p 
+    WHERE p.active = 1
+      AND pe.pid= p.id`
   const result = db
     .prepare(sql)
     .all()
