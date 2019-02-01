@@ -679,7 +679,7 @@ export default class extends Component {
                           .split(/,/)
                           .map(x => x.replace(/:(.*)/, ' ($1)'))
                       : []
-                    return list.length ? <Dialog title="Users (roles)" label={list.length}>{list}</Dialog> : ''
+                    return list.length ? <Dialog title="Users (roles)" label={''+list.length}>{list}</Dialog> : ''
                   },
                   Filter: this.createUserFilterOptions(),
                   filterMethod: (filter, row, column) => {
@@ -991,7 +991,7 @@ export default class extends Component {
                   Header: 'Cat Page Products',
                   accessor: 'cat_url_product_count',
                   Cell: cell => (
-                    <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
+                    <Tooltip placement="right" title={cell.value ? cell.value : 'n/a'} enterDelay={20} leaveDelay={20}>
                       {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
                     </Tooltip>
                   ),
@@ -1013,7 +1013,7 @@ export default class extends Component {
                   Header: 'Search Page Products',
                   accessor: 'search_url_product_count',
                   Cell: cell => (
-                    <Tooltip placement="right" title={cell.value} enterDelay={20} leaveDelay={20}>
+                    <Tooltip placement="right" title={cell.value ? cell.value : 'n/a'} enterDelay={20} leaveDelay={20}>
                       {this.validate(cell.value, v => v > 0, this.checkIcon, this.errorIcon)}
                     </Tooltip>
                   ),
