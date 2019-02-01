@@ -33,7 +33,7 @@ class SimpleDialog extends React.Component {
 
 SimpleDialog.propTypes = {
   classes: PropTypes.object,
-  children: PropTypes.object,
+  children: PropTypes.array,
   title: PropTypes.string
 }
 
@@ -72,7 +72,7 @@ export default SimpleDialogDemo
 
 SimpleDialogDemo.propTypes = {
   className: PropTypes.string,
-  children: PropTypes.object,
+  children: PropTypes.array,
   label: PropTypes.string,
   title: PropTypes.string,
 }
