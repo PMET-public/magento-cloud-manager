@@ -5,28 +5,28 @@ defaults.global.animation = false
 //defaults.global.tooltips.backgroundColor = 'rgba(200,200,200,0.8)'
 
 
-const getNthRGBTriple = (startTriple, endTriple, size, index) => {
-  // validate index < size && all numbers are ints 0 <= x <=255 
-  const isIntBetween0and255 = val => Number.isInteger(val) && val > -1 && val < 256
-  if (!( index < size && startTriple.concat(endTriple, size, index).reduce((acc, val) => acc && isIntBetween0and255(val), true))) {
-    throw 'Failed input validation.'
-  }
-  const [startR, startG, startB] = startTriple
-  const [endR, endG, endB] = endTriple
+// const getNthRGBTriple = (startTriple, endTriple, size, index) => {
+//   // validate index < size && all numbers are ints 0 <= x <=255 
+//   const isIntBetween0and255 = val => Number.isInteger(val) && val > -1 && val < 256
+//   if (!( index < size && startTriple.concat(endTriple, size, index).reduce((acc, val) => acc && isIntBetween0and255(val), true))) {
+//     throw 'Failed input validation.'
+//   }
+//   const [startR, startG, startB] = startTriple
+//   const [endR, endG, endB] = endTriple
 
-  const getStep = (start, end, size) => (end - start) / (size - 1)
-  const stepR = getStep(startR, endR, size)
-  const stepG = getStep(startG, endG, size)
-  const stepB = getStep(startB, endB, size)
+//   const getStep = (start, end, size) => (end - start) / (size - 1)
+//   const stepR = getStep(startR, endR, size)
+//   const stepG = getStep(startG, endG, size)
+//   const stepB = getStep(startB, endB, size)
   
-  const getNthVal = (start, step, index) => start + parseInt(step * index, 10)
-  return [
-    getNthVal(startR, stepR, index),
-    getNthVal(startG, stepG, index),
-    getNthVal(startB, stepB, index)
-  ]
+//   const getNthVal = (start, step, index) => start + parseInt(step * index, 10)
+//   return [
+//     getNthVal(startR, stepR, index),
+//     getNthVal(startG, stepG, index),
+//     getNthVal(startB, stepB, index)
+//   ]
 
-}
+// }
 
 export default class extends Component {
   constructor(props) {
