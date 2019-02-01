@@ -14,7 +14,7 @@ module.exports = (req, res) => {
       LEFT JOIN projects p ON p.id = hs.project_id
       WHERE p.active = 1
       ) hs
-    LEFT JOIN matched_envs_hosts m ON m.proj_env_id = hs.proj_env_id
+    INNER JOIN matched_envs_hosts m ON m.proj_env_id = hs.proj_env_id
     WHERE timestamp > (strftime('%s','now') - ${days}*24*60*60)`
   const rows = db.prepare(sql).all()
   res.json(rows)
