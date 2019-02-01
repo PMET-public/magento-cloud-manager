@@ -149,7 +149,7 @@ exports.fetch = function myfetch() {
   return fetch.apply(this, arguments)
 }
 
-// this helper function takes out formatted as "column_name value\n"
+// this helper function takes output formatted as "column_name value\n"
 // and inserts it into the specified table
 const parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], additionalVals = []) => {
   const cmdOutput = stdout
