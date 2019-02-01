@@ -838,7 +838,7 @@ export default class extends Component {
                           .replace(/ (1[45]\d{8} \/)/g, '\n$1')
                           .split('\n')
                       : []
-                    return list.length ? <Dialog title="Environmental Errors" label={list.length}>{this.errorList(list)}</Dialog> : ''
+                    return list.length ? <Dialog title="Environmental Errors" label={list.length ? list.length : ''}>{this.errorList(list)}</Dialog> : ''
                   },
                   maxWidth: calcWidth(5),
                   filterMethod: (filter, row, column) => {
