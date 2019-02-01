@@ -37,6 +37,15 @@ const defaultFiltered = [{
   value: 'active'
 }]
 
+const curDateInSecs = parseInt(new Date()/1000, 10)
+const secsIn1Day = 24 * 60 * 60
+const secsIn2Wk = 14 * secsIn1Day
+const secsIn1Mo = 30 * secsIn1Day
+const secsIn3Mo = 90 * secsIn1Day
+const secsIn6Mo = 180 * secsIn1Day
+const secsIn1Yr = 365 * secsIn1Day
+
+
 export default class extends Component {
   constructor(props) {
     super(props)
@@ -354,87 +363,90 @@ export default class extends Component {
     this.untestedFilter
   ]
 
-  curDateInSecs = parseInt(new Date()/1000, 10)
-  secsIn1Day = 24 * 60 * 60
-  secsIn2Wk = 14 * this.secsIn1Day
-  secsIn1Mo = 30 * this.secsIn1Day
-  secsIn3Mo = 90 * this.secsIn1Day
-  secsIn6Mo = 180 * this.secsIn1Day
-  secsIn1Yr = 365 * this.secsIn1Day
-
-  lessThan2WkFilter = {
+  lessThan2WkAgoFilter = {
     key: '< 2 wk', 
-    value: '< ' + this.secsIn2Wk, 
+    value: '< ' + secsIn2Wk, 
     label: '< 2 wk',
     test: (filter, row) => {
       const retVal = row[filter.id] !== null && 
-        this.curDateInSecs - this.secsIn2Wk < new Date(row[filter.id] * 1000)/1000
+      curDateInSecs - secsIn2Wk < new Date(row[filter.id] * 1000)/1000
       return retVal
     }
   }
 
-  moreThan2WkFilter = {
+  lessThan2WkHenceFilter = {
+    key: '< 2 wk', 
+    value: '< ' + secsIn2Wk, 
+    label: '< 2 wk',
+    test: (filter, row) => {
+      const retVal = row[filter.id] !== null && 
+      new Date(row[filter.id] * 1000)/1000 < curDateInSecs + secsIn2Wk
+      return retVal
+    }
+  }
+
+  moreThan2WkHenceFilter = {
     key: '> 2 wk', 
-    value: '> ' + this.secsIn2Wk, 
+    value: '> ' + secsIn2Wk, 
     label: '> 2 wk',
     test: (filter, row) => {
       const retVal = row[filter.id] !== null && 
-        new Date(row[filter.id] * 1000)/1000 > new Date()/1000 + this.secsIn2Wk
+        new Date(row[filter.id] * 1000)/1000 > curDateInSecs + secsIn2Wk
       return retVal
     }
   }
 
-  lessThan1MoFilter = {
+  lessThan1MoAgoFilter = {
     key: '< 1 mo', 
-    value: '> ' + this.secsIn1Mo,
+    value: '> ' + secsIn1Mo,
     label: '< 1 mo',
     test: (filter, row) => {
       const retVal = row[filter.id] !== null &&
-        this.curDateInSecs - this.secsIn1Mo < new Date(row[filter.id] * 1000)/1000
+        curDateInSecs - secsIn1Mo < new Date(row[filter.id] * 1000)/1000
       return retVal
     }
   }
 
-  lessThan3MoFilter = {
+  lessThan3MoAgoFilter = {
     key: '< 3 mo', 
-    value: '> ' + this.secsIn3Mo,
+    value: '> ' + secsIn3Mo,
     label: '< 3 mo',
     test: (filter, row) => {
       const retVal = row[filter.id] !== null && 
-        this.curDateInSecs - this.secsIn3Mo < new Date(row[filter.id] * 1000)/1000
+        curDateInSecs - secsIn3Mo < new Date(row[filter.id] * 1000)/1000
       return retVal
     }
   }
 
-  lessThan6MoFilter = {
+  lessThan6MoAgoFilter = {
     key: '< 6 mo', 
-    value: '< ' + this.secsIn6Mo,
+    value: '< ' + secsIn6Mo,
     label: '< 6 mo',
     test: (filter, row) => {
       const retVal = row[filter.id] !== null && 
-        this.curDateInSecs - this.secsIn6Mo < new Date(row[filter.id] * 1000)/1000
+        curDateInSecs - secsIn6Mo < new Date(row[filter.id] * 1000)/1000
       return retVal
     }
   }
 
-  lessThan1YrFilter = {
+  lessThan1YrAgoFilter = {
     key: '< 1 yr', 
-    value: '< ' + this.secsIn1Yr,
+    value: '< ' + secsIn1Yr,
     label: '< 1 yr',
     test: (filter, row) => {
       const retVal = row[filter.id] !== null && 
-        this.curDateInSecs - this.secsIn1Yr < new Date(row[filter.id] * 1000)/1000
+        curDateInSecs - secsIn1Yr < new Date(row[filter.id] * 1000)/1000
       return retVal
     }
   }
 
-  moreThan1YrFilter = {
+  moreThan1YrAgoFilter = {
     key: '> 1 yr', 
-    value: '> ' + this.secsIn1Yr,
+    value: '> ' + secsIn1Yr,
     label: '> 1 yr',
     test: (filter, row) => {
       const retVal = row[filter.id] !== null && 
-        this.curDateInSecs - this.secsIn1Yr > new Date(row[filter.id] * 1000)/1000
+        curDateInSecs - secsIn1Yr > new Date(row[filter.id] * 1000)/1000
       return retVal
     }
   }
@@ -449,12 +461,12 @@ export default class extends Component {
   }
 
   commonTimeBasedFilters = [
-    this.lessThan2WkFilter,
-    this.lessThan1MoFilter,
-    this.lessThan3MoFilter,
-    this.lessThan6MoFilter,
-    this.lessThan1YrFilter,
-    this.moreThan1YrFilter,
+    this.lessThan2WkAgoFilter,
+    this.lessThan1MoAgoFilter,
+    this.lessThan3MoAgoFilter,
+    this.lessThan6MoAgoFilter,
+    this.lessThan1YrAgoFilter,
+    this.moreThan1YrAgoFilter,
   ]
 
   commonTBFWithNever = this.commonTimeBasedFilters.concat([this.neverFilter])
@@ -462,16 +474,16 @@ export default class extends Component {
   expirationFilters = [
     {
       key: 'expired', 
-      value: this.curDateInSecs.toString(), 
+      value: curDateInSecs.toString(), 
       label: 'expired',
       test: (filter, row) => {
         const retVal = row[filter.id] !== null && 
-          row[filter.id] < this.curDateInSecs
+          row[filter.id] < curDateInSecs
         return retVal
       }
     },
-    this.lessThan2WkFilter,
-    this.moreThan2WkFilter,
+    this.lessThan2WkHenceFilter,
+    this.moreThan2WkHenceFilter,
     this.untestedFilter
   ]
 
