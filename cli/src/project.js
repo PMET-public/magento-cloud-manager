@@ -11,7 +11,16 @@ const getProjectsFromApi = async () => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
-      return stdout.trim().split('\n')
+      const apiProjects = stdout.trim().split('\n')
+      // before returning ...
+      // active projects in the DB but not in the API should be marked inactive
+      const sql = 'SELECT id FROM projects WHERE active = 1;'
+      const result = db.prepare(sql).all()
+      logger.mylog('debug', result)
+      const dbProjects = result.map(row => row.id)
+      const difference = dbProjects.filter(id => !apiProjects.includes(id))
+      difference.forEach(setProjectInactive)
+      return apiProjects
     })
     .catch(error => logger.mylog('error', error))
   return result
