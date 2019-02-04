@@ -292,7 +292,7 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
     })
     // based on a report, request.abort was not a function in setTimeout when chained 
     // so break chaining as possible solution and ensure assignment completion first
-    request.setTimeout(10000, () => {
+    request.setTimeout(30000, () => {
       reject('Request timed out for ' + url)
       request.abort()
     }).on('error', (error) => {
