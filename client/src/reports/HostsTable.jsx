@@ -8,7 +8,9 @@ import Dialog from '../util/Dialog'
 export default class extends Component { // eslint-disable-line react/display-name
   constructor(props) {
     super(props)
-    this.state = {}
+    this.state = {
+      data: []
+    }
   }
 
   matchRow = (filter, row) => {

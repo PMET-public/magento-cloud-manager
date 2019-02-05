@@ -19,6 +19,6 @@ export default function UniqueOptions(props) {
 }
 
 UniqueOptions.propTypes = {
-  data: PropTypes.object.isRequired,
+  data: PropTypes.array.isRequired,
   accessor: PropTypes.string
 }
