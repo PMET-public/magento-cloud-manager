@@ -691,7 +691,7 @@ export default class extends Component {
                           .split(/,/)
                           .map(x => x.replace(/:(.*)/, ' ($1)'))
                       : []
-                    return list.length ? <Dialog title="Users (roles)" label={''+list.length}>{list}</Dialog> : ''
+                    return list.length ? <Dialog title="Users (roles)" label={list.length ? ''+list.length : ''}>{list}</Dialog> : ''
                   },
                   Filter: this.createUserFilterOptions(),
                   filterMethod: (filter, row, column) => {
