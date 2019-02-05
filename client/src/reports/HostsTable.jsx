@@ -63,7 +63,7 @@ export default class extends Component { // eslint-disable-line react/display-na
               const list = cell.value.split(/,/)
               return (
                 <div>
-                  <Dialog title="Cotenants" label={list.length}>{list}</Dialog>
+                  <Dialog title="Cotenants" label={list.length ? ''+list.length : ''}>{list}</Dialog>
                 </div>
               )
             },
