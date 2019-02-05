@@ -4,30 +4,6 @@ import {Scatter, defaults} from 'react-chartjs-2'
 defaults.global.animation = false
 //defaults.global.tooltips.backgroundColor = 'rgba(200,200,200,0.8)'
 
-
-// const getNthRGBTriple = (startTriple, endTriple, size, index) => {
-//   // validate index < size && all numbers are ints 0 <= x <=255 
-//   const isIntBetween0and255 = val => Number.isInteger(val) && val > -1 && val < 256
-//   if (!( index < size && startTriple.concat(endTriple, size, index).reduce((acc, val) => acc && isIntBetween0and255(val), true))) {
-//     throw 'Failed input validation.'
-//   }
-//   const [startR, startG, startB] = startTriple
-//   const [endR, endG, endB] = endTriple
-
-//   const getStep = (start, end, size) => (end - start) / (size - 1)
-//   const stepR = getStep(startR, endR, size)
-//   const stepG = getStep(startG, endG, size)
-//   const stepB = getStep(startB, endB, size)
-  
-//   const getNthVal = (start, step, index) => start + parseInt(step * index, 10)
-//   return [
-//     getNthVal(startR, stepR, index),
-//     getNthVal(startG, stepG, index),
-//     getNthVal(startB, stepB, index)
-//   ]
-
-// }
-
 export default class extends Component {
   constructor(props) {
     super(props)
@@ -88,38 +64,10 @@ export default class extends Component {
   randomRangeInt = (min, max) => Math.floor(Math.random() * (max - min) + min)
   labels = {}
   regions = {
-    'ap-3': {
-      'color': { // bluish
-        start: [0, 0, 204],
-        end: [102, 204, 255],
-        size: 0
-      }
-    },
     'demo': {
       color: { // greenish
         start: [100, 50, 0],
         end: [255, 204, 50],
-        size: 0
-      }
-    },
-    'eu-3': {
-      color: { // purplish
-        start: [153, 0, 204],
-        end: [204, 204, 255],
-        size: 0
-      }
-    },
-    'us': {
-      color: { // orange
-        start: [204, 122, 0],
-        end: [255, 224, 179],
-        size: 0
-      }
-    },
-    'us-3': {
-      color: { // redish
-        start: [153, 0, 0],
-        end: [255, 128, 128],
         size: 0
       }
     }
@@ -165,7 +113,6 @@ export default class extends Component {
             const rc = this.regions[host.region].color
             // color algorithm change based on
             // https://stackoverflow.com/questions/10014271/generate-random-color-distinguishable-to-humans
-            //const c = getNthRGBTriple(rc.start, rc.end, rc.size, host.nthInRegion)
             const c = host.nthInRegion * (360 / (rc.size < 1 ? 1 : rc.size)) % 360
             data.datasets.push({
               label: host.label,
