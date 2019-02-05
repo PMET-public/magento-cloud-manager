@@ -58,20 +58,12 @@ export default class extends Component {
   }
 
   maxDays = 10000
+  defaultDays = 7
   dayOpts = [1, 7, 14, 30, 180]
   msInDay = 1000 * 24 * 60 * 60
   randomRange = (min, max) => Math.random() * (max - min) + min
   randomRangeInt = (min, max) => Math.floor(Math.random() * (max - min) + min)
   labels = {}
-  regions = {
-    'demo': {
-      color: { // greenish
-        start: [100, 50, 0],
-        end: [255, 204, 50],
-        size: 0
-      }
-    }
-  }
 
   fetchData = days => {
     fetch('/hosts-states-historic?days=' + days, {credentials: 'same-origin'})
@@ -87,17 +79,27 @@ export default class extends Component {
           let minX = 0
           let maxY = 0
 
+          const regions = {
+            'demo': {
+              color: { // greenish
+                start: [100, 50, 0],
+                end: [255, 204, 50],
+                size: 0
+              }
+            }
+          }
+
           // group rows by host
           res.forEach(row => {
             if (typeof hostsData[row.host_id] === 'undefined') {
               hostsData[row.host_id] = []
-              const nthInRegion = this.regions[row.region].color.size
+              const nthInRegion = regions[row.region].color.size
               hosts[row.host_id] = {
                 label: row.region + ' ' + row.host_id,
                 region: row.region,
                 nthInRegion: nthInRegion
               }
-              this.regions[row.region].color.size = nthInRegion + 1
+              regions[row.region].color.size = nthInRegion + 1
             }
             // convert timestamp into "days ago"
             // use Math.round(x * 100) / 100 for 2 decimal places
@@ -108,12 +110,12 @@ export default class extends Component {
             hostsData[row.host_id].push({x: x, y: y})
           })
 
-          Object.entries(hostsData).forEach(([key, val], index) => {
-            const host = hosts[key]
-            const rc = this.regions[host.region].color
+          Object.entries(hostsData).forEach(([host_id, val], index) => {
+            const host = hosts[host_id]
+            const rc = regions[host.region].color
             // color algorithm change based on
             // https://stackoverflow.com/questions/10014271/generate-random-color-distinguishable-to-humans
-            const c = host.nthInRegion * (360 / (rc.size < 1 ? 1 : rc.size)) % 360
+            const c = host_id * (360 / (rc.size < 1 ? 1 : rc.size)) % 360
             data.datasets.push({
               label: host.label,
               fill: false,
@@ -166,7 +168,7 @@ export default class extends Component {
   }
 
   componentDidMount() {
-    this.fetchData(7)
+    this.fetchData(this.defaultDays)
     this.forceUpdate()
   }
 
@@ -176,17 +178,17 @@ export default class extends Component {
 
   render() {
     return this.state.isLoaded ? (
-      <div>
+      <div style={{height: '80%'}}>
         <h2>Historic Utilization</h2>
         Show usage for
         <select onChange={event => this.fetchData(event.target.value)}>
-          <option value="1">1 day</option>
-          <option value="7">1 wk</option>
-          <option value="14">2 wk</option>
-          <option value="30">1 mo</option>
+          <option value="1" selected={ 1 === this.defaultDays}>1 day</option>
+          <option value="7" selected={ 7 === this.defaultDays}>1 wk</option>
+          <option value="14" selected={ 14 === this.defaultDays}>2 wk</option>
+          <option value="30" selected={ 30 === this.defaultDays}>1 mo</option>
           <option value={this.maxDays}>all time</option>
         </select>
-        <Scatter data={this.state.data} options={this.state.options} height={250} ref={this.chartRefCallback} />
+        <Scatter data={this.state.data} options={this.state.options} ref={this.chartRefCallback} />
         {/* <div dangerouslySetInnerHTML={{__html: this.state.legendHtml}} /> */}
       </div>
     ) : (
