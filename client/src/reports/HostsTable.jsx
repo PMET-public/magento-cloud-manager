@@ -43,7 +43,7 @@ export default class extends Component { // eslint-disable-line react/display-na
             })
         }}
         minRows={0}
-        defaultPageSize={10}
+        defaultPageSize={20}
         filterable
         defaultFilterMethod={this.matchRow}
         className={'-striped -highlight hosts-current-table'}
