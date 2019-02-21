@@ -58,6 +58,26 @@ export default class extends Component { // eslint-disable-line react/display-na
             className: 'right',
             Cell: cell => cell.value
           },
+          // if masters and children are ever segregated again, this may be useful
+          // {
+          //   Header: 'Masters?',
+          //   accessor: 'host_id',
+          //   filterMethod: (filter, row) => {
+          //     return filter.value === 'all' ? true : filter.value === row[filter.id]
+          //   },
+          //   Filter: ({filter, onChange}) => (
+          //     <select
+          //       onChange={event => onChange(event.target.value)}
+          //       style={{width: '100%'}}
+          //       value={filter ? filter.value : 'all'}>
+          //       <option value="">Show All</option>
+          //       <UniqueOptions data={this.state.data} accessor={'region'} />
+          //     </select>
+          //   ),
+          //   maxWidth: calcWidth(5),
+          //   className: 'right',
+          //   Cell: cell => cell.value
+          // },
           {
             Header: 'Cotenants',
             accessor: 'cotenants',
