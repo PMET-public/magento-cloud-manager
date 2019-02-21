@@ -124,7 +124,7 @@ const updateEnvHostRelationships = () => {
 exports.updateEnvHostRelationships = updateEnvHostRelationships
 
 const getCotenantGroups = () => {
-  // identify cotenants - envs on the same host when they were last checked since
+  // identify cotenants: currently active envs on the same host when they were last checked since
   // their boot time, # cpus, & ip address were the same at that time.
   // (ordered by region to keep hosts in the same region together when enumerated)
   const sql = `SELECT region, GROUP_CONCAT(hs.proj_env_id) cotenants, hs.cpus, hs.boot_time, hs.ip, hs.load_avg_15, 
@@ -141,9 +141,10 @@ LEFT JOIN
 (SELECT e.id environment_id, project_id, region 
  FROM environments e 
  LEFT JOIN projects p ON p.id = e.project_id
- WHERE e.active = 1 
+ WHERE e.active = 1
+  AND p.active = 1 
   AND e.missing = 0
-  AND p.active = 1
+  AND (e.failure = 0 OR e.failure IS null)
  ) pe 
 ON pe.project_id || ':' || pe.environment_id = proj_env_id
 WHERE pe.region is not null) hs
