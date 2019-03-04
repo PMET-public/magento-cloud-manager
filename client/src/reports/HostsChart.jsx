@@ -83,9 +83,12 @@ export default class extends Component {
             'demo': {
               color: { // greenish
                 start: [100, 50, 0],
-                end: [255, 204, 50],
-                size: 0
-              }
+                end: [255, 204, 50]
+              },
+              size: 0
+            },
+            'us': {
+              size: 0
             }
           }
 
@@ -93,13 +96,13 @@ export default class extends Component {
           res.forEach(row => {
             if (typeof hostsData[row.host_id] === 'undefined') {
               hostsData[row.host_id] = []
-              const nthInRegion = regions[row.region].color.size
+              const nthInRegion = regions[row.region].size
               hosts[row.host_id] = {
                 label: row.region + ' ' + row.host_id,
                 region: row.region,
                 nthInRegion: nthInRegion
               }
-              regions[row.region].color.size = nthInRegion + 1
+              regions[row.region].size = nthInRegion + 1
             }
             // convert timestamp into "days ago"
             // use Math.round(x * 100) / 100 for 2 decimal places
@@ -112,10 +115,10 @@ export default class extends Component {
 
           Object.entries(hostsData).forEach(([host_id, val], index) => {
             const host = hosts[host_id]
-            const rc = regions[host.region].color
+            const rs = regions[host.region].size
             // color algorithm change based on
             // https://stackoverflow.com/questions/10014271/generate-random-color-distinguishable-to-humans
-            const c = host_id * (360 / (rc.size < 1 ? 1 : rc.size)) % 360
+            const c = host_id * (360 / (rs < 1 ? 1 : rs)) % 360
             data.datasets.push({
               label: host.label,
               fill: false,
