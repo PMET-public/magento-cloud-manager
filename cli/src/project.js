@@ -103,7 +103,7 @@ const getProjEnvsFromDB = project => {
 }
 
 const discoverEnvs = async project => {
-  const cmd = `${MC_CLI} environment:list -p ${project} 2>/dev/null | sed '1,3d;$d'`
+  const cmd = `${MC_CLI} environment:list --format=tsv --no-header -p ${project}`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(async ({stdout, stderr}) => {
@@ -116,8 +116,8 @@ const discoverEnvs = async project => {
       stdout
         .trim()
         .split('\n')
-        .map(row => row.split('|'))
-        .forEach(([empty1, environment, name, status, empty2]) => {
+        .map(row => row.split('\t'))
+        .forEach(([environment, name, status]) => {
           name = name.trim()
           status = status.trim()
           const preceedingSpaces = environment.search(/\S/)
