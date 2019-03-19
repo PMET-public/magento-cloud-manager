@@ -152,7 +152,10 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
 exports.deployEnvFromTar = deployEnvFromTar
 
 
-const rebuildAndRedeployUsingDummyFile = (project, environment) => {
+const rebuildAndRedeployUsingDummyFile = async (project, environment, tarFile, reset = false) => {
+  if (reset) {
+    await resetEnv(project, environment)
+  }
   const epochTimeInSec = new Date()/1000
   const path = `/tmp/${project}-${environment}-${epochTimeInSec}`
   const cmd = `${MC_CLI} get --yes -e ${environment} ${project} "${path}"

@@ -322,7 +322,7 @@ yargs.command(
     }
     let pidEnvs = new Set(argv['pid:env'])
     if (argv.force) {
-      return pLimitForEachHandler(4, rebuildAndRedeployUsingDummyFile, pidEnvs)
+      return pLimitForEachHandler(4, rebuildAndRedeployUsingDummyFile, pidEnvs, additionalArgs)
     }
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, deployEnvFromTar, pidEnvs, additionalArgs)
