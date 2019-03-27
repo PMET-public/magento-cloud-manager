@@ -11,13 +11,13 @@ perl -pe 's/" \($/_new" \(/' cloud.sql > $dir/1-create-new-tables.sql
 
 # insert old values into new tables
 perl -ne 's/^.`(.*)`.*/\1/ and print "$1, "; 
-  s/CREATE TABLE..(.*)".*$/\n${1} (/ and chomp and print' cloud.sql > $dir/2-copy-into-new-tables.sql
+  s/CREATE TABLE.*"(.*)".*$/\n${1} (/ and chomp and print' cloud.sql > $dir/2-copy-into-new-tables.sql
 
 perl -i -ne 's/^(.*?) \((.*), $/insert into ${1}_new \(${2}\) select * from ${1};/
   and print' $dir/2-copy-into-new-tables.sql
 
 # drop old tables and rename new tables
-perl -ne 's/^CREATE TABLE "(.*)".*$/DROP TABLE ${1}; ALTER TABLE ${1}_new RENAME TO ${1};/ 
+perl -ne 's/^CREATE TABLE.*"(.*)".*$/DROP TABLE ${1}; ALTER TABLE ${1}_new RENAME TO ${1};/ 
   and print' cloud.sql > $dir/3-drop-old-rename-new-tables.sql
 
 echo -n "Backing up db ... "
