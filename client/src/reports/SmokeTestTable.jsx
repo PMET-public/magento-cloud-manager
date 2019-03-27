@@ -117,6 +117,21 @@ export default class extends Component {
     }
   }
 
+  cronFilter = (filter, row) => {
+    const cronTime = parseInt(row[filter.id],10)
+    const testTime = parseInt(row['timestamp'],10)
+    switch (filter.value) {
+      case 'passing':
+        return testTime - cronTime <= 900
+      case 'failing':
+        return testTime - cronTime > 900
+      case 'untested':
+        return row[filter.id] === null
+      default:
+        return true
+    }
+  }
+
   average = ({data, column}) => {
     let sum = 0
     let count = 0
@@ -807,6 +822,16 @@ export default class extends Component {
                   maxWidth: calcWidth(3),
                   className: 'right',
                   Filter: this.createFilterOptionsFromAccessor('http_status'),
+                },
+                {
+                  Header: 'Cron',
+                  accessor: 'last_cron_success',
+                  // was cron successfully run in the last 15 min before the smoke test
+                  Cell: cell => this.validate(cell, cell => cell.original.timestamp - cell.value < 900, this.checkIcon, this.errorIcon),
+                  maxWidth: calcWidth(2),
+                  className: 'right',
+                  Filter: this.createFilterOptions(this.passFailFilters),
+                  filterMethod: this.cronFilter
                 },
                 {
                   Header: 'All indexes valid',
