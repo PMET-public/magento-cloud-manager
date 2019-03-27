@@ -49,6 +49,10 @@ const smokeTestApp = async (project, environment = 'master') => {
       SELECT \\"last_login_admin\\", UNIX_TIMESTAMP(logdate) FROM admin_user WHERE username != \\"${magentoSIAdminUser}\\"
         ORDER BY logdate DESC limit 1;
     "
+
+    last_cron_success=$(perl -0777 -ne "/[\\S\\s]*\\n\\[([^.]*)[\\S\\s]*Ran jobs by schedule/ and print \\$1" /var/log/cron.log)
+    echo last_cron_success $(date --date="$last_cron_success" +%s)
+
     # use curl -I for just headers using HTTP HEAD
     # use curl -sD - -o /dev/null  for headers (-D -: dump headers to stdout) using HTTP GET
     http_status=$(curl -sI localhost | sed -n "s/HTTP\\/1.1 \\([0-9]*\\).*/\\1/p")
