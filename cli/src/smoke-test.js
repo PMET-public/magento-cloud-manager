@@ -51,7 +51,7 @@ const smokeTestApp = async (project, environment = 'master') => {
     "
 
     last_cron_success=$(perl -0777 -ne "/[\\S\\s]*\\n\\[([^.]*)[\\S\\s]*Ran jobs by schedule/ and print \\$1" /var/log/cron.log)
-    echo last_cron_success $(date --date="$last_cron_success" +%s)
+    echo last_cron_success $(test -z "$last_cron_success" && echo NULL ||  date --date="$last_cron_success" +%s)
 
     # use curl -I for just headers using HTTP HEAD
     # use curl -sD - -o /dev/null  for headers (-D -: dump headers to stdout) using HTTP GET
@@ -122,10 +122,10 @@ exports.smokeTestApp = smokeTestApp
 const getUntestedEnvs = () => {
   // live envs w/o entries in smoke_tests
   const sql = `SELECT e.project_id || ':' || e.id proj_env_id FROM
-	(SELECT *
-	  FROM environments e 
+  (SELECT *
+    FROM environments e 
     LEFT JOIN projects p ON e.project_id = p.id
-	  WHERE e.active = 1 AND p.active = 1 AND e.missing = 0 AND (e.failure = 0 OR e.failure IS NULL)) e
+    WHERE e.active = 1 AND p.active = 1 AND e.missing = 0 AND (e.failure = 0 OR e.failure IS NULL)) e
   LEFT JOIN smoke_tests s ON e.id = s.environment_id AND e.project_id = s.project_id 
   WHERE s.id IS NULL`
   const result = db
