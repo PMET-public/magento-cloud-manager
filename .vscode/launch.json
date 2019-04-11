@@ -54,6 +54,17 @@
       "type": "node",
       "outputCapture": "std",
       "request": "launch",
+      "name": "Generate css for cloud",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "cloud:gen-css",
+        "-v"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
       "name": "Smoke test all applications (verbose)",
       "program": "${workspaceFolder}/cli/bin/mcm",
       "args": [

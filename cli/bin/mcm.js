@@ -14,6 +14,7 @@ const {updateProject, getProjectsFromApi} = require('../src/project')
 const {smokeTestApp, getUntestedEnvs} = require('../src/smoke-test')
 const {searchActivitiesForFailures} = require('../src/activity')
 const {addCloudProjectKeyToGitlabKeys} = require('../src/gitlab')
+const {generateCss} = require('../src/cloud')
 const {
   deleteInactiveEnvs,
   deleteEnv,
@@ -199,6 +200,16 @@ yargs
     type: 'boolean',
     coerce: coercer
   })
+
+yargs.command(
+  ['cloud:gen-css', 'cp'],
+  'Generate css for chrome extension to publically publish',
+  () => {},
+  argv => {
+    verifyOnlyArg(argv)
+    generateCss()
+  }
+)
 
 yargs.command(
   ['env:backup [pid:env...]', 'eb'],
