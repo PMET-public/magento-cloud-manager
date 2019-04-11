@@ -2,6 +2,6 @@
 id_rsa.magento
 node_modules
 *.bak
-*.db
+*.db*
 .DS_Store
 *.log
