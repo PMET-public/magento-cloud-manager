@@ -17,13 +17,16 @@ const generateCss = () => {
 
   const envVersions = db.prepare(sql).all()
   logger.mylog('debug', envVersions)
-  let css = '.menu .nav-list a:not(.caret)::after { font-size: 10px; color: #f26322; }'
+  let css = '.menu .nav-list a:not(.caret)::after { font-size: 10px; }'
   envVersions.forEach(row => {
     let envHref = '/projects/' + row.project_id + '/environments/' +  row.environment_id
-    css += '\n.menu .nav-list a[href="' + envHref + '"]:not(.caret)::after { content: "' + row.ee_composer_version + '"; }'
+    css += '\n.menu .nav-list a[href="' + envHref + '"]:not(.caret)::after {'
     if (row.ee_composer_version === '2.3.1') {
-      css += '\n.menu .nav-list a[href="' + envHref + '"]:not(.caret)::after { content: "✔"; color: #79a22e; }'
+      css += 'content: "' + row.ee_composer_version + ' ✔"; color: #79a22e;'
+    } else {
+      css += 'content: "' + row.ee_composer_version + '"; color: #f26322;'
     }
+    css += '}'
   })
   logger.mylog('info', css)
   return css

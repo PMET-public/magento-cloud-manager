@@ -202,7 +202,7 @@ yargs
   })
 
 yargs.command(
-  ['cloud:gen-css', 'cp'],
+  ['cloud:gen-css', 'cg'],
   'Generate css for chrome extension to publically publish',
   () => {},
   argv => {
