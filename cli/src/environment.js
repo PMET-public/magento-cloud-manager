@@ -12,6 +12,7 @@ const updateEnvironmentFromApi = async (project, environment = 'master') => {
       const active = /\nstatus\s+(active|dirty)/.test(stdout) ? 1 : 0
       const createdAt = Date.parse(stdout.replace(/[\s\S]*created_at\t(\S*)[\s\S]*/, '$1')) / 1000
       // be careful to preserve 'failure' and 'branch_level' on existing envs when using INSERT OR REPLACE
+      // REPLACE is essentially deletion followed by insertion
       // however if the MC_CLI cmd succeeded the env is not missing (0)
       const sql = `INSERT OR REPLACE INTO environments (id, project_id, title, machine_name, active, last_created_at, missing, failure, branch_level) 
       VALUES (?, ?, ?, ?, ?, ?, 0,
