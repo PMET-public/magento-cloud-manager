@@ -265,7 +265,7 @@
       "type": "node",
       "outputCapture": "std",
       "request": "launch",
-      "name": "Sync envs",
+      "name": "Sync envs testing master patterns",
       "program": "${workspaceFolder}/cli/bin/mcm",
       "args": [
         "env:sync",
@@ -273,6 +273,17 @@
         "xy4itwbmg2khk:master",
         "xy4itwbmg2khk:test2",
         "xy4itwbmg2khk:test3"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Sync env",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:sync",
+        "6iqrsmlqhxefq:East"
       ]
     },
     {
@@ -307,7 +318,9 @@
       "args": [
         "project:find-failures",
         "-v",
-        "j7mn26kjab6my"
+        "-t",
+        "0",
+        "34gqyvr5hijbu"
       ]
     },
     {
