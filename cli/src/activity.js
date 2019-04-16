@@ -72,18 +72,22 @@ const searchActivitiesForFailures = async project => {
     const branchActivities = await getActivitiesFromApi(project, 'environment.branch')
     const pushActivities = await getActivitiesFromApi(project, 'environment.push')
     const redeployActivities = await getActivitiesFromApi(project, 'environment.redeploy')
+    const syncActivities = await getActivitiesFromApi(project, 'environment.synchronize')
     const branchResults = parseActivityList(branchActivities)
     const pushResults = parseActivityList(pushActivities)
     const redeployResults = parseActivityList(redeployActivities)
+    const syncResults = parseActivityList(syncActivities)
     const combinedSuccesses = mergeMostRecentActivityResultByEnv([
       branchResults.successes,
       pushResults.successes,
-      redeployResults.successes
+      redeployResults.successes,
+      syncResults.successes
     ])
     const combinedFailures = mergeMostRecentActivityResultByEnv([
       branchResults.failures,
       pushResults.failures,
-      redeployResults.failures
+      redeployResults.failures,
+      syncResults.failures
     ])
     for (let environment in combinedFailures) {
       const value =
