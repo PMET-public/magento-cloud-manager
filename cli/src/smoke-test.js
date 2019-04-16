@@ -43,7 +43,6 @@ const smokeTestApp = async (project, environment = 'master') => {
       SELECT \\"store_count\\", COUNT(*) FROM store;
       SELECT \\"order_count\\", COUNT(*) FROM sales_order;
       SELECT \\"cms_block_count\\", COUNT(*) FROM cms_block;
-      SELECT \\"template_count\\", COUNT(*) FROM gene_bluefoot_stage_template;
       SELECT \\"last_login_customer\\", UNIX_TIMESTAMP(last_login_at) FROM customer_log 
         ORDER BY last_login_at DESC limit 1;
       SELECT \\"last_login_admin\\", UNIX_TIMESTAMP(logdate) FROM admin_user WHERE username != \\"${magentoSIAdminUser}\\"

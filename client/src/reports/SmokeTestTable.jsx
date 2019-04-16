@@ -957,13 +957,6 @@ export default class extends Component {
                   Cell: cell => <div>{cell.value}</div>,
                   maxWidth: calcWidth(3),
                   className: 'right'
-                },
-                {
-                  Header: 'Templates',
-                  accessor: 'template_count',
-                  Cell: cell => <div>{cell.value}</div>,
-                  maxWidth: calcWidth(2),
-                  className: 'right'
                 }
               ]
             },
