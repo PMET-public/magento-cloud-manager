@@ -721,7 +721,49 @@ export default class extends Component {
               ]
             },
             {
-              Header: 'Usage',
+              Header: 'App Version',
+              columns: [
+                {
+                  Header: 'EE Version',
+                  accessor: 'ee_composer_version',
+                  className: 'right',
+                  width: calcWidth(10),
+                  Filter: this.createFilterOptionsFromAccessor('ee_composer_version')
+                },
+                {
+                  Header: 'app.yaml MD5',
+                  accessor: 'app_yaml_md5',
+                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
+                  maxWidth: calcWidth(4),
+                  Filter: this.createFilterOptionsFromAccessor('app_yaml_md5')
+                },
+                {
+                  Header: 'composer.lock MD5',
+                  accessor: 'composer_lock_md5',
+                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
+                  maxWidth: calcWidth(4),
+                  Filter: this.createFilterOptionsFromAccessor('composer_lock_md5')
+                },
+                {
+                  Header: 'composer.lock Age',
+                  accessor: 'composer_lock_mtime',
+                  Cell: cell => this.formatDate(cell.value),
+                  maxWidth: calcWidth(5),
+                  className: 'right',
+                  Filter: this.createFilterOptions(this.commonTimeBasedFilters),
+                  filterMethod: this.createFilterMethod(this.commonTimeBasedFilters)
+                },
+                {
+                  Header: 'config.php MD5',
+                  accessor: 'config_php_md5',
+                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
+                  maxWidth: calcWidth(4),
+                  Filter: this.createFilterOptionsFromAccessor('config_php_md5')
+                }
+              ]
+            },
+            {
+              Header: 'App Usage',
               columns: [
                 {
                   Header: 'Created',
@@ -767,48 +809,6 @@ export default class extends Component {
                   className: 'right',
                   Filter: this.createFilterOptions(this.expirationFilters),
                   filterMethod: this.createFilterMethod(this.expirationFilters)
-                }
-              ]
-            },
-            {
-              Header: 'Version',
-              columns: [
-                {
-                  Header: 'EE Version',
-                  accessor: 'ee_composer_version',
-                  className: 'right',
-                  width: calcWidth(10),
-                  Filter: this.createFilterOptionsFromAccessor('ee_composer_version')
-                },
-                {
-                  Header: 'app.yaml MD5',
-                  accessor: 'app_yaml_md5',
-                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                  maxWidth: calcWidth(4),
-                  Filter: this.createFilterOptionsFromAccessor('app_yaml_md5')
-                },
-                {
-                  Header: 'composer.lock MD5',
-                  accessor: 'composer_lock_md5',
-                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                  maxWidth: calcWidth(4),
-                  Filter: this.createFilterOptionsFromAccessor('composer_lock_md5')
-                },
-                {
-                  Header: 'composer.lock Age',
-                  accessor: 'composer_lock_mtime',
-                  Cell: cell => this.formatDate(cell.value),
-                  maxWidth: calcWidth(5),
-                  className: 'right',
-                  Filter: this.createFilterOptions(this.commonTimeBasedFilters),
-                  filterMethod: this.createFilterMethod(this.commonTimeBasedFilters)
-                },
-                {
-                  Header: 'config.php MD5',
-                  accessor: 'config_php_md5',
-                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                  maxWidth: calcWidth(4),
-                  Filter: this.createFilterOptionsFromAccessor('config_php_md5')
                 }
               ]
             },
@@ -1109,7 +1109,6 @@ export default class extends Component {
                     }
                     a = parseDiff(a)
                     b = parseDiff(b)
-
                     if (a > b) {
                       return 1;
                     }
@@ -1120,7 +1119,7 @@ export default class extends Component {
                   }
                 },
                 {
-                  Header: 'When',
+                  Header: 'Updated',
                   accessor: 'timestamp',
                   Cell: cell => cell.value ? moment(new Date(cell.value * 1000)).fromNow() : '',
                   maxWidth: calcWidth(5),

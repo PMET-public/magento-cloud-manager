@@ -50,7 +50,7 @@ class DrawerContent extends Component {
               <ListItemText classes={{primary: classes.primary}} inset primary="Response times" />
             </MenuItem>
           </Link>
-          <Link to={'/smoke-test-table'}>
+          <Link to={'/environments-table'}>
             <MenuItem className={classes.menuItem}>
               <ListItemIcon className={classes.icon}>
                 <Icon color="secondary">list</Icon>

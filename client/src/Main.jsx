@@ -6,7 +6,7 @@ import styles from './style/mui-styles'
 import HostsTable from './reports/HostsTable'
 import HostsChart from './reports/HostsChart'
 import ResponseTimesChart from './reports/ResponseTimesChart'
-import SmokeTestTable from './reports/SmokeTestTable'
+import EnvironmentsTable from './reports/EnvironmentsTable'
 
 class Main extends Component {
   render() {
@@ -18,7 +18,7 @@ class Main extends Component {
         <Route path={'/hosts-table'} component={HostsTable} />
         <Route path={'/hosts-chart'} component={HostsChart} />
         <Route path={'/response-times-chart'} component={ResponseTimesChart} />
-        <Route path={'/smoke-test-table'} component={SmokeTestTable} />
+        <Route path={'/environments-table'} component={EnvironmentsTable} />
       </main>
     )
   }
