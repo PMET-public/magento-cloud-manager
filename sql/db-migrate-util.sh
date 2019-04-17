@@ -6,7 +6,7 @@ n=$((lastDir+1))
 dir=dbmigrate$(printf "%02d" $n)
 mkdir $dir
 
-# create new tables from originals
+# create new tables from previous
 perl -pe 's/" \($/_new" \(/' cloud.sql > $dir/1-create-new-tables.sql
 
 # insert old values into new tables
