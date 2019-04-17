@@ -745,15 +745,6 @@ export default class extends Component {
                   Filter: this.createFilterOptionsFromAccessor('composer_lock_md5')
                 },
                 {
-                  Header: 'composer.lock Age',
-                  accessor: 'composer_lock_mtime',
-                  Cell: cell => this.formatDate(cell.value),
-                  maxWidth: calcWidth(5),
-                  className: 'right',
-                  Filter: this.createFilterOptions(this.commonTimeBasedFilters),
-                  filterMethod: this.createFilterMethod(this.commonTimeBasedFilters)
-                },
-                {
                   Header: 'config.php MD5',
                   accessor: 'config_php_md5',
                   Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),

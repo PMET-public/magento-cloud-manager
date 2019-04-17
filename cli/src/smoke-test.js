@@ -123,7 +123,6 @@ const checkAppVersion = async (project, environment = 'master') => {
         s/.*magento-product-enterprise-edition-(2\\.[0-9]+\\.[0-9]+).*/\\1/ and print;
       " composer.lock | head -1)
     echo composer_lock_md5 $(md5sum composer.lock | sed "s/ .*//")
-    echo composer_lock_mtime $(stat -t composer.lock | awk "{print \\$12}")
     echo config_php_md5 $(md5sum app/etc/config.php | sed "s/ .*//")
   '`
   const result = exec(cmd)

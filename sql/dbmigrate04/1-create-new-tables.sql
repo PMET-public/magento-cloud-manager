@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS "applications" (
 	`app_yaml_md5`	TEXT NOT NULL,
 	`ee_composer_version`	TEXT,
 	`composer_lock_md5`	TEXT,
-	`composer_lock_mtime`	INTEGER NOT NULL,
+  `config_php_md5` TEXT,
 	`config_php_md5`	TEXT,
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
 	PRIMARY KEY(`project_id`, `environment_id`)
