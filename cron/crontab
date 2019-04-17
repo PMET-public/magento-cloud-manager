@@ -17,7 +17,7 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 40 0 * * * perl -le 'sleep rand 900' && $MCM_PATH env:smoke-test --quiet --untested -t 0
 
 # check certs & redeploy expiring on Sat
-0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH env:check-public-url --quiet --all -t 0
+0 1 * * 6 perl -le 'sleep rand 900' && $MCM_PATH env:check-http-status --quiet --all -t 0
 0 2 * * 6 perl -le 'sleep rand 900' && $MCM_PATH env:deploy --quiet --expiring -t 0
 
 # delete inactive every Sunday
