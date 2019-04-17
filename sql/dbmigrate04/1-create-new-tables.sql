@@ -97,7 +97,6 @@ CREATE TABLE IF NOT EXISTS "smoke_tests_new" (
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
 CREATE TABLE IF NOT EXISTS "applications" (
-	`id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
 	`project_id`	TEXT NOT NULL,
 	`environment_id`	TEXT NOT NULL,
 	`app_yaml_md5`	TEXT NOT NULL,
@@ -106,5 +105,5 @@ CREATE TABLE IF NOT EXISTS "applications" (
 	`composer_lock_mtime`	INTEGER NOT NULL,
 	`config_php_md5`	TEXT,
 	`timestamp`	DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
-	PRIMARY KEY(`id`,`project_id`)
+	PRIMARY KEY(`project_id`, `environment_id`)
 );
