@@ -546,7 +546,7 @@ export default class extends Component {
           }}
           onFetchData={(state, instance) => {
             this.setState({loading: true})
-            fetch('/smoke-tests', {credentials: 'same-origin'})
+            fetch('/environments', {credentials: 'same-origin'})
               .then(res => res.json())
               .then(res => {
                 this.setState({
