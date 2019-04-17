@@ -727,7 +727,7 @@ export default class extends Component {
                   Header: 'EE Version',
                   accessor: 'ee_composer_version',
                   className: 'right',
-                  width: calcWidth(10),
+                  width: calcWidth(6),
                   Filter: this.createFilterOptionsFromAccessor('ee_composer_version')
                 },
                 {
