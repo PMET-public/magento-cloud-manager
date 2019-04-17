@@ -15,14 +15,6 @@ const smokeTestApp = async (project, environment = 'master') => {
     # utilization based on the 1, 5, & 15 min load avg and # cpu at the start
     echo utilization_start $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
       sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")
-    echo app_yaml_md5 $(md5sum .magento.app.yaml | sed "s/ .*//")
-    echo ee_composer_version $(perl -ne "
-        s/.*magento\\/product-enterprise-edition.*:.*?\\"([^\\"]+)\\".*/\\1/ and print;
-        s/.*magento-product-enterprise-edition-(2\\.[0-9]+\\.[0-9]+).*/\\1/ and print;
-      " composer.lock | head -1)
-    echo composer_lock_md5 $(md5sum composer.lock | sed "s/ .*//")
-    echo composer_lock_mtime $(stat -t composer.lock | awk "{print \\$12}")
-    echo config_php_md5 $(md5sum app/etc/config.php | sed "s/ .*//")
     echo cumulative_cpu_percent $(ps -p 1 -o %cpu --cumulative --no-header)
     echo cpus $(nproc)
 
@@ -95,11 +87,11 @@ const smokeTestApp = async (project, environment = 'master') => {
 
     echo utilization_end $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 
       sed "s/ [0-9]*\\/.*//;s/\\(\\...\\)/\\1*100\\/$(nproc),/g;s/.$//")")
-'`
+  '`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
-      parseFormattedCmdOutputIntoDB(stdout, 'smoke_tests', ['project_id', 'environment_id'], [project, environment])
+      parseFormattedCmdOutputIntoDB(stdout, 'smoke_tests', false, ['project_id', 'environment_id'], [project, environment])
       logger.mylog('info', `Smoke test of env: ${environment} of project: ${project} completed.`)
       return true
     })
@@ -117,6 +109,43 @@ const smokeTestApp = async (project, environment = 'master') => {
   return await result
 }
 exports.smokeTestApp = smokeTestApp
+
+const checkAppVersion = async (project, environment = 'master') => {
+  const sshCmd = await getSshCmd(project, environment)
+  if (typeof sshCmd === 'undefined') {
+    return
+  }
+
+  const cmd = `${sshCmd} '
+    echo app_yaml_md5 $(md5sum .magento.app.yaml | sed "s/ .*//")
+    echo ee_composer_version $(perl -ne "
+        s/.*magento\\/product-enterprise-edition.*:.*?\\"([^\\"]+)\\".*/\\1/ and print;
+        s/.*magento-product-enterprise-edition-(2\\.[0-9]+\\.[0-9]+).*/\\1/ and print;
+      " composer.lock | head -1)
+    echo composer_lock_md5 $(md5sum composer.lock | sed "s/ .*//")
+    echo composer_lock_mtime $(stat -t composer.lock | awk "{print \\$12}")
+    echo config_php_md5 $(md5sum app/etc/config.php | sed "s/ .*//")
+  '`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .then(({stdout, stderr}) => {
+      parseFormattedCmdOutputIntoDB(stdout, 'applications', true, ['project_id', 'environment_id'], [project, environment])
+      logger.mylog('info', `Check app version of env: ${environment} of project: ${project} completed.`)
+      return true
+    })
+    .catch(error => {
+      if (typeof error.stderr !== 'undefined') {
+        if (/Specified environment not found|you successfully connected, but the service/.test(error.stderr)) {
+          setEnvironmentMissing(project, environment)
+        } else if (/not currently active/.test(error.stderr)) {
+          setEnvironmentInactive(project, environment)
+        }
+      }
+      logger.mylog('error', error.stderr || error.message)
+    })
+  return await result
+}
+exports.checkAppVersion = checkAppVersion
 
 const getUntestedEnvs = () => {
   // live envs w/o entries in smoke_tests

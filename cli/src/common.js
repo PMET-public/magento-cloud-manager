@@ -151,14 +151,14 @@ exports.fetch = function myfetch() {
 
 // this helper function takes output formatted as "column_name value\n"
 // and inserts it into the specified table
-const parseFormattedCmdOutputIntoDB = (stdout, table, additionalKeys = [], additionalVals = []) => {
+const parseFormattedCmdOutputIntoDB = (stdout, table, replace, additionalKeys = [], additionalVals = []) => {
   const cmdOutput = stdout
     .trim()
     .split('\n')
     .map(row => row.split(/[ \t](.+)/)) // split on 1st whitespace char
   const keys = cmdOutput.map(row => row[0]).concat(additionalKeys)
   const vals = cmdOutput.map(row => row[1]).concat(additionalVals)
-  const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${'?, '.repeat(keys.length).slice(0, -2)})`
+  const sql = `INSERT ${replace ? 'OR REPLACE' : ''} INTO ${table} (${keys.join(', ')}) VALUES (${'?, '.repeat(keys.length).slice(0, -2)})`
   const result = db.prepare(sql).run(...vals)
   logger.mylog('debug', result)
   return result

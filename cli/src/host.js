@@ -20,7 +20,7 @@ const updateHost = async (project, environment = 'master') => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
-      parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', ['project_id', 'environment_id'], [project, environment])
+      parseFormattedCmdOutputIntoDB(stdout, 'hosts_states', false, ['project_id', 'environment_id'], [project, environment])
       logger.mylog('info', `Host of env: ${environment} of project: ${project} updated.`)
       return true
     })

@@ -11,7 +11,7 @@ const pLimit = require('p-limit')
 const {logger, showWhoAmI, allOpsSuccessTemplate, mixedSuccessTemplate} = require('../src/common')
 const {updateHost, getSampleEnvs, updateEnvHostRelationships} = require('../src/host')
 const {updateProject, getProjectsFromApi} = require('../src/project')
-const {smokeTestApp, getUntestedEnvs} = require('../src/smoke-test')
+const {smokeTestApp, checkAppVersion, getUntestedEnvs} = require('../src/smoke-test')
 const {searchActivitiesForFailures} = require('../src/activity')
 const {addCloudProjectKeyToGitlabKeys} = require('../src/gitlab')
 const {generateCss} = require('../src/cloud')
@@ -226,7 +226,18 @@ yargs.command(
     pLimitForEachHandler(6, backup, pidEnvs)
   }
 )
-  
+
+yargs.command(['env:check-app-version [pid:env...]', 'ea'], 'Check the app version of env(s)', addSharedPidEnvOpts,
+  argv => {
+    verifyOnlyOneOf(argv, ['i', 'a', 'pid:env'])
+    let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, checkAppVersion, pidEnvs)
+    }
+    pLimitForEachHandler(6, checkAppVersion, pidEnvs)
+  }
+)
+
 yargs.command(['env:check-public-url [pid:env...]', 'ec'], 'Check the public url of env(s) for expected app response', addSharedPidEnvOpts,
   argv => {
     verifyOnlyOneOf(argv, ['i', 'a', 'pid:env'])
