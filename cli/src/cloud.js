@@ -1,4 +1,4 @@
-const {exec, execOutputHandler, db, logger, parseFormattedCmdOutputIntoDB} = require('./common')
+const {db, logger} = require('./common')
 
 const generateCss = () => {
   // identify cotenants: currently active envs on the same host when they were last checked since
