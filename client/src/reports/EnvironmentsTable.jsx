@@ -807,12 +807,12 @@ export default class extends Component {
               Header: 'App Checks',
               columns: [
                 {
-                  Header: 'HTTP Status',
-                  accessor: 'http_status',
+                  Header: 'Localhost HTTP Status',
+                  accessor: 'localhost_http_status',
                   Cell: cell => this.validate(cell.value, v => v === 302, this.checkIcon, this.errorIcon),
                   maxWidth: calcWidth(3),
                   className: 'right',
-                  Filter: this.createFilterOptionsFromAccessor('http_status'),
+                  Filter: this.createFilterOptionsFromAccessor('localhost_http_status'),
                 },
                 {
                   Header: 'Cron',

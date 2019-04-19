@@ -46,11 +46,11 @@ const smokeTestApp = async (project, environment = 'master') => {
 
     # use curl -I for just headers using HTTP HEAD
     # use curl -sD - -o /dev/null  for headers (-D -: dump headers to stdout) using HTTP GET
-    http_status=$(curl -sI localhost | sed -n "s/HTTP\\/1.1 \\([0-9]*\\).*/\\1/p")
-    echo http_status $http_status
+    localhost_http_status=$(curl -sI localhost | sed -n "s/HTTP\\/1.1 \\([0-9]*\\).*/\\1/p")
+    echo localhost_http_status $localhost_http_status
 
     # --- any value below can be NULL in the DB b/c we exit on invalid responses from the web server ---
-    test $http_status -eq 302 || exit 0
+    test $localhost_http_status -eq 302 || exit 0
     store_url=$(curl -sI localhost | sed -n "s/Location: \\(.*\\)?.*/\\1/p")
     store_html=$(curl -s $store_url)
     echo store_url_cached $(curl $store_url -o /dev/null -s -w "%{time_total}")

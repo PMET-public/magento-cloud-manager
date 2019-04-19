@@ -8,7 +8,7 @@ module.exports = (req, res) => {
       s.id, a.app_yaml_md5, a.ee_composer_version, a.composer_lock_md5, a.config_php_md5,
       s.cumulative_cpu_percent, s.not_valid_index_count, s.catalog_product_entity_count,
       s.catalog_category_product_count, s.admin_user_count, s.store_count, s.order_count, s.cms_block_count,
-      s.http_status, s.store_url_uncached,
+      s.localhost_http_status, s.store_url_uncached,
       s.store_url_cached, s.cat_url, s.cat_url_product_count, s.cat_url_uncached, s.cat_url_partial_cache,
       s.cat_url_cached, s.search_url, s.search_url_partial_cache, s.search_url_product_count,
       s.german_check, s.venia_check, s.admin_check, s.last_cron_success, s.error_logs, s.last_deploy_log, s.cpus, 

@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS "smoke_tests_new" (
   `last_login_customer` INTEGER,
   `last_login_admin` INTEGER,
   `last_cron_success` INTEGER,
-  `http_status` INTEGER NOT NULL,
+  `localhost_http_status` INTEGER NOT NULL,
   `store_url_uncached` INTEGER,
   `store_url_cached` INTEGER,
   `cat_url` TEXT,
