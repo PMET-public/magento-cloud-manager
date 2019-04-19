@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS "environments" (
   `failure` BOOLEAN CHECK(failure in ( 0 , 1 )),
   `missing` BOOLEAN CHECK(missing in ( 0 , 1 )),
   `last_created_at` INTEGER NOT NULL,
-  `branch_level`  INTEGER,
+  `branch_level` INTEGER,
   `timestamp` DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
   PRIMARY KEY(`id`,`project_id`)
 );
@@ -64,11 +64,6 @@ CREATE TABLE IF NOT EXISTS "smoke_tests" (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   `project_id` TEXT NOT NULL,
   `environment_id` TEXT NOT NULL,
-  `app_yaml_md5` TEXT NOT NULL,
-  `ee_composer_version` TEXT,
-  `composer_lock_md5` TEXT,
-  `composer_lock_mtime` INTEGER NOT NULL,
-  `config_php_md5` TEXT,
   `cumulative_cpu_percent` REAL NOT NULL,
   `not_valid_index_count` INTEGER,
   `catalog_product_entity_count` INTEGER,
@@ -77,7 +72,6 @@ CREATE TABLE IF NOT EXISTS "smoke_tests" (
   `store_count` INTEGER,
   `order_count` INTEGER,
   `cms_block_count` INTEGER,
-  `template_count` INTEGER,
   `last_login_customer` INTEGER,
   `last_login_admin` INTEGER,
   `last_cron_success` INTEGER,
@@ -101,4 +95,14 @@ CREATE TABLE IF NOT EXISTS "smoke_tests" (
   `utilization_start` TEXT NOT NULL,
   `utilization_end` TEXT,
   `timestamp` DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
+);
+CREATE TABLE IF NOT EXISTS "applications" (
+  `project_id` TEXT NOT NULL,
+  `environment_id` TEXT NOT NULL,
+  `app_yaml_md5` TEXT NOT NULL,
+  `ee_composer_version` TEXT,
+  `composer_lock_md5` TEXT,
+  `config_php_md5` TEXT,
+  `timestamp` DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
+  PRIMARY KEY(`project_id`, `environment_id`)
 );
