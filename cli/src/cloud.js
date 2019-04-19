@@ -27,8 +27,12 @@ const generateCss = async () => {
   const result = await Promise.all(promises)
   logger.mylog('debug', result)
 
-  const sql = `SELECT a.project_id, p.title project_title, a.environment_id, a.ee_composer_version, a.app_yaml_md5, a.composer_lock_md5, a.config_php_md5, a.timestamp
+  const sql = `SELECT a.project_id, a.environment_id, w.expiration, w.http_status, w.base_url_found_in_headers_or_body base_url_found, 
+      w.timeout, w.timestamp web_timestamp,
+      a.ee_composer_version, a.app_yaml_md5, a.composer_lock_md5, a.config_php_md5, a.timestamp version_timestamp
     FROM applications a, environments e, projects p
+    LEFT JOIN web_statuses w ON 
+        w.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
     WHERE p.active = 1
       and p.region = 'demo'
       and p.id = e.project_id
@@ -36,13 +40,12 @@ const generateCss = async () => {
       and e.id = a.environment_id
       and e.active = 1
       and e.missing = 0
-  `
+    `
 
   const envVersions = db.prepare(sql).all()
   logger.mylog('debug', envVersions)
 
   let css = '.menu .nav-list a:not(.caret)::after { font-size: 10px; }'
-  let timestamp = 0
 
   envVersions.forEach(row => {
 
@@ -60,25 +63,24 @@ const generateCss = async () => {
       }
     }
 
-    if (row.timestamp > timestamp) {
-      timestamp = row.timestamp
-    }
     let envHref = '/projects/' + row.project_id + '/environments/' +  row.environment_id
-    css += '\n.menu .nav-list a[href="' + envHref + '"]:not(.caret)::after {'
-    if (latestAvailable) {
-      css += 'content: "' + row.ee_composer_version + ' ✔"; color: #79a22e;'
+    css += '\n.menu .nav-list a[href="' + envHref + '"]:not(.caret)::after { content: "' +  row.ee_composer_version
+    if (row.base_url_found === 0 || row.base_url_found === null) {
+      css += ' ??"; color: #e12c27; background-color: #5b5856; padding: 2px 4px;'
+    } else if (latestAvailable) {
+      css += ' ✔"; color: #79a22e;'
     } else {
-      css += 'content: "' + row.ee_composer_version + ' ⇪"; color: #f26322;'
+      css += ' ⇪"; color: #f26322;'
     }
     css += '}'
   })
   css += `\nul#environments::after {
     color: #e0c56d;
-    content: '\\AVersion info last updated:\\A${new Date(timestamp * 1000).toGMTString()}\\A';
+    content: 'Env available checked hourly, versions checked every 6 hrs. Last generated: ${new Date().toGMTString()}';
     white-space: pre-wrap;
     font-size: 0.8em;
     font-weight: normal;
-    padding-left: 20px;
+    padding: 4em 1em 0 2em;
   }`
   logger.mylog('info', css)
   return css
