@@ -215,18 +215,6 @@ const getExpiringPidEnvs = () => {
 }
 exports.getExpiringPidEnvs = getExpiringPidEnvs
 
-const checkExpired = response => {
-  const certificateInfo = response.connection.getPeerCertificate()
-  const expirationDate = new Date(certificateInfo.valid_to)
-  const expirationSecs = Math.floor(expirationDate / 1000)
-  const sql = `INSERT OR REPLACE INTO web_statuses (host_name, expiration) 
-    VALUES ('${response.connection.servername}', ${expirationSecs})`
-  const result = db.prepare(sql).run()
-  logger.mylog('debug', result)
-  return expirationDate < new Date()
-}
-exports.checkExpired = checkExpired
-
 const checkStatusCode = response => {
   const result = {
     logLevel: 'error',
@@ -273,7 +261,10 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
   const url = `https://${hostName}/`
   return await new Promise((resolve, reject) => {
     let request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, async response => {
-      const isExpired = checkExpired(response)
+      const certificateInfo = response.connection.getPeerCertificate()
+      const expirationDate = new Date(certificateInfo.valid_to)
+      const expirationSecs = Math.floor(expirationDate / 1000)
+      const isExpired = expirationDate < new Date()
       if (isExpired) {
         logger.mylog('error', `Expired. Project: ${project} env: ${environment} ${url}`)
       }
@@ -292,11 +283,27 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
           logger.mylog('debug', `Response body matches base url. Project: ${project} env: ${environment} ${url}`)
         }
       }
+
+      const sql = `INSERT OR REPLACE INTO web_statuses (host_name, expiration, http_status, base_url_found_in_headers_or_body, timeout) 
+        VALUES ('${hostName}', ${expirationSecs}, ${response.statusCode}, 
+          ${bodyMatches ? '1' : '0'},
+          0)`
+      const result = db.prepare(sql).run()
+      logger.mylog('debug', result)
+
       resolve(!isExpired && statusCodeResult.logLevel !== 'error' && bodyMatches)
     })
     // based on a report, request.abort was not a function in setTimeout when chained 
     // so break chaining as possible solution and ensure assignment completion first
     request.setTimeout(30000, () => {
+
+      const sql = `INSERT OR REPLACE INTO web_statuses (host_name, expiration, http_status, base_url_found_in_headers_or_body, timeout) 
+        VALUES ('${hostName}', 
+          (SELECT expiration FROM web_statuses WHERE host_name = '${hostName}'),
+          null, 0, 1)`
+      const result = db.prepare(sql).run()
+      logger.mylog('debug', result)
+
       reject('Request timed out for ' + url)
       request.abort()
     }).on('error', (error) => {
