@@ -219,7 +219,7 @@ const checkExpired = response => {
   const certificateInfo = response.connection.getPeerCertificate()
   const expirationDate = new Date(certificateInfo.valid_to)
   const expirationSecs = Math.floor(expirationDate / 1000)
-  const sql = `INSERT OR REPLACE INTO cert_expirations (host_name, expiration) 
+  const sql = `INSERT OR REPLACE INTO web_statuses (host_name, expiration) 
     VALUES ('${response.connection.servername}', ${expirationSecs})`
   const result = db.prepare(sql).run()
   logger.mylog('debug', result)
