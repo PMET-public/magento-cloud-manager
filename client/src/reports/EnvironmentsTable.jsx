@@ -782,7 +782,12 @@ export default class extends Component {
                   className: 'right',
                   Filter: this.createFilterOptions(this.commonTimeBasedFilters),
                   filterMethod: this.createFilterMethod(this.commonTimeBasedFilters)
-                },
+                }
+              ]
+            },
+            {
+              Header: 'App Checks',
+              columns: [
                 {
                   Header: 'Cert Expires',
                   accessor: 'expiration',
@@ -800,12 +805,7 @@ export default class extends Component {
                   className: 'right',
                   Filter: this.createFilterOptions(this.expirationFilters),
                   filterMethod: this.createFilterMethod(this.expirationFilters)
-                }
-              ]
-            },
-            {
-              Header: 'App Checks',
-              columns: [
+                },
                 {
                   Header: 'Localhost HTTP Status',
                   accessor: 'localhost_http_status',
