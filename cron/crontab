@@ -26,7 +26,7 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 40 1 * * * perl -le 'sleep rand 900' && $MCM_PATH project:find-failures --quiet --all -t 0
 
 # check http status every hr
-0 * * * * perl -le 'sleep rand 900' && $MCM_PATH env:check-http-status --quiet --all -t 0
+0 * * * * perl -le 'sleep rand 900' && $MCM_PATH env:check-web-status --quiet --all -t 0
 
 # check app versions every 6 hrs then generate updated cloud css
 10 0,6,12,18 * * * perl -le 'sleep rand 900' && $MCM_PATH env:check-app-version --quiet --all -t 0 && $MCM_PATH cloud:gen-css | ssh -T -i /home/ese/.ssh/private-keys/id_rsa.magento zajhc7u663lak-master-7rqtwti--mymagento@ssh.demo.magento.cloud "cat > /app/pub/media/cloud-ui.css"

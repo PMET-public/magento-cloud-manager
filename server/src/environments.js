@@ -35,7 +35,7 @@ module.exports = (req, res) => {
         when p.active = 1 then 'active' 
         else 'missing' 
       end as proj_status, 
-      c.host_name, c.expiration
+      w.host_name, w.expiration
     FROM environments e
     LEFT JOIN 
       (SELECT * from smoke_tests GROUP BY project_id, environment_id ORDER BY id DESC) AS s
@@ -45,7 +45,7 @@ module.exports = (req, res) => {
         LEFT JOIN  (SELECT project_id, group_concat(email || ':' || role) user_list FROM users GROUP BY project_id) u
         ON u.project_id = p.id) p
     ON e.project_id = p.id
-    LEFT JOIN cert_expirations c ON c.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
+    LEFT JOIN web_statuses w ON w.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
     LEFT JOIN applications a ON e.id = a.environment_id and e.project_id = a.project_id
     ORDER BY last_created_at DESC`
   const rows = db.prepare(sql).all()

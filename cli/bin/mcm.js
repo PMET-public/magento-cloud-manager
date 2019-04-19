@@ -238,7 +238,7 @@ yargs.command(['env:check-app-version [pid:env...]', 'ea'], 'Check the app versi
   }
 )
 
-yargs.command(['env:check-http-status [pid:env...]', 'eh'], 'Check the http status of env(s) for expected app response', addSharedPidEnvOpts,
+yargs.command(['env:check-web-status [pid:env...]', 'ew'], 'Check the web status of env(s)', addSharedPidEnvOpts,
   argv => {
     verifyOnlyOneOf(argv, ['i', 'a', 'pid:env'])
     let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])

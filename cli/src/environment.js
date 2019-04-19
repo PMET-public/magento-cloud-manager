@@ -328,11 +328,11 @@ const getEnvsFromApi = async project => {
 exports.getEnvsFromApi = getEnvsFromApi
 
 const getAllLiveEnvsFromDB = () => {
-  const sql = `SELECT e.id environment_id, e.project_id, c.expiration
+  const sql = `SELECT e.id environment_id, e.project_id, w.expiration
     FROM environments e 
     LEFT JOIN projects p ON e.project_id = p.id
-    LEFT JOIN cert_expirations c ON 
-      c.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
+    LEFT JOIN web_statuses w ON 
+      w.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
       WHERE e.active = 1 AND p.active = 1 AND e.missing = 0 AND (e.failure = 0 OR e.failure IS null)`
   const result = db.prepare(sql).all()
   logger.mylog('debug', result)

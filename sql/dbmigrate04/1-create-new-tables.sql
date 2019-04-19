@@ -49,9 +49,12 @@ CREATE TABLE IF NOT EXISTS "environments_new" (
   `timestamp` DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
   PRIMARY KEY(`id`,`project_id`)
 );
-CREATE TABLE IF NOT EXISTS "cert_expirations_new" (
+CREATE TABLE IF NOT EXISTS "web_statuses" (
   `host_name` TEXT NOT NULL,
   `expiration` INTEGER NOT NULL,
+  `http_status` INTEGER,
+  `base_url_found_in_headers_or_body` BOOLEAN CHECK(base_url_found_in_headers_or_body in ( 0 , 1 )),
+  `timeout` BOOLEAN CHECK(timeout in ( 0 , 1 )),
   `timestamp` INTEGER NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
   PRIMARY KEY(`host_name`)
 );
