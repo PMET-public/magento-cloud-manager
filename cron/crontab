@@ -1,4 +1,5 @@
-MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
+MCM_DIR=/home/ese/magento-cloud-manager
+MCM_PATH="${MCM_DIR/cli/bin/mcm"
 
 # use perl sleep and rand functions to vary start times
 # 900 s = 15 min, 7200 s = 2hrs, 14000 s ~ 4 hrs
@@ -26,7 +27,7 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 40 1 * * * perl -le 'sleep rand 900' && $MCM_PATH project:find-failures --quiet --all -t 0
 
 # check http status every hr
-0 * * * * perl -le 'sleep rand 900' && $MCM_PATH env:check-web-status --quiet --all -t 0
+0 * * * * perl -le 'sleep rand 900' && $MCM_DIR/cron/monitor-env-urls.sh
 
 # check app versions every 6 hrs
 10 0,6,12,18 * * * perl -le 'sleep rand 900' && $MCM_PATH env:check-app-version --quiet --all -t 0 

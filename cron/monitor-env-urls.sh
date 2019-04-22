@@ -1,18 +1,26 @@
 #!/bin/bash
 
+slack_url=$(perl -nle '/slackUrl.*:\s*"(.*)"/ and print $1' "${MCM_DIR}/cli/.secrets.json")
+old_log_file="${MCM_DIR}/cron/monitoring-results.prev.log"
+new_log_file="${MCM_DIR}/cron/monitoring-results.log"
 
-# debug
-set -x
+cp "${new_log_file}" "${old_log_file}" || touch "${old_log_file}"
+"${MCM_DIR}/cli/bin/mcm" env:check-web-status --quiet --all -t 0 | grep . | sort | tee /dev/tty > "${new_log_file}"
+resolved_errors=$(diff "${old_log_file}" "${new_log_file}" | perl -ne 's/^</!/ and print')
+new_errors=$(diff "${old_log_file}" "${new_log_file}" | perl -ne 's/^>/✓/ and print')
 
-# stop on errors
-set -e
+if [[ ! -z "${resolved_errors}" ]]; then
+  error_count=$(echo "${resolved_errors}" | wc -l | xargs)
+  msg=$(echo -e "\n${error_count} resolved errors\n${resolved_errors}")
+fi
 
-MCM_DIR=$( cd $(dirname $0)/.. ; pwd -P )
+if [[ ! -z "${new_errors}" ]]; then
+  error_count=$(echo "${new_errors}" | wc -l | xargs)
+  msg=$(echo -e "${msg}\n\n${error_count} new errors\n${new_errors}")
+fi
 
-cp "${MCM_DIR}/cron/monitoring-results-latest" "${MCM_DIR}/cron/monitoring-results-old" || :
-"${MCM_DIR}/cli/bin/mcm" env:check-public-url --quiet --all -t 0 > "${MCM_DIR}/cron/monitoring-results-latest"
-diff "${MCM_DIR}/cron/monitoring-results-latest" "${MCM_DIR}/cron/monitoring-results-old"
-
-curl -X POST -H 'Content-type: application/json' --data '{"text":"@here test by khb"}' https://hooks.slack.com/services/T02V4A29Q/B6MH2KZK4/T5T
-Bz2RBhhZRTiAMCnoonFdz
+if [[ ! -z "${msg}" ]]; then
+  echo "$msg"
+  curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"@here ${msg}\"}" "${slack_url}"
+fi
 
