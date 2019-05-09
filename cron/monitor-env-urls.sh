@@ -1,5 +1,7 @@
 #!/bin/bash
 
+MCM_DIR="$( cd $(dirname $0)/.. ; pwd -P )"
+
 slack_url=$(perl -nle '/slackUrl.*:\s*"(.*)"/ and print $1' "${MCM_DIR}/cli/.secrets.json")
 old_log_file="${MCM_DIR}/cron/monitoring-results.prev.log"
 new_log_file="${MCM_DIR}/cron/monitoring-results.log"
