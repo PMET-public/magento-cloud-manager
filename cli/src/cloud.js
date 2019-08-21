@@ -3,18 +3,18 @@ const md5 = require('md5')
 
 const generateCss = async () => {
 
-  const flavors = ['ref', 'demo', 'b2b', 'pwa']
+  const tags = ['ref-RC', 'ref-GA', 'demo-RC', 'demo-GA', 'b2b-RC', 'b2b-GA', 'pwa-RC', 'pwa-GA']
   const files = [ 
-    {path: '.magento.app.yaml', col: 'app_yaml_md5'}, 
+    {path: '.magento.app.yaml', col: 'app_yaml_md5'},
     {path: 'composer.lock', col: 'composer_lock_md5'},
     {path: 'app/etc/config.php', col: 'config_php_md5'}
   ]
   const md5s = {}
   const promises = []
 
-  flavors.forEach( flavor => {
+  tags.forEach( tag => {
     files.forEach( file => {
-      const url = `https://raw.githubusercontent.com/PMET-public/magento-cloud/cur-${flavor}/${file.path}`
+      const url = `https://raw.githubusercontent.com/PMET-public/magento-cloud/${tag}/${file.path}`
       promises.push(
         fetch(url)
           .then(res => res.text())
@@ -49,17 +49,18 @@ const generateCss = async () => {
 
   envVersions.forEach(row => {
 
-    let latestAvailable
-    for (let flavor of flavors) {
-      latestAvailable = true
+    let matchesTag
+    for (let tag of tags) {
+      matchesTag = tag
       for (let file of files) {
-        if (row[file.col] !== md5s[`https://raw.githubusercontent.com/PMET-public/magento-cloud/cur-${flavor}/${file.path}`]) {
-          latestAvailable = false 
-          break // file md5 does not a match; skip to next flavor
+        if (row[file.col] !== md5s[`https://raw.githubusercontent.com/PMET-public/magento-cloud/${tag}/${file.path}`]) {
+          logger.mylog('debug', `Project: ${row.project_id}, env: ${row.environment_id} does not have the latest version of ${file.path} of tag ${tag}`)
+          matchesTag = false 
+          break // file md5 does not match; skip to next tag
         }
       }
-      if (latestAvailable) {
-        break // latestAvailble must have matched for all files' md5s in this flavor
+      if (matchesTag) {
+        break // latestAvailble must have matched for all files' md5s in this tag
       }
     }
 
@@ -68,7 +69,9 @@ const generateCss = async () => {
     if (row.base_url_found === 0 || row.base_url_found === null) {
       css += ' ??"; color: #e12c27; background-color: #5b5856; padding: 2px 4px;'
     } else if (latestAvailable) {
-      css += ' ✔"; color: #79a22e;'
+      css += ' GA ✔"; color: #79a22e;'
+    } else if (RC) {
+      css += ' RC"; color: #e0c56d;'
     } else {
       css += ' ⇪"; color: #f26322;'
     }
