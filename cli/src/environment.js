@@ -128,7 +128,8 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
         # special case: 1st time auth.json forcefully added b/c of .gitignore. subsequent runs have no affect
         git add -f auth.json
         git commit -m "commit from tar file"
-        git push -f -u $(git remote) ${environment}`
+        git branch -u $(git remote)/${environment}
+        git push -f $(git remote) HEAD:${environment}`
       const result = exec(cmd)
         .then(execOutputHandler)
         .then(({stdout, stderr}) => {
@@ -555,7 +556,7 @@ const backup = async (project, environment) => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(async ({stdout, stderr}) => {
-      console.log(stdout, stderr)
+      //console.log(stdout, stderr)
       getPathFromRemote(project, environment, stdout.replace(/[\s\S]*tarfile (.*)/,'$1').trim())
     })
     .catch(error => {
@@ -578,7 +579,7 @@ const restore = async (project, environment, localPath) => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(async ({stdout, stderr}) => {
-      console.log(stdout, stderr)
+      //console.log(stdout, stderr)
     })
     .catch(error => {
       logger.mylog('error', error)
