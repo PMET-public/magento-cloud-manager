@@ -68,7 +68,7 @@ const smokeTestApp = async (project, environment = 'master') => {
     cat_url=$(curl -s $store_url | perl -ne "s/.*?class.*?nav-[12]-1.*?href=.([^ ]+.html).*/\\1/ and print")
     if [ -n "$cat_url" ]; then
       echo cat_url $cat_url
-      echo cat_url_product_count $(curl -s $cat_url | grep "img.*class.*product-image-photo" | wc -l)
+      echo cat_url_product_count $(curl -s $cat_url | grep "src=.*product/cache" | wc -l)
       echo cat_url_cached $(curl $cat_url -o /dev/null -s -w "%{time_total}")
       php bin/magento cache:flush > /dev/null
       echo cat_url_uncached $(curl $cat_url -o /dev/null -s -w "%{time_total}")
@@ -79,7 +79,7 @@ const smokeTestApp = async (project, environment = 'master') => {
     search_url="\${store_url}catalogsearch/result/?q=accessory"
     echo search_url $search_url
     echo search_url_partial_cache $(curl $search_url -o /dev/null -s -w "%{time_total}")
-    echo search_url_product_count $(curl -s $search_url | grep "img.*class.*product-image-photo" | wc -l)
+    echo search_url_product_count $(curl -s $search_url | grep "src=.*product/cache" | wc -l)
 
     if [ -n "$cat_url" ]; then
       echo cat_url_partial_cache $(curl $cat_url -o /dev/null -s -w "%{time_total}")
