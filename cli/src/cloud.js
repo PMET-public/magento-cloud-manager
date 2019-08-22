@@ -54,7 +54,7 @@ const generateCss = async () => {
       matchesTag = tag
       for (let file of files) {
         if (row[file.col] !== md5s[`https://raw.githubusercontent.com/PMET-public/magento-cloud/${tag}/${file.path}`]) {
-          logger.mylog('debug', `Project: ${row.project_id}, env: ${row.environment_id} does not have the latest version of ${file.path} of tag ${tag}`)
+          logger.mylog('debug', `Project: ${row.project_id}, env: ${row.environment_id} does not match version of ${file.path} of tag ${tag}`)
           matchesTag = false 
           break // file md5 does not match; skip to next tag
         }
@@ -68,10 +68,12 @@ const generateCss = async () => {
     css += '\n.menu .nav-list a[href="' + envHref + '"]:not(.caret)::after { content: "' +  row.ee_composer_version
     if (row.base_url_found === 0 || row.base_url_found === null) {
       css += ' ??"; color: #e12c27; background-color: #5b5856; padding: 2px 4px;'
-    } else if (latestAvailable) {
-      css += ' GA ✔"; color: #79a22e;'
-    } else if (RC) {
-      css += ' RC"; color: #e0c56d;'
+    } else if (matchesTag) {
+      if (/-GA/.test(matchesTag)) {
+        css += ' GA ✔"; color: #79a22e;'
+      } else if (/-RC/.test(matchesTag)) {
+        css += ' RC"; color: #e0c56d;'
+      }
     } else {
       css += ' ⇪"; color: #f26322;'
     }
