@@ -41,7 +41,7 @@ const smokeTestApp = async (project, environment = 'master') => {
         ORDER BY logdate DESC limit 1;
     "
 
-    last_cron_success=$(perl -0777 -ne "/[\\S\\s]*\\n\\[([^.]*)[\\S\\s]*Ran jobs by schedule/ and print \\$1" /var/log/cron.log)
+    last_cron_success=$(perl -0777 -ne "/[\\S\\s]*\\n\\[([^.]+)[\\S\\s]*Ran jobs by schedule/ and print \\$1" /var/log/cron.log)
     echo last_cron_success $(test -z "$last_cron_success" && echo NULL ||  date --date="$last_cron_success" +%s)
 
     # use curl -I for just headers using HTTP HEAD
