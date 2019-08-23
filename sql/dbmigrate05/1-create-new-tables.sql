@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS "applications_new" (
   `project_id` TEXT NOT NULL,
   `environment_id` TEXT NOT NULL,
   `app_yaml_md5` TEXT NOT NULL,
-  `env_yaml_md5` TEXT NOT NULL,
+  `env_yaml_md5` TEXT,
   `ee_composer_version` TEXT,
   `composer_lock_md5` TEXT,
   `config_php_md5` TEXT,
