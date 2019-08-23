@@ -38,7 +38,7 @@ module.exports = (req, res) => {
       w.host_name, w.expiration
     FROM environments e
     LEFT JOIN 
-      (SELECT * from smoke_tests GROUP BY project_id, environment_id ORDER BY id DESC) AS s
+      (select * FROM (SELECT * from smoke_tests ORDER BY id DESC) GROUP BY project_id, environment_id) AS s
       ON e.id = s.environment_id and e.project_id = s.project_id
     LEFT JOIN
       (SELECT p.id, p.title, p.region, p.active, user_list FROM projects p
