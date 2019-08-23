@@ -738,6 +738,13 @@ export default class extends Component {
                   Filter: this.createFilterOptionsFromAccessor('app_yaml_md5')
                 },
                 {
+                  Header: 'env.yaml MD5',
+                  accessor: 'env_yaml_md5',
+                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
+                  maxWidth: calcWidth(4),
+                  Filter: this.createFilterOptionsFromAccessor('env_yaml_md5')
+                },
+                {
                   Header: 'composer.lock MD5',
                   accessor: 'composer_lock_md5',
                   Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),

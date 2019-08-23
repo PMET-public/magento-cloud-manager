@@ -118,6 +118,7 @@ const checkAppVersion = async (project, environment = 'master') => {
 
   const cmd = `${sshCmd} '
     echo app_yaml_md5 $(md5sum .magento.app.yaml | sed "s/ .*//")
+    echo env_yaml_md5 $(md5sum .magento.env.yaml | sed "s/ .*//")
     echo ee_composer_version $(perl -ne "
         s/.*magento\\/product-enterprise-edition.*:.*?\\"([^\\"]+)\\".*/\\1/ and print;
         s/.*magento-product-enterprise-edition-(2\\.[0-9]+\\.[0-9]+).*/\\1/ and print;

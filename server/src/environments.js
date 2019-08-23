@@ -5,7 +5,7 @@ const {db} = require('../util/common')
 
 module.exports = (req, res) => {
   const sql = `SELECT 
-      s.id, a.app_yaml_md5, a.ee_composer_version, a.composer_lock_md5, a.config_php_md5,
+      s.id, a.app_yaml_md5, a.env_yaml_md5, a.ee_composer_version, a.composer_lock_md5, a.config_php_md5,
       s.cumulative_cpu_percent, s.not_valid_index_count, s.catalog_product_entity_count,
       s.catalog_category_product_count, s.admin_user_count, s.store_count, s.order_count, s.cms_block_count,
       s.localhost_http_status, s.store_url_uncached,
