@@ -10,10 +10,10 @@ mkdir $dir
 perl -pe 's/" \($/_new" \(/' cloud.sql > $dir/1-create-new-tables.sql
 
 # insert old values into new tables
-perl -ne 's/^.`(.*)`.*/\1/ and print "$1, "; 
+perl -ne 's/^\s*`(.*)`.*/\1/ and print "$1, "; 
   s/CREATE TABLE.*"(.*)".*$/\n${1} (/ and chomp and print' cloud.sql > $dir/2-copy-into-new-tables.sql
 
-perl -i -ne 's/^(.*?) \((.*), $/insert into ${1}_new \(${2}\) select * from ${1};/
+perl -i -ne 's/^(.*?) \((.*), $/insert into ${1}_new \(${2}\) select ${2} from ${1};/
   and print' $dir/2-copy-into-new-tables.sql
 
 # drop old tables and rename new tables
