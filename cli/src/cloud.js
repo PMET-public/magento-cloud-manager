@@ -6,6 +6,7 @@ const generateCss = async () => {
   const tags = ['ref-RC', 'ref-GA', 'demo-RC', 'demo-GA', 'b2b-RC', 'b2b-GA', 'pwa-RC', 'pwa-GA']
   const files = [ 
     {path: '.magento.app.yaml', col: 'app_yaml_md5'},
+    {path: '.magento.env.yaml', col: 'env_yaml_md5'},
     {path: 'composer.lock', col: 'composer_lock_md5'},
     {path: 'app/etc/config.php', col: 'config_php_md5'}
   ]
