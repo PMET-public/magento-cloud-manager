@@ -377,7 +377,10 @@ const deleteEnv = async (project, environment) => {
     logger.mylog('error', `Can not delete master env of project: ${project}`)
     return
   }
-  const cmd = `${MC_CLI} environment:delete -p ${project} -e ${environment} -q -y --delete-branch`
+  // kill any php process up to 10 times in the next 10 min
+  // that may still be running and blocking a proper shutdown before deleting
+  const cmd = `ssh -n $(${MC_CLI} ssh -p ${project} -e ${environment} --pipe) 'for i in {1..10}; do pkill php; sleep 60; done' &
+    ${MC_CLI} environment:delete -p ${project} -e ${environment} -q -y --delete-branch`
   const result = exec(cmd)
     .then(execOutputHandler)
     .catch(error => {
