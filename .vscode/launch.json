@@ -231,7 +231,7 @@
       "args": [
         "env:deploy",
         "--force",
-        "apwjqamdbjquw"
+        "a6terwtbk67os:smiletest"
       ]
     },
     {
@@ -240,11 +240,11 @@
       "request": "launch",
       "name": "Redeploy a sample env using tar file",
       "program": "${workspaceFolder}/cli/bin/mcm",
-      "cwd": "/Users/kbentrup/Documents/ese/mc/b2b1.the1umastory.com/",
+      "cwd": "/Users/kbentrup/Documents/ese/mc/",
       "args": [
         "env:deploy",
         "b2b.tar",
-        "b66cyazlbp6dk",
+        "dg24rqlsvsuqw",
         "-v",
         "--reset",
         "--yes"
