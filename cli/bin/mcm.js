@@ -25,7 +25,7 @@ const {
   getPathFromRemote,
   sendPathToRemoteTmpDir,
   getLiveEnvsAsPidEnvArr,
-  deployEnvFromTar,
+  deployEnvWithFile,
   rebuildAndRedeployUsingDummyFile,
   getExpiringPidEnvs,
   backup
@@ -294,9 +294,10 @@ yargs.command(
   }
 )
 
+// N.B. when using '|' positional param syntax of yargs, both operands receive the value
 yargs.command(
-  ['env:deploy [tar] [pid:env...]'],
-  'Redeploy or deploy env(s) using the optional provided tar file as the new git head',
+  ['env:deploy [sh|tar] [pid:env...]'],
+  'Redeploy or deploy env(s) using the optional provided tar file or shell script',
   yargs => {
     addSharedPidEnvOpts(false)
     yargs.option('x', {
@@ -306,11 +307,12 @@ yargs.command(
       type: 'boolean',
       coerce: coercer
     })
-    yargs.positional('tar', {
+    yargs.positional('sh|tar', {
       type: 'string',
       describe:
-        `A tar of the git HEAD to push. E.g.,\n${cmdTxt('\tgit archive --format=tar HEAD > head.tar')}` +
-        '\nDon\'t forget any files needed that are not tracked in git. E.g.,\n  ' +
+        'If shell script, run against the current HEAD, then commit & push.\n' +
+        `If tar file, replace git HEAD with tar contents. E.g.,\n${cmdTxt('\tgit archive --format=tar HEAD > head.tar')}` +
+        '\nDon\'t forget any files needed that are not tracked in git. e.g.,\n' +
         cmdTxt('\ttar -rf head.tar auth.json'),
       normalize: true
     })
@@ -320,7 +322,8 @@ yargs.command(
       coerce: coercer
     })
     yargs.option('force', {
-      description: 'Force rebuild & redeploy as-is. No tar. Deploying via ssh if possible is faster (skips rebuild).',
+      description: 'Force rebuild & redeploy as-is. No shell script or tar file.\n' +
+        'If possible, deploying via ssh is faster (because it skips rebuild step).',
       type: 'boolean',
       coerce: coercer
     })
@@ -332,9 +335,10 @@ yargs.command(
   },
   argv => {
     if (argv.force) {
-      // force does not use tar, so add 1st arg ("tar") to list of pidEnvs
+      // force is used for as-is redeployment & does not use tar or sh, so add 1st arg ("sh|tar") to list of pidEnvs
       argv['pid:env'] = argv['pid:env'] || []
       argv['pid:env'].unshift(argv['tar'])
+      argv['sh'] = undefined
       argv['tar'] = undefined
     }
     verifyOnlyOneOf(argv, ['x', 'force', 'tar'])
@@ -347,14 +351,14 @@ yargs.command(
       return pLimitForEachHandler(4, rebuildAndRedeployUsingDummyFile, pidEnvs, additionalArgs)
     }
     if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, deployEnvFromTar, pidEnvs, additionalArgs)
+      pidEnvs = filterStillValidRuns(argv.time, deployEnvWithFile, pidEnvs, additionalArgs)
     }
     if (argv.tar && !require('fs').existsSync(argv.tar)) {
       console.error(errorTxt(`Could not find file: ${argv.tar}`))
       process.exit(1)
     }
     if (argv.yes) {
-      pLimitForEachHandler(4, deployEnvFromTar, pidEnvs, additionalArgs)
+      pLimitForEachHandler(4, deployEnvWithFile, pidEnvs, additionalArgs)
     } else {
       const rl = readline.createInterface({input: process.stdin, output: process.stdout})
       const question = argv.reset
@@ -363,7 +367,7 @@ yargs.command(
       rl.question(question + `\n${Array.from(pidEnvs).join(' ')} ?\nTo continues, type 'yes': `, answer => {
         rl.close()
         if (answer === 'yes') {
-          pLimitForEachHandler(4, deployEnvFromTar, pidEnvs, additionalArgs)
+          pLimitForEachHandler(4, deployEnvWithFile, pidEnvs, additionalArgs)
         }
       })
     }

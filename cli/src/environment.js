@@ -95,14 +95,16 @@ const resetEnv = async (project, environment) => {
   return result
 }
 
-const deployEnvFromTar = async (project, environment, tarFile, reset = false, forceRebuildRedeploy = false) => {
-  const basename = tarFile.replace(/.*\//, '')
+const deployEnvWithFile = async (project, environment, file, reset = false, forceRebuildRedeploy = false) => {
+  const basename = file.replace(/.*\//, '')
   if (reset) {
     await resetEnv(project, environment)
   }
   // split the cmd into separate parts to trap STDERR output from `MC_CLI get` that is not actually error
-  // clone to nested tmp dir, discard all but the git dir and auth.json, mv git dir and tar file to parent dir
-  // extract tar, commit, and push
+  // clone to nested tmp dir, discard all but the git dir and auth.json, mv git dir and file to parent dir
+  // if tar, extract tar
+  // if sh script, execute
+  // commit, and push
   const path = `/tmp/${project}-${environment}-${new Date()/1000}`
   const cmd = `mkdir -p "${path}"
     cd "${path}"
@@ -117,24 +119,30 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
       if (!/\/.*[a-z0-9]{13}/.test(path)) {
         throw 'Invalid path.'
       }
-      const cmd = `mv ${path}/tmp/{.git,auth.json} ${path} 2> /dev/null
-        cp ${tarFile} ${path}
-        rm -rf "${path}/tmp"
+      let cmd = ''
+      if (/\.tar$/i.test(basename)) {
+        cmd += `mv ${path}/tmp/{.git,auth.json} ${path} 2> /dev/null; rm -rf "${path}/tmp"\n`
+      } else {
+        cmd += `mv ${path}/tmp/* ${path}/tmp/.* ${path}/\n`
+      }
+      cmd += `
+        cp ${file} ${path}
         cd "${path}"
-        tar -xf "${basename}"
+        ${/\.tar$/i.test(basename) ? 'tar -xf ' + basename : './' + basename }
         rm "${basename}"
         git add -u
         git add .
         # special case: 1st time auth.json forcefully added b/c of .gitignore. subsequent runs have no affect
         git add -f auth.json
-        git commit -m "commit from tar file"
+        git commit -m "commit using ${basename}"
         git branch -u $(git remote)/${environment}
-        git push -f $(git remote) HEAD:${environment}`
+        git push -f $(git remote) HEAD:${environment}
+      `
       const result = exec(cmd)
         .then(execOutputHandler)
         .then(({stdout, stderr}) => {
           if (!stderr) {
-            logger.mylog('info', `Env: ${environment} of project: ${project} deployed using ${tarFile}.`)
+            logger.mylog('info', `Env: ${environment} of project: ${project} deployed using ${file}.`)
           } else if (/Everything up-to-date/.test(stderr) && forceRebuildRedeploy) {
             logger.mylog('error', 'Environment is up-to-date. Nothing to push.\n'+ 
             'Use the "--force" option to rebuild & deploy an env with a dummy ".redeploy" file.')
@@ -151,10 +159,10 @@ const deployEnvFromTar = async (project, environment, tarFile, reset = false, fo
     })
   return result
 }
-exports.deployEnvFromTar = deployEnvFromTar
+exports.deployEnvWithFile = deployEnvWithFile
 
 
-const rebuildAndRedeployUsingDummyFile = async (project, environment, tarFile, reset = false) => {
+const rebuildAndRedeployUsingDummyFile = async (project, environment, file, reset = false) => {
   if (reset) {
     await resetEnv(project, environment)
   }

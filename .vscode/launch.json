@@ -254,6 +254,22 @@
       "type": "node",
       "outputCapture": "std",
       "request": "launch",
+      "name": "Redeploy a sample env using a shell script",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "cwd": "/Users/kbentrup/Documents/magento-cloud-manager/cli/bin/env-scripts/",
+      "args": [
+        "env:deploy",
+        "fix-routes-and-services.sh",
+        "exkfyxnbu3zke:NextProj",
+        "-v",
+        "--reset",
+        "--yes"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
       "name": "Redeploy expiring envs",
       "program": "${workspaceFolder}/cli/bin/mcm",
       "args": [
