@@ -80,7 +80,7 @@ const resetEnv = async (project, environment) => {
   const remoteCmd = `mysql -h database.internal -e "drop database if exists main; 
   create database if not exists main default character set utf8;"; 
   # can not remove var/export so or noop cmd (|| :) in case it exists
-  rm -rf ~/var/* ~/pub/media/* ~/app/etc/env.php ~/app/etc/config.php || :`
+  rm -rf ~/pub/media/* ~/app/etc/* ~/var/.* ~/var/* || :`
   const cmd = `${await getSshCmd(project, environment)} '${remoteCmd}'`
   const result = exec(cmd)
     .then(execOutputHandler)
@@ -130,6 +130,7 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
         cd "${path}"
         ${/\.tar$/i.test(basename) ? 'tar -xf ' + basename : './' + basename }
         rm "${basename}"
+        ${MC_CLI} ssh -p ${project} -e ${environment} "pkill php"
         git add -u
         git add .
         # special case: 1st time auth.json forcefully added b/c of .gitignore. subsequent runs have no affect
