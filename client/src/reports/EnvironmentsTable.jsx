@@ -46,7 +46,7 @@ const secsIn6Mo = 180 * secsIn1Day
 const secsIn1Yr = 365 * secsIn1Day
 
 
-export default class extends Component {
+export default class EnvironmentsTable extends Component {
   constructor(props) {
     super(props)
     this.state = {
@@ -143,6 +143,8 @@ export default class extends Component {
     })
     if (count) {
       return <span>{Math.round(sum * 10 / count) / 10}</span>
+    } else {
+      return null
     }
   }
 
@@ -273,6 +275,8 @@ export default class extends Component {
         }
       }
       return this.createFilterOptions(filters)
+    } else {
+      return null
     }
   }
 
@@ -297,9 +301,10 @@ export default class extends Component {
         value: 'nonmaster'
       })
       return this.createFilterOptions(filters)
+    } else {
+      return null
     }
   }
-
 
   createUserFilterOptions = () => {
     if (this.state.data) {
@@ -317,6 +322,8 @@ export default class extends Component {
         })
       }
       return this.createFilterOptions(filters)
+    } else {
+      return null
     }
   }
 
@@ -896,7 +903,7 @@ export default class extends Component {
                         .split('\v')
                       : []
                     if (!list.length) {
-                      return
+                      return null
                     } else if (this.deployCompleted(list[list.length-1])) {
                       return this.checkIcon()
                     } else {
