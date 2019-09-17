@@ -92,7 +92,7 @@
       "args": [
         "env:smoke-test",
         "-v",
-        "apwjqamdbjquw:b2bwithalgolia",
+        "apwjqamdbjquw:master",
         "-t",
         "0"
       ]
@@ -464,11 +464,11 @@
       "stopOnEntry": false,
       "port": 9229,
       "address": "localhost",
-      "restart": false,
+      "restart": true,
       "sourceMaps": false,
       "outFiles": [],
       "localRoot": "${workspaceRoot}/server",
-      "remoteRoot": null
+      "remoteRoot": "${workspaceRoot}/server"
     },
     {
       "name": "Chrome",
