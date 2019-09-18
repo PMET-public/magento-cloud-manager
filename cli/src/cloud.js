@@ -30,7 +30,7 @@ const generateCss = async () => {
 
   const sql = `SELECT a.project_id, a.environment_id, w.expiration, w.http_status, w.base_url_found_in_headers_or_body base_url_found, 
       w.timeout, w.timestamp web_timestamp,
-      a.ee_composer_version, a.app_yaml_md5, a.composer_lock_md5, a.config_php_md5, a.timestamp version_timestamp
+      a.ee_composer_version, a.app_yaml_md5, a.env_yaml_md5, a.composer_lock_md5, a.config_php_md5, a.timestamp version_timestamp
     FROM applications a, environments e, projects p
     LEFT JOIN web_statuses w ON 
         w.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
