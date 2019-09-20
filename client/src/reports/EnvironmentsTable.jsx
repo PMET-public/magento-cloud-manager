@@ -227,7 +227,8 @@ export default class EnvironmentsTable extends Component {
         <input
           id={props.id ? props.id : 'all'}
           type={props.selectType || 'checkbox'}
-          checked={props.checked}
+        // checked={props.checked}
+        checked={this.isSelected(props.id) || props.checked}
           onClick={e => {
             const {shiftKey} = e
             e.stopPropagation()
@@ -539,7 +540,7 @@ export default class EnvironmentsTable extends Component {
         <button onClick={this.resetAllFilters}>Reset All Filters</button>
         <Clipboard
           className="checkbox-selection-to-clipboard-button"
-          data-clipboard-text={this.state.selection.join(' ')}>
+          data-clipboard-text={this.state.selection.join(' ').replace(/(^| )select-/g,' ').trim()}>
           Copy selected
         </Clipboard>
         <CheckboxTable
