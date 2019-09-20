@@ -537,6 +537,11 @@ export default class EnvironmentsTable extends Component {
     return (
       <div>
         <button onClick={this.resetAllFilters}>Reset All Filters</button>
+        <Clipboard
+          className="checkbox-selection-to-clipboard-button"
+          data-clipboard-text={this.state.selection.join(' ')}>
+          Copy selected
+        </Clipboard>
         <CheckboxTable
           selectType="checkbox"
           ref={r => (this.checkboxTable = r)}
@@ -635,22 +640,22 @@ export default class EnvironmentsTable extends Component {
                       </a>
                     </div>
                   ),
-                  Filter: ({filter, onChange}) => (
-                    <div>
-                      <Clipboard
-                        className="checkbox-selection-to-clipboard-button"
-                        data-clipboard-text={this.state.selection.join(' ')}>
-                        <Icon color="secondary">code</Icon>
-                      </Clipboard>
-                      <input
-                        placeholder="Regex"
-                        type="text"
-                        onChange={event => onChange(event.target.value)}
-                        style={{width: '90%'}}
-                        value={filter && filter.value ? filter.value : ''}
-                      />
-                    </div>
-                  ),
+                  // Filter: ({filter, onChange}) => (
+                  //   <div>
+                  //     {/* <Clipboard
+                  //       className="checkbox-selection-to-clipboard-button"
+                  //       data-clipboard-text={this.state.selection.join(' ')}>
+                  //       <Icon color="secondary">code</Icon>
+                  //     </Clipboard> */}
+                  //     <input
+                  //       placeholder="Regex"
+                  //       type="text"
+                  //       onChange={event => onChange(event.target.value)}
+                  //       style={{width: '90%'}}
+                  //       value={filter && filter.value ? filter.value : ''}
+                  //     />
+                  //   </div>
+                  // ),
                   filterMethod: (filter, row, column) => {
                     const o = row._original
                     return new RegExp(filter.value, 'i').test(
