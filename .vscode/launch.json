@@ -101,6 +101,20 @@
       "type": "node",
       "outputCapture": "std",
       "request": "launch",
+      "name": "Smoke test sample ref project (verbose)",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:smoke-test",
+        "-v",
+        "xy4itwbmg2khk:master",
+        "-t",
+        "0"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
       "name": "Back up env (verbose)",
       "program": "${workspaceFolder}/cli/bin/mcm",
       "args": [
