@@ -119,10 +119,7 @@ const checkAppVersion = async (project, environment = 'master') => {
   const cmd = `${sshCmd} '
     echo app_yaml_md5 $(md5sum .magento.app.yaml | sed "s/ .*//")
     echo env_yaml_md5 $( { [ -f .magento.env.yaml ] && md5sum .magento.env.yaml || echo ""; } | sed "s/ .*//")
-    echo ee_composer_version $(perl -ne "
-        s/.*magento\\/product-enterprise-edition.*:.*?\\"([^\\"]+)\\".*/\\1/ and print;
-        s/.*magento-product-enterprise-edition-(2\\.[0-9]+\\.[0-9]+).*/\\1/ and print;
-      " composer.lock | head -1)
+    echo ee_composer_version $(perl -ne "undef \$/; s/[\\S\\s]*cloud-metapackage\\"[\\S\\s]*?\\"version\\": \\"([^\\"]*)[\\S\\s]*/\\1/m and print" composer.lock)
     echo composer_lock_md5 $(md5sum composer.lock | sed "s/ .*//")
     echo config_php_md5 $(md5sum app/etc/config.php | sed "s/ .*//")
   '`
