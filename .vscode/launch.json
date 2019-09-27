@@ -130,7 +130,7 @@
       "name": "Check web for all envs (verbose)",
       "program": "${workspaceFolder}/cli/bin/mcm",
       "args": [
-        "env:check-web",
+        "env:check-web-status",
         "-a"
       ]
     },
@@ -141,7 +141,7 @@
       "name": "Check web for sample envs (verbose)",
       "program": "${workspaceFolder}/cli/bin/mcm",
       "args": [
-        "env:check-web",
+        "env:check-web-status",
         "-v",
         "u4rn4e7jke2ao:erp-integration", //gdprlmsp3syac:sales-demo
         "-t",
@@ -391,14 +391,15 @@
       "type": "node",
       "outputCapture": "std",
       "request": "launch",
-      "name": "Check web of sample pid(s)",
+      "name": "Check app version of sample pid(s)",
       "program": "${workspaceFolder}/cli/bin/mcm",
       "args": [
-        "env:check-web",
+        "env:check-app-version",
         "-v",
         "-t 0",
-        "rft4g4olbri4q:sprint-3",
-        "73xge34nt3ft4:dave"
+        "rft4g4olbri4q:master",
+        "vjacyav2sflo6",
+        "evndbcag3hlna"
       ]
     },
     {
