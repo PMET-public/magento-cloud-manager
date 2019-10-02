@@ -130,6 +130,8 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
         cd "${path}"
         ${/\.tar$/i.test(basename) ? 'tar -xf ' + basename : './' + basename }
         rm "${basename}"
+        # flush the cache prevents errors on startup of the next package
+        ssh -n $(${MC_CLI} ssh -p ${project} -e ${environment} --pipe) "php bin/magento cache:flush"
         ssh -n $(${MC_CLI} ssh -p ${project} -e ${environment} --pipe) "{ for i in {1..30}; do pkill php; sleep 60; done; } &>/dev/null &"
         git add -u
         git add .
