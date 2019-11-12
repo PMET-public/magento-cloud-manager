@@ -46,43 +46,43 @@ const smokeTestApp = async (project, environment = 'master') => {
 
     # use curl -I for just headers using HTTP HEAD
     # use curl -sD - -o /dev/null  for headers (-D -: dump headers to stdout) using HTTP GET
-    localhost_http_status=$(curl -sI localhost | sed -n "s/HTTP\\/1.1 \\([0-9]*\\).*/\\1/p")
+    localhost_http_status=$(curl -u admin:${project} -sI localhost | sed -n "s/HTTP\\/1.1 \\([0-9]*\\).*/\\1/p")
     echo localhost_http_status $localhost_http_status
 
     # --- any value below can be NULL in the DB b/c we exit on invalid responses from the web server ---
     test $localhost_http_status -eq 302 || exit 0
-    store_url=$(curl -sI localhost | perl -ne "s#Location: +(https?://[^/]+/).*#\\1# and print")
-    store_html=$(curl -s $store_url)
+    store_url=$(curl -u admin:${project} -sI localhost | perl -ne "s#Location: +(https?://[^/]+/).*#\\1# and print")
+    store_html=$(curl -u admin:${project} -s $store_url)
     echo store_url_cached $(curl $store_url -o /dev/null -s -w "%{time_total}")
 
-    echo german_check $(curl "$store_url?___store=luma_de&___from_store=default" -s | grep " \\"baseUrl.*de_DE" | wc -l)
-    echo venia_check $(curl "$store_url?___store=venia_us&___from_store=default" -s | grep " \\"baseUrl.*venia" | wc -l)
+    echo german_check $(curl -u admin:${project} "$store_url?___store=luma_de&___from_store=default" -s | grep " \\"baseUrl.*de_DE" | wc -l)
+    echo venia_check $(curl -u admin:${project} "$store_url?___store=venia_us&___from_store=default" -s | grep " \\"baseUrl.*venia" | wc -l)
     php bin/magento admin:user:unlock ${magentoSIAdminUser} > /dev/null
     rm /tmp/myc 2> /dev/null || : 
-    read -r form_url form_key <<<$(curl -sL -c /tmp/myc -b /tmp/myc "$store_url/admin/" | 
+    read -r form_url form_key <<<$(curl -u admin:${project} -sL -c /tmp/myc -b /tmp/myc "$store_url/admin/" | 
       perl -ne "chomp; s/.*var BASE_URL.*(https.*\\/).*/\\1 / and print;s/.*var FORM_KEY = .(.*).;.*/\\1/ and print")
-    echo admin_check $(curl -sLv --max-redirs 1 -c /tmp/myc -b /tmp/myc -X POST -d \
+    echo admin_check $(curl -u admin:${project} -sLv --max-redirs 1 -c /tmp/myc -b /tmp/myc -X POST -d \
       "login[username]=${magentoSIAdminUser}&login[password]=${magentoSIAdminPassword}&form_key=$form_key" $form_url 2>&1 |
       grep -i -m 1 "Location.*admin/dashboard" | wc -l)
 
-    cat_url=$(curl -s $store_url | perl -ne "s/.*?class.*?nav-[12]-1.*?href=.([^ ]+.html).*/\\1/ and print")
+    cat_url=$(curl -u admin:${project} -s $store_url | perl -ne "s/.*?class.*?nav-[12]-1.*?href=.([^ ]+.html).*/\\1/ and print")
     if [ -n "$cat_url" ]; then
       echo cat_url $cat_url
-      echo cat_url_product_count $(curl -s $cat_url | grep "src=.*product/cache" | wc -l)
-      echo cat_url_cached $(curl $cat_url -o /dev/null -s -w "%{time_total}")
+      echo cat_url_product_count $(curl -u admin:${project} -s $cat_url | grep "src=.*product/cache" | wc -l)
+      echo cat_url_cached $(curl -u admin:${project} $cat_url -o /dev/null -s -w "%{time_total}")
       php bin/magento cache:flush > /dev/null
-      echo cat_url_uncached $(curl $cat_url -o /dev/null -s -w "%{time_total}")
+      echo cat_url_uncached $(curl -u admin:${project} $cat_url -o /dev/null -s -w "%{time_total}")
     fi
 
     php bin/magento cache:flush > /dev/null
-    echo store_url_uncached $(curl $store_url -o /dev/null -s -w "%{time_total}")
+    echo store_url_uncached $(curl -u admin:${project} $store_url -o /dev/null -s -w "%{time_total}")
     search_url="\${store_url}catalogsearch/result/?q=accessory"
     echo search_url $search_url
-    echo search_url_partial_cache $(curl $search_url -o /dev/null -s -w "%{time_total}")
-    echo search_url_product_count $(curl -s $search_url | grep "src=.*product/cache" | wc -l)
+    echo search_url_partial_cache $(curl -u admin:${project} $search_url -o /dev/null -s -w "%{time_total}")
+    echo search_url_product_count $(curl -u admin:${project} -s $search_url | grep "src=.*product/cache" | wc -l)
 
     if [ -n "$cat_url" ]; then
-      echo cat_url_partial_cache $(curl $cat_url -o /dev/null -s -w "%{time_total}")
+      echo cat_url_partial_cache $(curl -u admin:${project} $cat_url -o /dev/null -s -w "%{time_total}")
     fi
 
     echo utilization_end $(perl -e "printf \\"%.0f,%.0f,%.0f\\", $(cat /proc/loadavg | 

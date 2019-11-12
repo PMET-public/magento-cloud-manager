@@ -270,9 +270,9 @@ const checkBody = response => {
 
 const checkPublicUrlForExpectedAppResponse = async (project, environment = 'master') => {
   const hostName = await getWebHostName(project, environment)
-  const url = `https://${hostName}/`
+  const url = `https://admin:${project}@${hostName}/`
   return await new Promise((resolve, reject) => {
-    let request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false}, async response => {
+    let request = https.request({host: hostName, port: 443, method: 'GET', rejectUnauthorized: false, auth: `admin:${project}`}, async response => {
       const certificateInfo = response.connection.getPeerCertificate()
       const expirationDate = new Date(certificateInfo.valid_to)
       const expirationSecs = Math.floor(expirationDate / 1000)
