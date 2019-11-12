@@ -611,14 +611,14 @@ export default class EnvironmentsTable extends Component {
                       </a> */}
                       <a
                         target="_blank" rel="noopener noreferrer"
-                        href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
+                        href={`https:///admin:${cell.original.project_id}@${cell.original.machine_name}-${cell.original.project_id}.${
                           cell.original.region
                         }.magentosite.cloud/`}>
                         <Icon color="secondary">shopping_cart</Icon>
                       </a>
                       <a
                         target="_blank" rel="noopener noreferrer"
-                        href={`https://${cell.original.machine_name}-${cell.original.project_id}.${
+                        href={`https://admin:${cell.original.project_id}@${cell.original.machine_name}-${cell.original.project_id}.${
                           cell.original.region
                         }.magentosite.cloud/admin/`}>
                         <Icon color="secondary">dashboard</Icon>
