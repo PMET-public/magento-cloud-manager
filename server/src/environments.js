@@ -35,7 +35,7 @@ module.exports = (req, res) => {
         when p.active = 1 then 'active'
         else 'missing'
       end as proj_status,
-      w.host_name, w.expiration
+      w.host_name, w.expiration, w.http_status public_http_status
     FROM environments e
     LEFT JOIN
       (select * FROM (SELECT * from smoke_tests ORDER BY id DESC) GROUP BY project_id, environment_id) AS s
