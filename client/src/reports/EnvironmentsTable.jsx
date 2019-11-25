@@ -150,7 +150,7 @@ export default class EnvironmentsTable extends Component {
 
   formatDate = secSinceEpoch => {
     return /^\d+$/.test(secSinceEpoch)
-      ? moment(new Date(secSinceEpoch * 1000).toISOString().slice(0, 10)).fromNow()
+      ? moment(new Date(secSinceEpoch * 1000).toISOString().slice(0, 10)).fromNow().replace(/(.*) /, '$1').replace(/.$/, '')
       : ''
   }
 
@@ -188,6 +188,19 @@ export default class EnvironmentsTable extends Component {
   errorIcon = () => <Icon color="error">error_outline</Icon>
   timerIcon = () => <Icon>timer</Icon>
   starIcon = () => <Icon>star</Icon>
+
+  valueToIcon = (key) => {
+    const iconMap = {
+      'active': <Icon>check</Icon>,
+      'inactive': 'i',
+      'failure': 'f',
+      'missing': 'm'
+    }
+    if (!(key in iconMap)) {
+      return key
+    }
+    return iconMap[key]
+  }
 
   toggleSelection = (key, shift, row) => {
     let selection = [...this.state.selection]
@@ -227,8 +240,8 @@ export default class EnvironmentsTable extends Component {
         <input
           id={props.id ? props.id : 'all'}
           type={props.selectType || 'checkbox'}
-        // checked={props.checked}
-        checked={this.isSelected(props.id) || props.checked}
+          // checked={props.checked}
+          checked={this.isSelected(props.id) || props.checked}
           onClick={e => {
             const {shiftKey} = e
             e.stopPropagation()
@@ -267,6 +280,10 @@ export default class EnvironmentsTable extends Component {
       for (let i in accessorVals) {
         if (accessorVals[i] === null) {
           filters.push(this.untestedFilter)
+        } else if (accessorVals[i] === 'active') {
+          filters.push(this.activeFilter)
+        } else if (accessorVals[i] === 'missing') {
+          filters.push(this.missingFilter)
         } else {
           filters.push({
             key: accessorVals[i],
@@ -340,6 +357,15 @@ export default class EnvironmentsTable extends Component {
     return filterMethod
   }
 
+  testedFilter = {
+    key: 'tested',
+    value: 'tested',
+    label: 'tested',
+    test: (filter, row) => {
+      return row[filter.id] !== null
+    }
+  }
+
   untestedFilter = {
     key: 'untested',
     value: 'untested',
@@ -349,13 +375,16 @@ export default class EnvironmentsTable extends Component {
     }
   }
 
-  testedFilter = {
-    key: 'tested',
-    value: 'tested',
-    label: 'tested',
-    test: (filter, row) => {
-      return row[filter.id] !== null
-    }
+  activeFilter = {
+    key: 'active',
+    value: 'active',
+    label: 'active'
+  }
+
+  missingFilter = {
+    key: 'mising',
+    value: 'missing',
+    label: 'missing'
   }
 
   httpTestFilters = [
@@ -668,7 +697,7 @@ export default class EnvironmentsTable extends Component {
                   Header: 'Branch Level',
                   accessor: 'branch_level',
                   className: 'right',
-                  width: calcWidth(3),
+                  width: calcWidth(2),
                   Cell: cell => this.validate(cell.value, v => v === 0, this.starIcon, cell.value),
                   Filter: this.createBranchLevelFilterOptions(),
                   filterMethod: (filter, row, column) => {
@@ -686,8 +715,8 @@ export default class EnvironmentsTable extends Component {
                 {
                   Header: 'Region',
                   accessor: 'region',
-                  className: 'right',
-                  width: calcWidth(5),
+                  className: 'region-col',
+                  width: calcWidth(4),
                   Filter: this.createFilterOptionsFromAccessor('region'),
                   filterMethod: this.exactMatchRow
                 },
@@ -695,17 +724,19 @@ export default class EnvironmentsTable extends Component {
                   Header: 'Proj Status',
                   accessor: 'proj_status',
                   className: 'right',
-                  width: calcWidth(7),
+                  width: calcWidth(3),
                   Filter: this.createFilterOptionsFromAccessor('proj_status'),
-                  filterMethod: this.exactMatchRow
+                  filterMethod: this.exactMatchRow,
+                  Cell: cell => this.validate(cell.value, v => v === 'active', this.checkIcon, this.errorIcon),
                 },
                 {
                   Header: 'Env Status',
                   accessor: 'env_status',
                   className: 'right',
-                  width: calcWidth(7),
+                  width: calcWidth(3),
                   Filter: this.createFilterOptionsFromAccessor('env_status'),
-                  filterMethod: this.exactMatchRow
+                  filterMethod: this.exactMatchRow,
+                  Cell: cell => this.valueToIcon(cell.value)
                 },
                 {
                   Header: 'Users\' Emails',
@@ -739,36 +770,36 @@ export default class EnvironmentsTable extends Component {
                 {
                   Header: 'EE Version',
                   accessor: 'ee_composer_version',
-                  className: 'right',
-                  width: calcWidth(6),
+                  className: 'version-col',
+                  width: calcWidth(4),
                   Filter: this.createFilterOptionsFromAccessor('ee_composer_version')
                 },
                 {
                   Header: 'app.yaml MD5',
                   accessor: 'app_yaml_md5',
                   Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                  maxWidth: calcWidth(4),
+                  maxWidth: calcWidth(3),
                   Filter: this.createFilterOptionsFromAccessor('app_yaml_md5')
                 },
                 {
                   Header: 'env.yaml MD5',
                   accessor: 'env_yaml_md5',
                   Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                  maxWidth: calcWidth(4),
+                  maxWidth: calcWidth(3),
                   Filter: this.createFilterOptionsFromAccessor('env_yaml_md5')
                 },
                 {
                   Header: 'composer.lock MD5',
                   accessor: 'composer_lock_md5',
                   Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                  maxWidth: calcWidth(4),
+                  maxWidth: calcWidth(3),
                   Filter: this.createFilterOptionsFromAccessor('composer_lock_md5')
                 },
                 {
                   Header: 'config.php MD5',
                   accessor: 'config_php_md5',
                   Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                  maxWidth: calcWidth(4),
+                  maxWidth: calcWidth(3),
                   Filter: this.createFilterOptionsFromAccessor('config_php_md5')
                 }
               ]
@@ -780,7 +811,7 @@ export default class EnvironmentsTable extends Component {
                   Header: 'Created',
                   accessor: 'last_created_at',
                   Cell: cell => this.formatDate(cell.value),
-                  maxWidth: calcWidth(5),
+                  maxWidth: calcWidth(3),
                   className: 'right',
                   Filter: this.createFilterOptions(this.commonTimeBasedFilters),
                   filterMethod: this.createFilterMethod(this.commonTimeBasedFilters)
@@ -819,18 +850,31 @@ export default class EnvironmentsTable extends Component {
                     if (expiryDate < new Date()) {
                       return 'Expired!'
                     }
-                    return moment(expiryDate).fromNow()
+                    return this.formatDate(cell.value)
                   },
-                  maxWidth: calcWidth(5),
+                  maxWidth: calcWidth(3),
                   className: 'right',
                   Filter: this.createFilterOptions(this.expirationFilters),
                   filterMethod: this.createFilterMethod(this.expirationFilters)
                 },
                 {
+                  Header: 'Public HTTP Status',
+                  accessor: 'public_http_status',
+                  // Cell: cell => ({
+                  //   200: <Icon>check</Icon>,
+                  //   302: 302,
+                  //   503: <Icon color="error">error_outline</Icon>
+                  // })[cell.value] || null,
+                  Cell: cell => this.validate(cell.value, v => v === 200, this.checkIcon, this.errorIcon),
+                  maxWidth: calcWidth(2),
+                  className: 'right',
+                  Filter: this.createFilterOptionsFromAccessor('public_http_status'),
+                },
+                {
                   Header: 'Localhost HTTP Status',
                   accessor: 'localhost_http_status',
                   Cell: cell => this.validate(cell.value, v => v === 302, this.checkIcon, this.errorIcon),
-                  maxWidth: calcWidth(3),
+                  maxWidth: calcWidth(2),
                   className: 'right',
                   Filter: this.createFilterOptionsFromAccessor('localhost_http_status'),
                 },
@@ -1132,8 +1176,9 @@ export default class EnvironmentsTable extends Component {
                 {
                   Header: 'Updated',
                   accessor: 'timestamp',
-                  Cell: cell => cell.value ? moment(new Date(cell.value * 1000)).fromNow() : '',
-                  maxWidth: calcWidth(5),
+                  Cell: cell => cell.value ? this.formatDate(cell.value) : '',
+                  //Cell: cell => cell.value ? moment(new Date(cell.value * 1000)).fromNow() : '',
+                  maxWidth: calcWidth(3),
                   className: 'right',
                   Filter: this.createFilterOptions([this.testedFilter, this.untestedFilter]),
                   filterMethod: this.createFilterMethod([this.testedFilter, this.untestedFilter])
