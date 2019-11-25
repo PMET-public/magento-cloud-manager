@@ -200,6 +200,13 @@ a {
   height: 5px;
 }
 
+.region-col, .version-col {
+  transform: translate3d(10px, 1px, 0) rotate(-60deg);
+}
+
+.region-col {
+  text-indent: -5px;
+}
 
 /* icon checkmarks from https://codepen.io/jamesbarnett/pen/yILjk */
 @import url(//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css);
