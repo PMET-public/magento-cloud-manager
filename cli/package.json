@@ -8,14 +8,14 @@
     "babel-eslint": "^8.2.6",
     "better-sqlite3": "^4.1.0",
     "chalk": "^2.3.1",
-    "colors": "^1.1.2",
+    "colors": "^1.4.0",
     "md5": "^2.2.1",
     "moment": "^2.22.0",
     "mustache": "^2.3.0",
-    "node-fetch": "^2.0.0",
-    "p-limit": "^2.0.0",
+    "node-fetch": "^2.6.0",
+    "p-limit": "^2.2.1",
     "sprintf-js": "^1.1.1",
-    "winston": "^3.0.0-rc5",
+    "winston": "^3.2.1",
     "yargs": "^12.0.1"
   },
   "bin": {
