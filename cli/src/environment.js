@@ -479,12 +479,16 @@ const getWebHostName = async (project, environment) => {
 }
 
 const getSshUserAndHost = async (project, environment) => {
-  const result = await getMachineNameAndRegion(project, environment)
-  if (!result) {
-    throw 'Could not find project and env in db'
-  }
-  const {machineName, region} = result
-  return `${project}-${machineName}--mymagento@ssh.${region}.magento${region === 'us' ? 'site' : ''}.cloud`
+  const cmd = `${MC_CLI} ssh -p ${project} -e ${environment} --pipe`
+  const result = await exec(cmd)
+    .then(execOutputHandler)
+    .then(async ({stdout, stderr}) => {
+      if (/An API error occurred./.test(stderr)) {
+        throw 'An API error occurred.'
+      }
+      return stdout.trim()
+    })
+  return result
 }
 
 // Using this method instead of the built in `magento-cloud ssh ...` prevents token timeouts for ssh cmds
