@@ -28,6 +28,7 @@ const {
   deployEnvWithFile,
   rebuildAndRedeployUsingDummyFile,
   getExpiringPidEnvs,
+  setIPAccess,
   backup
 } = require('../src/environment')
 const {addUser, delUser} = require('../src/user')
@@ -441,6 +442,22 @@ yargs.command(
 )
 
 yargs.command(
+  ['env:set-ip-access [pid:env...]', 'ei'],
+  '(Re)set IP access to default for env(s)',
+  yargs => {
+    addSharedPidEnvOpts()
+  },
+  argv => {
+    verifyOnlyOneOf(argv, ['a', 'pid:env'])
+    let pidEnvs = new Set(argv.all ? getLiveEnvsAsPidEnvArr() : argv['pid:env'])
+    if (argv.time) {
+      pidEnvs = filterStillValidRuns(argv.time, setIPAccess, pidEnvs)
+    }
+    pLimitForEachHandler(6, setIPAccess, pidEnvs)
+  }
+)
+
+yargs.command(
   ['env:smoke-test [pid:env...]', 'es'],
   'Run smoke tests in env(s)',
   yargs => {
@@ -459,7 +476,7 @@ yargs.command(
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, smokeTestApp, pidEnvs)
     }
-    pLimitForEachHandler(2, smokeTestApp, pidEnvs)
+    pLimitForEachHandler(4, smokeTestApp, pidEnvs)
   }
 )
 

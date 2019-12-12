@@ -124,7 +124,8 @@ const execOutputHandler = ({stdout, stderr}) => {
       /Variable.*already set as/i,
       /Are you sure you want to delete the user/i,
       /Your environments are/i,
-      /Adding the user/i
+      /Adding the user/i,
+      /Updated HTTP access/i
     ]
     const result = nonErrorRegexes.filter(regex => regex.test(stderr))
     if (result.length === 0) {

@@ -1,6 +1,6 @@
 const https = require('https')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
-const {localCloudSshKeyPath} = require('../.secrets.json')
+const {localCloudSshKeyPath, auth_opts} = require('../.secrets.json')
 
 const updateEnvironmentFromApi = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
@@ -226,6 +226,22 @@ const getExpiringPidEnvs = () => {
   return expiringPidEnvs
 }
 exports.getExpiringPidEnvs = getExpiringPidEnvs
+
+const setIPAccess = async (project, environment) => {
+  const cmd = `${MC_CLI} httpaccess -p ${project} -e ${environment} --no-wait ${auth_opts}`
+  const result = exec(cmd)
+    .then(execOutputHandler)
+    .then(({stdout, stderr}) => {
+      if (/Failed to identify project/.test(stderr)) {
+        throw 'Project not found.'
+      }
+      logger.mylog('info', `Env: ${environment} of project: ${project} (re)set IP access.`)
+      return true
+    })
+    .catch(error => logger.mylog('error', error))
+  return result
+}
+exports.setIPAccess = setIPAccess
 
 const checkStatusCode = response => {
   const result = {

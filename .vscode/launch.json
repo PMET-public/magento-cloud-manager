@@ -143,7 +143,7 @@
       "args": [
         "env:check-web-status",
         "-v",
-        "u4rn4e7jke2ao:erp-integration", //gdprlmsp3syac:sales-demo
+        "n7nbrkm6byryw:master", //gdprlmsp3syac:sales-demo
         "-t",
         "0"
       ]
@@ -157,7 +157,7 @@
       "args": [
         "project:update",
         "-v",
-        "exkfyxnbu3zke",
+        "bjxvwp2ir32iw",
         "-t",
         "0"
       ]
@@ -314,6 +314,17 @@
       "args": [
         "env:sync",
         "6iqrsmlqhxefq:East"
+      ]
+    },
+    {
+      "type": "node",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "(Re)set IP access",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:set-ip-access",
+        "6iqrsmlqhxefq:master"
       ]
     },
     {
