@@ -453,7 +453,7 @@ yargs.command(
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, setIPAccess, pidEnvs)
     }
-    pLimitForEachHandler(6, setIPAccess, pidEnvs)
+    pLimitForEachHandler(2, setIPAccess, pidEnvs)
   }
 )
 
