@@ -1,4 +1,5 @@
 #! /bin/bash
+
 ./vendor/bin/m2-ece-deploy
 
 if [ $? != 0 ]; then
