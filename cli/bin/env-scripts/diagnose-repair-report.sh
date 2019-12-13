@@ -198,38 +198,69 @@ last_msg=$(
 report "Last customer login $last_msg.\n"
 
 # var/report
-cd $app_dir/var/report
-last_var_report=$(ls -tr | tail -1)
-last_var_report_mtime=$(date -d "$(stat -c %x $last_var_report)")
-last_var_report_contents=$(perl -pe 's/\\n/\n/g;s/<pre>/<pre>\n/;s/\n(#[0-9]+)/\n  \1/g' $last_var_report)
-report "\n----Most recent ${yellow}var/report$no_color from $last_var_report_mtime: ---------\n"
-report "$last_var_report_contents"
-report '\n-----------------------------------------------------------------------\n\n'
+cd $app_dir/var/report &&
+  {
+    last_var_report=$(ls -tr | tail -1)
+    last_var_report_mtime=$(date -d "$(stat -c %x $last_var_report)")
+    last_var_report_contents=$(perl -pe 's/\\n/\n/g;s/<pre>/<pre>\n/;s/\n(#[0-9]+)/\n  \1/g' $last_var_report)
+    report "\n----Most recent ${yellow}var/report$no_color from $last_var_report_mtime: ---------\n"
+    report "$last_var_report_contents"
+    report '\n-----------------------------------------------------------------------\n\n'
+  } ||
+  report "${green}No reports in var/report.$no_color\n"
 
 # exception.log
 cd $app_dir/var/log
 recent_exceptions=$(perl -ne '/report.(ERROR|CRITICAL)/ and print' exception.log | tail -3)
-report "\n----3 latest 'CRITICAL' or 'ERROR' messages in ${yellow}exception.log$no_color: ---------\n"
-report "$recent_exceptions"
-report '\n-----------------------------------------------------------------------\n\n'
+test ! -z "$recent_exceptions" &&
+  {
+    report "\n----3 latest 'CRITICAL' or 'ERROR' messages in ${yellow}exception.log$no_color: ---------\n"
+    report "$recent_exceptions"
+    report '\n-----------------------------------------------------------------------\n\n'
+  } ||
+  report "${green}No CRITICAL or ERROR messages in exception.log.$no_color\n"
 
 # support_report.log
 cd $app_dir/var/log
 recent_support_reports=$(perl -ne '/report.(ERROR|CRITICAL)/ and print' support_report.log | tail -3)
-report "\n----3 latest 'CRITICAL' or 'ERROR' messages in ${yellow}support_report.log$no_color: ----\n"
-report "$recent_support_reports"
-report '\n-----------------------------------------------------------------------\n\n'
+test ! -z "$recent_exceptions" &&
+  {
+    report "\n----3 latest 'CRITICAL' or 'ERROR' messages in ${yellow}support_report.log$no_color: ----\n"
+    report "$recent_support_reports"
+    report '\n-----------------------------------------------------------------------\n\n'
+  } ||
+  report "${green}No CRITICAL or ERROR messages in support_report.log.$no_color\n"
 
-# recent http access (not curl UA)
-cd /var/log
-recent_access=$(perl -ne '!/ "curl\// and print' /var/log/access.log | tail -5)
-report "\n----------------------Recent ${yellow}HTTP$no_color access-------------------------------\n"
-report "$recent_access"
-report '\n-----------------------------------------------------------------------\n\n'
+# recent http access (excluding go client from mcm and curl)
+log_files=$(test $is_cloud = "true" && echo "/var/log/access.log" || echo "/var/log/nginx/access.log")
+for lf in $log_files; do
+  recent_access=$(cat $lf |
+    perl -ne '!/ "Go-http-client/ and !/ "curl\// and /HTTP\/[1-2]\.?\d?"? 200/ and print' |
+    # limiting uniq to 1st 16 chars should give 1 result per ip
+    uniq -w 16 |
+    tail -5
+  )
+  test ! -z "$recent_access" &&
+  {
+    report "\n-------------------Recent ${green}OK (200) HTTP$no_color access-------------------------\n"
+    report "$recent_access"
+    report '\n-----------------------------------------------------------------------\n\n'
+  } ||
+  report "${yellow}No recent visits in $lf.$no_color\n"
+done
 
 # recent non-200 http access (not curl UA)
-cd /var/log
-recent_access=$(perl -ne '!/ "curl\// and !/HTTP\/[1-2]\.?\d? 200/ and print' /var/log/access.log | tail -5)
-report "\n----------------------Recent ${yellow}non-200 HTTP$no_color access-----------------------\n"
-report "$recent_access"
-report '\n-----------------------------------------------------------------------\n\n'
+log_files=$(test $is_cloud = "true" && echo "/var/log/access.log" || echo "/var/log/nginx/access.log /var/log/nginx/error.log")
+for lf in $log_files; do
+  recent_access=$(cat $lf |
+    perl -ne '!/ "curl\// and !/HTTP\/[1-2]\.?\d?"? 200/ and print' |
+    tail -5
+  )
+  test ! -z "$recent_access" &&
+  {
+    report "\n-----------Recent ${yellow}non OK (200) HTTP$no_color in $lf------------------\n"
+    report "$recent_access"
+    report '\n-----------------------------------------------------------------------\n\n'
+  } ||
+  report "${green}No recent errors in $lf.$no_color\n"
+done
