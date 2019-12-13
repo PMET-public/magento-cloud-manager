@@ -82,6 +82,8 @@ test -f .deploy_is_failed &&
       grep -v '^Running schema' |
       perl -pe 's/^/\t/' |
       tail
+    # reset cur timestamp b/c upgrade may have taken awhile
+    cur_unix_ts=$(date +%s)
   } ||
   report 'No failed deploy flag found.\n'
 
