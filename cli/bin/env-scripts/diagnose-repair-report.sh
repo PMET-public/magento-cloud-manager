@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ -z "$debug" || debug -eq 1 ]]; then
+if [[ -z "$debug" || $debug -eq 1 ]]; then
   set -x
   set -e
 fi
