@@ -253,7 +253,7 @@ for lf in $log_files; do
   )
   test ! -z "$recent_access" &&
   {
-    report "\n-------------------Recent ${green}OK (200) HTTP$no_color access-------------------------\n"
+    report "\n---------------Recent ${green}OK (200) HTTP$no_color in $lf-------------\n"
     report "$recent_access"
     report '\n-----------------------------------------------------------------------\n\n'
   } ||
@@ -270,7 +270,7 @@ for lf in $log_files; do
   )
   test ! -z "$recent_access" &&
   {
-    report "\n-----------Recent ${yellow}non OK (200) HTTP$no_color in $lf------------------\n"
+    report "\n-----------Recent ${yellow}non OK (200) HTTP$no_color in $lf-------------\n"
     report "$recent_access"
     report '\n-----------------------------------------------------------------------\n\n'
   } ||
