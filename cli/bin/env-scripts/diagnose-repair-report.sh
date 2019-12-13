@@ -52,6 +52,16 @@ is_cron_enabled() {
   '
 }
 
+dedup_msgs() {
+  perl -ne '/report.(ERROR|CRITICAL)/ and print' |
+    # want to dedup errors but have to ignore timestamps
+    # also want the most recent first so have to reverse (tac) before dedup and then reverse again
+    tac |
+    uniq -s 25 |
+    tac |
+    tail -5
+}
+
 # check Magento version
 this_ee_composer_version=$(cat $app_dir/composer.lock | get_ee_version)
 public_ee_composer_version=$(curl -s https://raw.githubusercontent.com/magento/magento-cloud/master/composer.lock | get_ee_version)
@@ -211,30 +221,31 @@ cd $app_dir/var/report &&
 
 # exception.log
 cd $app_dir/var/log
-recent_exceptions=$(perl -ne '/report.(ERROR|CRITICAL)/ and print' exception.log | tail -3)
+recent_exceptions=$(cat exception.log | dedup_msgs)
 test ! -z "$recent_exceptions" &&
   {
-    report "\n----3 latest 'CRITICAL' or 'ERROR' messages in ${yellow}exception.log$no_color: ---------\n"
+    report "\n----Some CRITICAL/ERROR msgs in ${yellow}exception.log$no_color (skip repeats): ---------\n"
     report "$recent_exceptions"
     report '\n-----------------------------------------------------------------------\n\n'
   } ||
-  report "${green}No CRITICAL or ERROR messages in exception.log.$no_color\n"
+  report "${green}No CRITICAL or ERROR msgs in exception.log.$no_color\n"
 
 # support_report.log
 cd $app_dir/var/log
-recent_support_reports=$(perl -ne '/report.(ERROR|CRITICAL)/ and print' support_report.log | tail -3)
-test ! -z "$recent_exceptions" &&
+recent_support_reports=$(cat support_report.log | dedup_msgs)
+test ! -z "$recent_support_reports" &&
   {
-    report "\n----3 latest 'CRITICAL' or 'ERROR' messages in ${yellow}support_report.log$no_color: ----\n"
+    report "\n----Some CRITICAL/ERROR msgs in ${yellow}support_report.log$no_color (skip repeats): ----\n"
     report "$recent_support_reports"
     report '\n-----------------------------------------------------------------------\n\n'
   } ||
-  report "${green}No CRITICAL or ERROR messages in support_report.log.$no_color\n"
+  report "${green}No CRITICAL or ERROR msgs in support_report.log.$no_color\n"
 
 # recent http access (excluding go client from mcm and curl)
 log_files=$(test $is_cloud = "true" && echo "/var/log/access.log" || echo "/var/log/nginx/access.log")
 for lf in $log_files; do
-  recent_access=$(cat $lf |
+  recent_access=$(
+    cat $lf |
     perl -ne '!/ "Go-http-client/ and !/ "curl\// and /HTTP\/[1-2]\.?\d?"? 200/ and print' |
     # limiting uniq to 1st 16 chars should give 1 result per ip
     uniq -w 16 |
@@ -249,11 +260,12 @@ for lf in $log_files; do
   report "${yellow}No recent visits in $lf.$no_color\n"
 done
 
-# recent non-200 http access (not curl UA)
+# recent http access (excluding go client from mcm and curl)
 log_files=$(test $is_cloud = "true" && echo "/var/log/access.log" || echo "/var/log/nginx/access.log /var/log/nginx/error.log")
 for lf in $log_files; do
-  recent_access=$(cat $lf |
-    perl -ne '!/ "curl\// and !/HTTP\/[1-2]\.?\d?"? 200/ and print' |
+  recent_access=$(
+    cat $lf |
+    perl -ne '!/ "Go-http-client/ and !/ "curl\// and !/HTTP\/[1-2]\.?\d?"? 200/ and print' |
     tail -5
   )
   test ! -z "$recent_access" &&
