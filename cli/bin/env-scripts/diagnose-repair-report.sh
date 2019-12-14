@@ -72,6 +72,9 @@ dedup_msgs() {
     tail -5
 }
 
+store_url=$(php $app_dir/bin/magento config:show web/unsecure/base_url)
+report "\n$green----REPORT FOR $store_url----$no_color\n\n"
+
 # check Magento version
 this_ee_composer_version="$(cat $app_dir/composer.lock | get_ee_version)"
 public_ee_composer_version="$(curl -s https://raw.githubusercontent.com/magento/magento-cloud/master/composer.lock | get_ee_version)"
@@ -108,7 +111,6 @@ test -f .deploy_is_failed &&
   report 'No failed deploy flag found.\n'
 
 # check for unusual HTTP responses
-store_url=$(php $app_dir/bin/magento config:show web/unsecure/base_url)
 localhost_http_status=$(curl -sI localhost | get_http_response_code)
 test $localhost_http_status -ne 302 &&
   report "Localhost HTTP response should be 302 is $red$localhost_http_status$no_color\n" ||
