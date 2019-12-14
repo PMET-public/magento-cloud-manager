@@ -6,15 +6,25 @@ if [[ -z "$debug" || $debug -eq 1 ]]; then
 fi
 
 # make it easy to call via bash history or while writing/debugging
-[[ "$0" =~ "most-recent" ]] || rm /tmp/most-recent-drr.sh || ln -s $0 /tmp/most-recent-drr.sh
+[[ "$0" =~ "most-recent" ]] ||
+  rm /tmp/most-recent-drr.sh 2> /dev/null ||
+  ln -s $0 /tmp/most-recent-drr.sh
 
 red='\033[0;31m'
 green='\033[0;32m'
 yellow='\033[1;33m'
 no_color='\033[0m'
 cur_unix_ts=$(date +%s)
-is_cloud=$(test ! -z "$MAGENTO_CLOUD_ROUTES" && echo "true" || echo "false")
-app_dir=$(test $is_cloud = "true" && echo "/app" || echo "/var/www/magento")
+
+is_cloud() {
+  test ! -z "$MAGENTO_CLOUD_ROUTES"
+  return $?
+}
+
+is_cloud &&
+  app_dir=/app ||
+  app_dir=/var/www/magento
+
 db_host=$(
   env_php_file=$app_dir/app/etc/env.php \
   php -r '$arr=include "$_SERVER[env_php_file]"; echo $arr["db"]["connection"]["default"]["host"];'
@@ -48,7 +58,7 @@ is_cron_enabled() {
   env_php_file=$1 php -r '
     error_reporting(E_ERROR|E_WARNING|E_PARSE);
     $arr=include "$_SERVER[env_php_file]";
-    echo !array_key_exists("enabled", $arr["cron"]) || $arr["cron"]["enabled"] == 1  ? "true" : "false";
+    echo !array_key_exists("cron", $arr) || !array_key_exists("enabled", $arr["cron"]) || $arr["cron"]["enabled"] == 1  ? "true" : "false";
   '
 }
 
@@ -63,12 +73,12 @@ dedup_msgs() {
 }
 
 # check Magento version
-this_ee_composer_version=$(cat $app_dir/composer.lock | get_ee_version)
-public_ee_composer_version=$(curl -s https://raw.githubusercontent.com/magento/magento-cloud/master/composer.lock | get_ee_version)
-test $this_ee_composer_version = $public_ee_composer_version &&
+this_ee_composer_version="$(cat $app_dir/composer.lock | get_ee_version)"
+public_ee_composer_version="$(curl -s https://raw.githubusercontent.com/magento/magento-cloud/master/composer.lock | get_ee_version)"
+test "$this_ee_composer_version" = "$public_ee_composer_version" &&
   report "This env is running the lastest public Magento version: $green$public_ee_composer_version$no_color.\n" ||
   report "This env is not running the lastest public Magento version.
-    $yellowpublic: $public_ee_composer_version, env: $this_ee_composer_version.$no_color\n"
+    ${yellow}public: $public_ee_composer_version, env: $this_ee_composer_version.$no_color\n"
 
 # check for unfinished maintenance 
 cd $app_dir/var
@@ -98,7 +108,7 @@ test -f .deploy_is_failed &&
   report 'No failed deploy flag found.\n'
 
 # check for unusual HTTP responses
-store_url=$(php $app_dir/bin/magento config:show:default-url)
+store_url=$(php $app_dir/bin/magento config:show web/unsecure/base_url)
 localhost_http_status=$(curl -sI localhost | get_http_response_code)
 test $localhost_http_status -ne 302 &&
   report "Localhost HTTP response should be 302 is $red$localhost_http_status$no_color\n" ||
@@ -107,13 +117,17 @@ curl -I $store_url 2>&1 | grep -q 'certificate problem' &&
   report "${red}Certificate problem.$no_color\n"
 remote_public_http_status=$(curl -skI $store_url | get_http_response_code)
 test $remote_public_http_status -eq 200 &&
-  report 'Public HTTP response is normal ($remote_public_http_status)\n' ||
+  report "Public HTTP response is normal ($remote_public_http_status)\n" ||
   report "Public HTTP response should be 200 is $red$remote_public_http_status$no_color\n"
-route_url=$(echo "$MAGENTO_CLOUD_ROUTES" | base64 -d - | perl -pe 's#^{"(https?://[^"]+).*#\1#')
-test "$is_cloud" = "true" &&
-  # only compare string after https?://
-  test "$(echo $store_url | perl -pe 's#https?://##')" = "$(echo $route_url | perl -pe 's#https?://##')" ||
-    report "${red}Route url ($route_url) is different than configured store url ($store_url)$no_color\n"
+
+# occassionally the db base url != the env url (cloning data, other chantes, etc.)
+is_cloud &&
+  {
+    route_url=$(echo "$MAGENTO_CLOUD_ROUTES" | base64 -d - | perl -pe 's#^{"(https?://[^"]+).*#\1#')
+    # only compare string after https?://
+    test "$(echo $store_url | perl -pe 's#https?://##')" = "$(echo $route_url | perl -pe 's#https?://##')" ||
+      report "${red}Route url ($route_url) is different than configured store url ($store_url)$no_color\n"
+  }
 
 # check cron
 cd $app_dir
@@ -132,8 +146,11 @@ test $(is_cron_enabled $env_file_old) = "true" ||
       } ||
       exit "Enabling cron via regex failed."
   }
-last_cron=$(grep -A2 '^\[.*Launching command' /var/log/cron.log | tail -3 | tr '\n' ' ')
-last_cron_ts=$(date -d "$(echo $last_cron | perl -pe 's/^.([^\.]+).*$/\1/')" +%s)
+is_cloud &&
+  cron_file=/var/log/cron.log ||
+  cron_file=/var/www/magento/var/log/magento.cron.log
+last_cron=$(grep -a -A2 '^\[.*Launching command' $cron_file | tail -3 | tr '\n' ' ')
+last_cron_ts=$(date -d "$(echo $last_cron | perl -pe 's/^.([^\.\]]+).*$/\1/')" +%s)
 min_since_last_cron=$(( (cur_unix_ts - last_cron_ts) / 60 ))
 report 'Last cron '
 echo $last_cron | grep -q 'Ran jobs by' &&
@@ -160,8 +177,8 @@ report "Host has $nproc cpus.\n"
 
 # check indexes
 invalid_index_count=$(
-  mysql $db_name -sN -h $db_host -u $db_user -p"$db_password" \
-    -e 'SELECT COUNT(*) FROM indexer_state WHERE status != "valid";'
+  mysql $db_name -sN -h $db_host -u $db_username --password="$db_password" \
+    -e 'SELECT COUNT(*) FROM indexer_state WHERE status != "valid";' 2> /dev/null
 )
 test $invalid_index_count -gt 0 &&
   {
@@ -173,39 +190,49 @@ test $invalid_index_count -gt 0 &&
 
 # last admin login
 last_admin_login=$(
-  mysql $db_name -sN -h $db_host -u $db_user -p"$db_password" \
-    -e 'SELECT UNIX_TIMESTAMP(logdate) FROM admin_user WHERE username != "sionly" ORDER BY logdate DESC limit 1;'
+  mysql $db_name -sN -h $db_host -u $db_username --password="$db_password" \
+    -e 'SELECT UNIX_TIMESTAMP(logdate) FROM admin_user 
+      WHERE username != "sionly" ORDER BY logdate DESC limit 1;' 2> /dev/null
 )
-hr_since_last_admin_login=$(( (cur_unix_ts - last_admin_login) / 3600 ))
-days_since_last_admin_login=$(( (cur_unix_ts - last_admin_login) / 86400 ))
-last_msg=$(
-  test $days_since_last_admin_login -gt 30 && 
-    echo "$yellow$days_since_last_admin_login$no_color days ago" ||
-    {
-      test $days_since_last_admin_login -gt 1 &&
-        echo "$days_since_last_admin_login days ago" ||
-        echo "$hr_since_last_admin_login hrs ago"
-    }
-)
-report "Last admin login $last_msg.\n"
+[[ ! -z "$last_admin_login" && "$last_admin_login" != "NULL" ]] &&
+  {
+    hr_since_last_admin_login=$(( (cur_unix_ts - last_admin_login) / 3600 ))
+    days_since_last_admin_login=$(( (cur_unix_ts - last_admin_login) / 86400 ))
+    last_msg=$(
+      test $days_since_last_admin_login -gt 30 && 
+        echo "$yellow$days_since_last_admin_login$no_color days ago" ||
+        {
+          test $days_since_last_admin_login -gt 1 &&
+            echo "$days_since_last_admin_login days ago" ||
+            echo "$hr_since_last_admin_login hrs ago"
+        }
+    )
+    report "Last admin login $last_msg.\n"
+  } ||
+  report "${yellow}No admin logins found.$no_color\n"
 
 # last customer login
 last_customer_login=$(
-  mysql $db_name -sN -h $db_host -u $db_user -p"$db_password" \
-    -e 'SELECT UNIX_TIMESTAMP(last_login_at) FROM customer_log ORDER BY last_login_at DESC limit 1;'
+  mysql $db_name -sN -h $db_host -u $db_username --password="$db_password" \
+    -e 'SELECT UNIX_TIMESTAMP(last_login_at) FROM customer_log 
+      ORDER BY last_login_at DESC limit 1;' 2> /dev/null
 )
-hr_since_last_customer_login=$(( (cur_unix_ts - last_customer_login) / 3600 ))
-days_since_last_customer_login=$(( (cur_unix_ts - last_customer_login) / 86400 ))
-last_msg=$(
-  test $days_since_last_customer_login -gt 30 && 
-    echo "$yellow$days_since_last_customer_login$no_color days ago" ||
-    {
-      test $days_since_last_customer_login -gt 1 &&
-        echo "$days_since_last_customer_login days ago" ||
-        echo "$hr_since_last_customer_login hrs ago"
-    }
-)
-report "Last customer login $last_msg.\n"
+[[ ! -z "$last_customer_login" && "$last_customer_login" != "NULL" ]] &&
+  {
+    hr_since_last_customer_login=$(( (cur_unix_ts - last_customer_login) / 3600 ))
+    days_since_last_customer_login=$(( (cur_unix_ts - last_customer_login) / 86400 ))
+    last_msg=$(
+      test $days_since_last_customer_login -gt 30 && 
+        echo "$yellow$days_since_last_customer_login$no_color days ago" ||
+        {
+          test $days_since_last_customer_login -gt 1 &&
+            echo "$days_since_last_customer_login days ago" ||
+            echo "$hr_since_last_customer_login hrs ago"
+        }
+    )
+    report "Last customer login $last_msg.\n"
+  } ||
+  report "${yellow}No customer logins found.$no_color\n"
 
 # var/report
 cd $app_dir/var/report &&
@@ -241,36 +268,40 @@ test ! -z "$recent_support_reports" &&
   } ||
   report "${green}No CRITICAL or ERROR msgs in support_report.log.$no_color\n"
 
-# recent http access (excluding go client from mcm and curl)
-log_files=$(test $is_cloud = "true" && echo "/var/log/access.log" || echo "/var/log/nginx/access.log")
+# recent http access (excluding go client from mcm, curl, wget)
+is_cloud &&
+  log_files=/var/log/access.log ||
+  log_files=/var/log/nginx/access.log
 for lf in $log_files; do
   recent_access=$(
     cat $lf |
-    perl -ne '!/ "Go-http-client/ and !/ "curl\// and /HTTP\/[1-2]\.?\d?"? 200/ and print' |
+    perl -ne '!/ "Go-http-client/ and !/ "curl\// and !/ "wget/i and /HTTP\/[1-2]\.?\d?"? 200/ and print' |
     # limiting uniq to 1st 16 chars should give 1 result per ip
     uniq -w 16 |
     tail -5
   )
   test ! -z "$recent_access" &&
   {
-    report "\n---------------Recent ${green}OK (200) HTTP$no_color in $lf-------------\n"
+    report "\n---------------Recent ${green}normal$no_color HTTP responses in $lf-------------\n"
     report "$recent_access"
     report '\n-----------------------------------------------------------------------\n\n'
   } ||
   report "${yellow}No recent visits in $lf.$no_color\n"
 done
 
-# recent http access (excluding go client from mcm and curl)
-log_files=$(test $is_cloud = "true" && echo "/var/log/access.log" || echo "/var/log/nginx/access.log /var/log/nginx/error.log")
+# recent http access (excluding go client from mcm, curl, wget)
+is_cloud &&
+  log_files=/var/log/access.log ||
+  log_files="/var/log/nginx/access.log /var/log/nginx/error.log"
 for lf in $log_files; do
   recent_access=$(
     cat $lf |
-    perl -ne '!/ "Go-http-client/ and !/ "curl\// and !/HTTP\/[1-2]\.?\d?"? 200/ and print' |
+    perl -ne '!/ "Go-http-client/ and !/ "curl\// and !/ "wget/i and !/HTTP\/[1-2]\.?\d?"? [2-3][0-9]{2}/ and print' |
     tail -5
   )
   test ! -z "$recent_access" &&
   {
-    report "\n-----------Recent ${yellow}non OK (200) HTTP$no_color in $lf-------------\n"
+    report "\n-----------Recent ${yellow}bad$no_color HTTP responses in $lf-------------\n"
     report "$recent_access"
     report '\n-----------------------------------------------------------------------\n\n'
   } ||
