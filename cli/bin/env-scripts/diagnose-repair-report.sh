@@ -94,7 +94,7 @@ test -f .maintenance.flag &&
 test -f .deploy_is_failed &&
   report "$red.deploy_is_failed found. Removing ...$no_color\n" &&
   rm .deploy_is_failed &&
-  report "Attempting 'php bin/magento setup:upgrade'\n" &&
+  report "Attempting 'php bin/magento setup:upgrade' ... ${yellow}This may take a few minutes.$no_color\n" &&
   {
     cd ${app_dir}
     php bin/magento setup:upgrade >/dev/null 2>&1
@@ -109,6 +109,17 @@ test -f .deploy_is_failed &&
     cur_unix_ts=$(date +%s)
   } ||
   report 'No failed deploy flag found.\n'
+
+# check for undeployed static content
+cd $app_dir
+test $(find pub/static -type f -name '*.css' | wc -l) -gt 1 &&
+  report "Static files found.\n" ||
+  {
+    report "${red}Static files missing.$no_color Generating ... ${yellow}This may take a few minutes.$no_color\n"
+    php bin/magento setup:static-content:deploy >/dev/null 2>&1
+    report "Done.\n"
+  } 
+
 
 # check for unusual HTTP responses
 localhost_http_status=$(curl -sI localhost | get_http_response_code)
