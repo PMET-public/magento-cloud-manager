@@ -97,7 +97,7 @@ test -f .deploy_is_failed &&
   report "Attempting 'php bin/magento setup:upgrade' ... ${yellow}This may take a few minutes.$no_color\n" &&
   {
     cd ${app_dir}
-    php bin/magento setup:upgrade >/dev/null 2>&1
+    php bin/magento setup:upgrade > /dev/null 2>&1
     report 'Tailing relevant end of install_upgrade.log:\n' &&
       cat ${app_dir}/var/log/install_upgrade.log |
       perl -pe 's/\e\[\d+(?>(;\d+)*)m//g;' |
@@ -116,7 +116,7 @@ test $(find pub/static -type f -name '*.css' | wc -l) -gt 1 &&
   report "Static files found.\n" ||
   {
     report "${red}Static files missing.$no_color Generating ... ${yellow}This may take a few minutes.$no_color\n"
-    php bin/magento setup:static-content:deploy >/dev/null 2>&1
+    php bin/magento setup:static-content:deploy > /dev/null 2>&1
     report "Done.\n"
   } 
 
