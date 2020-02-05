@@ -23,4 +23,5 @@ sqlite3 cloud.db "
   delete from smoke_tests where project_id = '$1';
   delete from applications where project_id = '$1';
   delete from web_statuses where host_name like '%-$1.%';
+  VACUUM;
 "

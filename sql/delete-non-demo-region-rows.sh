@@ -11,4 +11,5 @@ sqlite3 cloud.db "
   delete from applications where project_id in (select id from projects where region != 'demo');
   delete from web_statuses where host_name not like '%.demo.%';
   delete from projects where id in (select id from projects where region != 'demo');
+  VACUUM;
 "
