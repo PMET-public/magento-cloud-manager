@@ -248,7 +248,7 @@ last_customer_login=$(
   report "${yellow}No customer logins found.$no_color\n"
 
 # var/report
-cd $app_dir/var/report &&
+cd $app_dir/var/report 2> /dev/null &&
   {
     last_var_report=$(ls -tr | tail -1)
     last_var_report_mtime=$(date -d "$(stat -c %x $last_var_report)")
