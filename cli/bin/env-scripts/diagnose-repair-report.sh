@@ -133,7 +133,7 @@ test $remote_public_http_status -eq 200 &&
   report "Public HTTP response is normal ($remote_public_http_status)\n" ||
   report "Public HTTP response should be 200 is $red$remote_public_http_status$no_color\n"
 
-# occassionally the db base url != the env url (cloning data, other chantes, etc.)
+# occassionally the db base url != the env url (cloning data, other changes, etc.)
 is_cloud &&
   {
     route_url=$(echo "$MAGENTO_CLOUD_ROUTES" | base64 -d - | perl -pe 's#^{"(https?://[^"]+).*#\1#')
