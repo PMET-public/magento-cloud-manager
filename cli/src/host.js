@@ -35,7 +35,7 @@ const updateHost = async (project, environment = 'master') => {
 exports.updateHost = updateHost
 
 const getSampleEnvs = () => {
-  // prefer master envs (and ensure active projects) b/c masters can not be deleted and so can't be recreated on new host
+  // prefer master envs (and ensure active projects) b/c masters can not be deleted
   // can still be rebalanced/migrated to another host though
   // length col accounts for rare case where env name begins with substring "master"
   const sql = `SELECT pe.proj_env_id FROM
