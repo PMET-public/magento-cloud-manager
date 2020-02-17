@@ -1,6 +1,6 @@
 const https = require('https')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
-const {localCloudSshKeyPath, auth_opts} = require('../.secrets.json')
+const {localCloudSshKeyPath, nets_json} = require('../.secrets.json')
 
 const updateEnvironmentFromApi = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
@@ -228,7 +228,12 @@ const getExpiringPidEnvs = () => {
 exports.getExpiringPidEnvs = getExpiringPidEnvs
 
 const setIPAccess = async (project, environment) => {
-  const cmd = `${MC_CLI} httpaccess -p ${project} -e ${environment} --no-wait ${auth_opts}`
+  const nowInMs = (new Date()).getTime()
+  const networks = nets_json.networks.filter(a => Date.parse(a.available_until) > nowInMs).sort((a,b) => a.address > b.address ? 1 : -1)
+  let network_opts = `--auth admin:${project}`
+  networks.forEach(n => network_opts += ` --access allow:${n.address}/${n.mask}`)
+
+  const cmd = `${MC_CLI} httpaccess -p ${project} -e ${environment} --no-wait ${network_opts} --access deny:any`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
