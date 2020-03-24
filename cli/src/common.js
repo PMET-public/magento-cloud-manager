@@ -90,7 +90,7 @@ db.prepare = function() {
 exports.db = db
 
 const dbExists = () => {
-  const sql = 'SELECT count(name) tbl_count FROM sqlite_master WHERE type="table";'
+  const sql = "SELECT count(name) tbl_count FROM sqlite_master WHERE type='table';"
   const result = db.prepare(sql).get()
   logger.mylog('debug', result)
   return !!result.tbl_count
