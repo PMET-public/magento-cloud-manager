@@ -16,7 +16,7 @@
     "p-limit": "^2.2.1",
     "sprintf-js": "^1.1.1",
     "winston": "^3.2.1",
-    "yargs": "^12.0.1"
+    "yargs": "^12.0.5"
   },
   "bin": {
     "mcm": "./bin/mcm"
