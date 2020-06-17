@@ -135,8 +135,8 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
         ssh -n $(${MC_CLI} ssh -p ${project} -e ${environment} --pipe) "{ for i in {1..30}; do pkill php; sleep 60; done; } &>/dev/null &"
         git add -u
         git add .
-        # special case: 1st time auth.json forcefully added b/c of .gitignore. subsequent runs have no affect
-        git add -f auth.json
+        rm auth.json || :
+        git rm auth.json || :
         git commit -m "commit using ${basename}"
         git branch -u $(git remote)/${environment}
         git push -f $(git remote) HEAD:${environment}
