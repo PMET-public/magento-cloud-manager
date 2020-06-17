@@ -90,7 +90,7 @@ db.prepare = function() {
 exports.db = db
 
 const dbExists = () => {
-  const sql = 'SELECT count(name) tbl_count FROM sqlite_master WHERE type="table";'
+  const sql = "SELECT count(name) tbl_count FROM sqlite_master WHERE type='table';"
   const result = db.prepare(sql).get()
   logger.mylog('debug', result)
   return !!result.tbl_count
@@ -125,7 +125,9 @@ const execOutputHandler = ({stdout, stderr}) => {
       /Are you sure you want to delete the user/i,
       /Your environments are/i,
       /Adding the user/i,
-      /Updated HTTP access/i
+      /Updated HTTP access/i,
+      /Createing variable/i,
+      /Variable .* updated/i
     ]
     const result = nonErrorRegexes.filter(regex => regex.test(stderr))
     if (result.length === 0) {

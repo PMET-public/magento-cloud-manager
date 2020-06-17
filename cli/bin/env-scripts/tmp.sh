@@ -8,7 +8,11 @@
 # php bin/magento setup:upgrade
 # php bin/magento setup:static-content:deploy
 # php bin/magento cache:flush
-# rm var/.maintenance.flag
+# rm var/.maintenance.flag 
 
 # fix broken cron
 # sed -i "/'enabled' => 0/d" /app/app/etc/env.php
+
+# mysql main -sN -h database.internal -e "update core_config_data set value = replace(value, 'http:', 'https:') where path = 'web/unsecure/base_url'"
+# php bin/magento indexer:reindex
+# php bin/magento cache:flush
