@@ -125,7 +125,9 @@ const execOutputHandler = ({stdout, stderr}) => {
       /Are you sure you want to delete the user/i,
       /Your environments are/i,
       /Adding the user/i,
-      /Updated HTTP access/i
+      /Updated HTTP access/i,
+      /Createing variable/i,
+      /Variable .* updated/i
     ]
     const result = nonErrorRegexes.filter(regex => regex.test(stderr))
     if (result.length === 0) {
