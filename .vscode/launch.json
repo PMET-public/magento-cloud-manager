@@ -6,7 +6,7 @@
   "configurations": [
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Host update on project yye7pupverdpa (verbose)",
@@ -19,7 +19,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Host update an invalid project (verbose)",
@@ -32,7 +32,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Host update sample (verbose)",
@@ -44,7 +44,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Match hosts and envs",
@@ -56,7 +56,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Generate css for cloud",
@@ -68,7 +68,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Smoke test all applications (verbose)",
@@ -80,7 +80,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Smoke test untested applications (verbose)",
@@ -92,7 +92,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Smoke test sample demo project (verbose)",
@@ -107,7 +107,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Smoke test sample ref project (verbose)",
@@ -122,7 +122,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Back up env (verbose)",
@@ -135,7 +135,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Check web for all envs (verbose)",
@@ -147,7 +147,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Check web for sample envs (verbose)",
@@ -162,7 +162,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Update sample project",
@@ -177,7 +177,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Update all projects",
@@ -189,7 +189,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Exec a sample script in a sample env",
@@ -204,7 +204,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Exec a sample sql in a sample env",
@@ -219,7 +219,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "mcm no args",
@@ -228,7 +228,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Exec a sample SQL file in a sample env",
@@ -241,7 +241,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Get a sample file env",
@@ -256,7 +256,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Redeploy a sample env with no changes (forced)",
@@ -269,7 +269,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Redeploy a sample env using tar file",
@@ -286,7 +286,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Redeploy a sample env using a shell script",
@@ -303,7 +303,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Redeploy expiring envs",
@@ -315,7 +315,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Sync envs testing master patterns",
@@ -330,7 +330,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Sync env",
@@ -342,7 +342,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "(Re)set IP access",
@@ -354,7 +354,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Find all activities failures (verbose)",
@@ -366,7 +366,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Find activities failures on invalid pid (verbose)",
@@ -379,7 +379,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Find activities failures on valid pid (verbose)",
@@ -394,7 +394,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Grant all gitlab keys access to all configured gitlab projects(verbose)",
@@ -406,7 +406,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Grant cloud project access to all configured gitlab projects (verbose)",
@@ -419,7 +419,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Delete inactive envs",
@@ -431,7 +431,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Check app version of sample pid(s)",
@@ -447,7 +447,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "User add",
@@ -463,7 +463,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "User delete",
@@ -477,7 +477,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Variable set",
@@ -493,7 +493,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Variable get",
@@ -508,7 +508,7 @@
     },
     {
       "type": "node",
-      "runtimeExecutable": "${HOME}/.fnm/node-versions/v13.11/10/installation/bin/node",
+      "runtimeExecutable": "${HOME}/.fnm/node-versions/v10.20.1/installation/bin/node",
       "outputCapture": "std",
       "request": "launch",
       "name": "Run mocha",
