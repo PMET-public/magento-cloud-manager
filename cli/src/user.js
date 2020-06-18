@@ -51,13 +51,13 @@ const recordUsers = async project => {
         .trim()
         .split('\n')
         .map(row => row.split('\t'))
-        .forEach(row => insertValues.push(`("${project}", "${row[0]}", "${row[2]}")`))
-      const sql = `DELETE FROM users WHERE project_id = "${project}";
-        INSERT INTO users (project_id, email, role) VALUES ${insertValues.join(',')}`
+        .forEach(row => insertValues.push(`('${project}', '${row[0]}', '${row[2]}')`))
+      const sql = `DELETE FROM users WHERE project_id = '${project}';
+      INSERT INTO users (project_id, email, role) VALUES ${insertValues.join(',')};`
       const result = db.exec(sql)
       logger.mylog('debug', result)
       return true
-    })
+    }).catch(error => logger.mylog('error', error))
   return result
 }
 exports.recordUsers = recordUsers

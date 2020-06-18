@@ -44,7 +44,7 @@ const updateProject = async project => {
 exports.updateProject = updateProject
 
 const setProjectInactive = project => {
-  const sql = 'UPDATE projects SET active = 0, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE id = ?'
+  const sql = "UPDATE projects SET active = 0, timestamp = cast(strftime('%s',CURRENT_TIMESTAMP) as int) WHERE id = ?"
   const result = db.prepare(sql).run(project)
   logger.mylog('debug', result)
   logger.mylog('info', `Project: ${project} set to inactive.`)

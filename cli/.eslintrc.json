@@ -22,7 +22,10 @@
     ],
     "quotes": [
       "error",
-      "single"
+      "single",
+      {
+        "avoidEscape": true
+      }
     ],
     "no-unused-vars": [
       "warn",
@@ -32,11 +35,15 @@
     ],
     "no-var": "error",
     "no-console": "off",
-    "prefer-destructuring": ["error", {
-      "array": true,
-      "object": true
-    }, {
-      "enforceForRenamedProperties": false
-    }]
+    "prefer-destructuring": [
+      "error",
+      {
+        "array": true,
+        "object": true
+      },
+      {
+        "enforceForRenamedProperties": false
+      }
+    ]
   }
 }

@@ -139,13 +139,13 @@ GROUP BY project_id, environment_id ORDER BY timestamp DESC) hs
 LEFT JOIN 
 /* projects' environments with regions*/
 (SELECT e.id environment_id, project_id, region 
- FROM environments e 
- LEFT JOIN projects p ON p.id = e.project_id
- WHERE e.active = 1
-  AND p.active = 1 
-  AND e.missing = 0
-  AND (e.failure = 0 OR e.failure IS null)
- ) pe 
+  FROM environments e
+  LEFT JOIN projects p ON p.id = e.project_id
+  WHERE e.active = 1
+    AND p.active = 1
+    AND e.missing = 0
+    AND (e.failure = 0 OR e.failure IS null)
+  ) pe
 ON pe.project_id || ':' || pe.environment_id = proj_env_id
 WHERE pe.region is not null) hs
 

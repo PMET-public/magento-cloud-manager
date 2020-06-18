@@ -39,7 +39,7 @@ const updateEnvironmentFromApi = async (project, environment = 'master') => {
 exports.updateEnvironmentFromApi = updateEnvironmentFromApi
 
 const setEnvironmentBranchLevel = (project, environment, value) => {
-  const sql = 'UPDATE environments SET branch_level = ?, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?'
+  const sql = "UPDATE environments SET branch_level = ?, timestamp = cast(strftime('%s', CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?"
   const result = db.prepare(sql).run(value, project, environment)
   logger.mylog('debug', result)
   logger.mylog('info', `Env: ${environment} of project: ${project} set branch level: ${value}.`)
@@ -48,7 +48,7 @@ const setEnvironmentBranchLevel = (project, environment, value) => {
 exports.setEnvironmentBranchLevel = setEnvironmentBranchLevel
 
 const setEnvironmentInactive = (project, environment) => {
-  const sql = 'UPDATE environments SET active = 0, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?' 
+  const sql = "UPDATE environments SET active = 0, timestamp = cast(strftime('%s', CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?"
   const result = db.prepare(sql).run(project, environment)
   logger.mylog('debug', result)
   logger.mylog('info', `Env: ${environment} of project: ${project} set to inactive.`)
@@ -57,7 +57,7 @@ const setEnvironmentInactive = (project, environment) => {
 exports.setEnvironmentInactive = setEnvironmentInactive
 
 const setEnvironmentFailure = (project, environment, value) => {
-  const sql = 'UPDATE environments SET failure = ?, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?'
+  const sql = "UPDATE environments SET failure = ?, timestamp = cast(strftime('%s', CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?"
   const result = db.prepare(sql).run(value, project, environment)
   logger.mylog('debug', result)
   logger.mylog('info', `Env: ${environment} of project: ${project} set failure: ${value}.`)
@@ -66,7 +66,7 @@ const setEnvironmentFailure = (project, environment, value) => {
 exports.setEnvironmentFailure = setEnvironmentFailure
 
 const setEnvironmentMissing = (project, environment, missing = 1) => {
-  const sql = 'UPDATE environments SET missing = ?, timestamp = cast(strftime("%s",CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?'
+  const sql = "UPDATE environments SET missing = ?, timestamp = cast(strftime('%s', CURRENT_TIMESTAMP) as int) WHERE project_id = ? AND id = ?"
   const result = db.prepare(sql).run(missing, project, environment)
   logger.mylog('debug', result)
   if (result && result.changes) {
