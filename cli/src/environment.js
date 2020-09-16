@@ -121,7 +121,11 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
       }
       let cmd = ''
       if (/\.tar$/i.test(basename)) {
-        cmd += `mv ${path}/tmp/{.git,auth.json} ${path} 2> /dev/null; rm -rf "${path}/tmp"\n`
+        cmd += `
+        mv ${path}/tmp/.git ${path}
+        mv ${path}/tmp/auth.json ${path}
+        rm -rf "${path}/tmp"
+        `
       } else {
         cmd += `mv ${path}/tmp/* ${path}/tmp/.* ${path}/\n`
       }
