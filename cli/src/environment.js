@@ -135,8 +135,14 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
         ${/\.tar$/i.test(basename) ? 'tar -xf ' + basename : './' + basename }
         rm "${basename}"
         # flush the cache prevents errors on startup of the next package
-        ssh -n $(${MC_CLI} ssh -p ${project} -e ${environment} --pipe) "php bin/magento cache:flush"
-        ssh -n $(${MC_CLI} ssh -p ${project} -e ${environment} --pipe) "{ for i in {1..30}; do pkill php; sleep 60; done; } &>/dev/null &"
+        `
+      // ssh syntax will vary if using a token
+      if (process.env.MAGENTO_CLOUD_CLI_TOKEN) {
+        cmd += `${MC_CLI} ssh -p ${project} -e ${environment}`
+      } else {
+        cmd += `ssh -n $(${MC_CLI} ssh -p ${project} -e ${environment} --pipe)`
+      }
+      cmd += ` "php bin/magento cache:flush; { for i in {1..30}; do pkill php; sleep 60; done; } &>/dev/null &"
         git add -u
         git add .
         rm auth.json || :
