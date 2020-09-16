@@ -149,8 +149,12 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
         git rm auth.json || :
         git commit -m "commit using ${basename}"
         git branch -u $(git remote)/${environment}
-        git push -f $(git remote) HEAD:${environment}
       `
+      if (process.env.MAGENTO_CLOUD_CLI_TOKEN) {
+        cmd += `${MC_CLI} push -y`
+      } else {
+        cmd += `git push -f $(git remote) HEAD:${environment}`
+      }
       const result = exec(cmd)
         .then(execOutputHandler)
         .then(({stdout, stderr}) => {
