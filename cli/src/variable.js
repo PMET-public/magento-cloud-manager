@@ -23,6 +23,9 @@ const setVar = async (project, environment, name, value) => {
       } else if (/Property not found/i.test(error.stderr)) {
         logger.mylog('debug', error.stderr)
         return 'update'
+      } else if (/variable is sensitive/i.test(error.stderr)) {
+        logger.mylog('debug', error.stderr)
+        return 'update'
       }
       logger.mylog('error', error)
     })
