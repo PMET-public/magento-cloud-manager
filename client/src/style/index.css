@@ -85,7 +85,7 @@ main {
 }
 
 main.main-content {
-  padding: 65px 0 0 0
+  padding: 0
 }
 
 .ReactTable .rt-thead .rt-th {
@@ -226,3 +226,12 @@ input[type=checkbox] + label::before {
 }
 input[type=checkbox] + label::before { content: "\f096"; } /* unchecked icon */
 input[type=checkbox]:checked + label::before { content: "\f046"; } /* checked icon */
+
+
+#root .MuiListItemText-inset {
+  padding-left: 6px;
+}
+
+#root .MuiListItemIcon-root {
+  min-width: none;
+}
