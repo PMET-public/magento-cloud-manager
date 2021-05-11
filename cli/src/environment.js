@@ -122,8 +122,8 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
       let cmd = ''
       if (/\.tar$/i.test(basename)) {
         cmd += `
-        mv ${path}/tmp/.git ${path}
-        mv ${path}/tmp/auth.json ${path}
+        mv ${path}/tmp/.git ${path} || :
+        [[ -f "${path}/tmp/auth.json" ]] && mv ${path}/tmp/auth.json ${path}
         rm -rf "${path}/tmp"
         `
       } else {
@@ -145,8 +145,7 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
       cmd += ` "php bin/magento cache:flush; { for i in {1..30}; do pkill php; sleep 60; done; } &>/dev/null &"
         git add -u
         git add .
-        rm auth.json || :
-        git rm auth.json || :
+        [[ -f auth.json ]] && rm auth.json && git rm auth.json
         git commit -m "commit using ${basename}"
         git branch -u $(git remote)/${environment}
       `
