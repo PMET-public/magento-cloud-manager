@@ -89,6 +89,16 @@ export default class EnvironmentsTable extends Component {
     return String(row[filter.id]) === filter.value
   }
 
+  envStatusFilter = (filter, row) => {
+    if (filter.value === 'all') {
+      return true
+    }
+    if (filter.value === 'untested') {
+      return row[filter.id] === null
+    }
+    return String(row[filter.id]) === filter.value
+  }
+
   zeroIsPassing = (filter, row) => {
     const val = parseInt(row[filter.id],10)
     switch (filter.value) {
@@ -183,7 +193,7 @@ export default class EnvironmentsTable extends Component {
     }
   }
 
-  empty = () => {}
+  empty = () => ''
   checkIcon = () => <Icon>check</Icon>
   errorIcon = () => <Icon color="error">error_outline</Icon>
   timerIcon = () => <Icon>timer</Icon>
@@ -735,6 +745,7 @@ export default class EnvironmentsTable extends Component {
                   className: 'right',
                   width: calcWidth(3),
                   Filter: this.createFilterOptionsFromAccessor('env_status'),
+                  // filterMethod: this.envStatusFilter,
                   filterMethod: this.exactMatchRow,
                   Cell: cell => this.valueToIcon(cell.value)
                 },
@@ -848,7 +859,7 @@ export default class EnvironmentsTable extends Component {
                     }
                     const expiryDate = new Date(cell.value * 1000)
                     if (expiryDate < new Date()) {
-                      return 'Expired!'
+                      return this.errorIcon
                     }
                     return this.formatDate(cell.value)
                   },
@@ -1121,6 +1132,7 @@ export default class EnvironmentsTable extends Component {
                       const vals = cell.value.split(',')
                       return parseInt(vals[4],10) - parseInt(vals[1],10)
                     }
+                    return ''
                   },
                   maxWidth: calcWidth(4),
                   Filter: ({filter, onChange}) => (
