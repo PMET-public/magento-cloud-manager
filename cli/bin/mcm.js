@@ -535,19 +535,19 @@ yargs.command(
   }
 )
 
-yargs.command(
-  ['project:find-failures [pid:env...]', 'pf'],
-  'Query activity API by proj(s) to find envs that failed to deploy',
-  addSharedPidEnvOpts,
-  async argv => {
-    verifyOnlyOneOf(argv, ['a', 'pid:env'])
-    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
-    if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
-    }
-    pLimitForEachHandler(4, searchActivitiesForFailures, pidEnvs)
-  }
-)
+// yargs.command(
+//   ['project:find-failures [pid:env...]', 'pf'],
+//   'Query activity API by proj(s) to find envs that failed to deploy',
+//   addSharedPidEnvOpts,
+//   async argv => {
+//     verifyOnlyOneOf(argv, ['a', 'pid:env'])
+//     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+//     if (argv.time) {
+//       pidEnvs = filterStillValidRuns(argv.time, searchActivitiesForFailures, pidEnvs)
+//     }
+//     pLimitForEachHandler(4, searchActivitiesForFailures, pidEnvs)
+//   }
+// )
 
 yargs.command(
   ['project:grant-gitlab [pid:env...]', 'pg'],

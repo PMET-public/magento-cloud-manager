@@ -17,7 +17,6 @@ Commands:
   mcm env:sync [pid:env...]                 Sync code with parent. N/A for master envs.
   mcm host:env-match                        Match envs to hosts based on shared system attributes  [aliases: he]
   mcm host:update [pid:env...]              Gather performance metrics of hosts via env(s)  [aliases: hu]
-  mcm project:find-failures [pid:env...]    Query activity API by proj(s) to find envs that failed to deploy  [aliases: pf]
   mcm project:grant-gitlab [pid:env...]     Grant access to proj(s) to all configured gitlab projects in .secrets.json  [aliases: pg]
   mcm project:update [pid...]               Update projects' info, users, and envs  [aliases: pu]
   mcm user:add <email> <role> [pid...]      Add user with email and role to projects  [aliases: ua]
