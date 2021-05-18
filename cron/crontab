@@ -1,5 +1,13 @@
+# set bash and .bashrc so correct version of node is found (using nvm or fnm)
+# also watch out for this gotcha https://unix.stackexchange.com/a/498954/7447
+# SHELL=/bin/bash
+# BASH_ENV=/path/to/.bashrc
+# set a token to avoid ssh cert errors
+# MAGENTO_CLOUD_CLI_TOKEN=
 MCM_DIR=/home/ese/magento-cloud-manager
 MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
+
+# * * * * * env; node -v
 
 # use perl sleep and rand functions to vary start times
 # 900 s = 15 min, 7200 s = 2hrs, 14000 s ~ 4 hrs
