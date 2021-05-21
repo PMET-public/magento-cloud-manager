@@ -4,6 +4,6 @@
     { "directory": "./client", "changeProcessCWD": true },
     { "directory": "./server", "changeProcessCWD": true }
   ],
-"editor.tabSize": 2,
-"eslint.trace.server": "verbose"
+  "editor.tabSize": 2,
+  "eslint.trace.server": "verbose"
 }
