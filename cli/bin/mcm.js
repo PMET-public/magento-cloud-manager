@@ -354,9 +354,16 @@ yargs.command(
     if (argv.time) {
       pidEnvs = filterStillValidRuns(argv.time, deployEnvWithFile, pidEnvs, additionalArgs)
     }
-    if (argv.tar && !require('fs').existsSync(argv.tar)) {
-      console.error(errorTxt(`Could not find file: ${argv.tar}`))
-      process.exit(1)
+    if (argv.tar) {
+      if (!require('fs').existsSync(argv.tar)) {
+        if (!/^[a-z0-9]{13}:?/.test(argv.tar)) {
+          console.error(errorTxt(`Could not find file: ${argv.tar}`))
+          process.exit(1)
+        } else {
+          pidEnvs.add(argv.tar)
+          pLimitForEachHandler(4, redeployEnv, pidEnvs, additionalArgs)
+        }
+      }
     }
     if (argv.yes) {
       pLimitForEachHandler(4, deployEnvWithFile, pidEnvs, additionalArgs)
