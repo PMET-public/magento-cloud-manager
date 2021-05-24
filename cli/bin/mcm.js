@@ -22,6 +22,7 @@ const {
   redeployEnv,
   syncEnv,
   checkPublicUrlForExpectedAppResponse,
+  reportWebStatuses,
   getPathFromRemote,
   sendPathToRemoteTmpDir,
   getLiveEnvsAsPidEnvArr,
@@ -247,6 +248,12 @@ yargs.command(['env:check-web-status [pid:env...]', 'ew'], 'Check the web status
       pidEnvs = filterStillValidRuns(argv.time, checkPublicUrlForExpectedAppResponse, pidEnvs)
     }
     pLimitForEachHandler(6, checkPublicUrlForExpectedAppResponse, pidEnvs)
+  }
+)
+
+yargs.command(['env:report-web-status', 'er'], 'Report a summary of all envs\' web statuses', {},
+  argv => {
+    reportWebStatuses()
   }
 )
 

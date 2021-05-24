@@ -177,7 +177,6 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
 }
 exports.deployEnvWithFile = deployEnvWithFile
 
-
 const rebuildAndRedeployUsingDummyFile = async (project, environment, file, reset = false) => {
   if (reset) {
     await resetEnv(project, environment)
@@ -367,6 +366,76 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
   })
 }
 exports.checkPublicUrlForExpectedAppResponse = checkPublicUrlForExpectedAppResponse
+
+const reportWebStatuses = () => {
+  const sql = `SELECT a.ee_composer_version,  e.id environment_id, e.project_id, w.*
+    FROM environments e 
+    LEFT JOIN projects p ON 
+      e.project_id = p.id
+    LEFT JOIN web_statuses w ON 
+      w.host_name = e.machine_name || '-' || e.project_id || '.' || p.region || '.magentosite.cloud'
+    LEFT JOIN applications a ON
+      e.project_id = a.project_id AND 
+      e.id = a.environment_id
+    WHERE e.active = 1 
+      AND p.active = 1 
+      AND e.missing = 0 
+      AND (e.failure = 0 OR e.failure IS null)
+    ORDER BY w.http_status`
+  const result = db.prepare(sql).all()
+  let nextHttpStatus = false,
+    numUnexpectedResponses = 0,
+    envs = {
+      "Expired": [],
+      "No Base Url": [],
+      "Timed Out" : []
+    }
+  for (let i = 0; i < result.length; i++) {
+    // check if env expired
+    if (Math.floor(new Date() / 1000) > result[i].expiration) {
+      envs.Expired.push(result[i])
+    } else if (result[i].http_status === null) {
+        envs["Timed Out"].push(result[i])
+    } else if (result[i].http_status === 200) {
+      if (result[i].base_url_found_in_headers_or_body === 0) {
+        envs["No Base Url"].push(result[i])
+      } else {
+        continue // 200 w/ base url is expected
+      }
+    } else {
+      if (typeof envs[result[i].http_status] === 'undefined') {
+        envs[result[i].http_status] = []
+      }
+      envs[result[i].http_status].push(result[i])
+    }
+    numUnexpectedResponses++
+  }
+  function sortEEVersion(a,b) {
+    if (a.ee_composer_version === null && b.ee_composer_version !== null) {
+      return -1
+    } else if (a.ee_composer_version !== null && b.ee_composer_version === null) {
+      return 1
+    } else if (a.ee_composer_version === b.ee_composer_version) {
+      return 0
+    } else if (a.ee_composer_version < b.ee_composer_version) {
+      return -1
+    }
+    return 1
+  }
+  Object.entries(envs).map(([key, value]) => {
+    console.log(`\n${key} envs: ${value.length} total`)
+    let urls = '',
+      listOfEnvs = ''
+    value.sort(sortEEVersion)
+    value.forEach(r => {
+      urls += `${r.ee_composer_version ? r.ee_composer_version.padEnd(8, ' ') : '        '} | https://demo.magento.cloud/projects/${r.project_id}/environments/${r.environment_id} | https://admin:${r.project_id}@${r.host_name}/\n`
+      listOfEnvs += `"${r.project_id}:${r.environment_id}" `
+    })
+    console.log(`${urls}${listOfEnvs}`)
+  })
+  console.log(`\nThere are ${numUnexpectedResponses} unexpected responses.`)
+}
+exports.reportWebStatuses = reportWebStatuses
 
 const getEnvsFromApi = async project => {
   const cmd = `${MC_CLI} environments -p ${project} --pipe`
