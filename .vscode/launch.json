@@ -317,6 +317,15 @@
       "runtimeExecutable": "${workspaceFolder}/select-node.sh",
       "outputCapture": "std",
       "request": "launch",
+      "name": "Redeploy envs with list",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:deploy",
+        "-v",
+        "xy4itwbmg2khk:master",
+        "dg24rqlsvsuqw:master"
+      ]
+    },
     {
       "type": "node",
       "runtimeExecutable": "${workspaceFolder}/select-node.sh",
