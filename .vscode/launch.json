@@ -414,31 +414,31 @@
         "34gqyvr5hijbu"
       ]
     },
-    {
-      "type": "node",
-      "runtimeExecutable": "${workspaceFolder}/select-node.sh",
-      "outputCapture": "std",
-      "request": "launch",
-      "name": "Grant all gitlab keys access to all configured gitlab projects(verbose)",
-      "program": "${workspaceFolder}/cli/bin/mcm",
-      "args": [
-        "project:grant-gitlab",
-        "-va"
-      ]
-    },
-    {
-      "type": "node",
-      "runtimeExecutable": "${workspaceFolder}/select-node.sh",
-      "outputCapture": "std",
-      "request": "launch",
-      "name": "Grant cloud project access to all configured gitlab projects (verbose)",
-      "program": "${workspaceFolder}/cli/bin/mcm",
-      "args": [
-        "project:grant-gitlab",
-        "-v",
-        "ugwphl3msex5e"
-      ]
-    },
+    // {
+    //   "type": "node",
+    //   "runtimeExecutable": "${workspaceFolder}/select-node.sh",
+    //   "outputCapture": "std",
+    //   "request": "launch",
+    //   "name": "Grant all gitlab keys access to all configured gitlab projects(verbose)",
+    //   "program": "${workspaceFolder}/cli/bin/mcm",
+    //   "args": [
+    //     "project:grant-gitlab",
+    //     "-va"
+    //   ]
+    // },
+    // {
+    //   "type": "node",
+    //   "runtimeExecutable": "${workspaceFolder}/select-node.sh",
+    //   "outputCapture": "std",
+    //   "request": "launch",
+    //   "name": "Grant cloud project access to all configured gitlab projects (verbose)",
+    //   "program": "${workspaceFolder}/cli/bin/mcm",
+    //   "args": [
+    //     "project:grant-gitlab",
+    //     "-v",
+    //     "ugwphl3msex5e"
+    //   ]
+    // },
     {
       "type": "node",
       "runtimeExecutable": "${workspaceFolder}/select-node.sh",

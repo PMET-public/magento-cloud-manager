@@ -563,19 +563,19 @@ yargs.command(
 //   }
 // )
 
-yargs.command(
-  ['project:grant-gitlab [pid:env...]', 'pg'],
-  'Grant access to proj(s) to all configured gitlab projects in .secrets.json',
-  addSharedPidEnvOpts,
-  async argv => {
-    verifyOnlyOneOf(argv, ['a', 'pid:env'])
-    let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
-    if (argv.time) {
-      pidEnvs = filterStillValidRuns(argv.time, addCloudProjectKeyToGitlabKeys, pidEnvs)
-    }
-    pLimitForEachHandler(6, addCloudProjectKeyToGitlabKeys, pidEnvs)
-  }
-)
+// yargs.command(
+//   ['project:grant-gitlab [pid:env...]', 'pg'],
+//   'Grant access to proj(s) to all configured gitlab projects in .secrets.json',
+//   addSharedPidEnvOpts,
+//   async argv => {
+//     verifyOnlyOneOf(argv, ['a', 'pid:env'])
+//     let pidEnvs = new Set(argv.all ? await getProjectsFromApi() : argv['pid:env'])
+//     if (argv.time) {
+//       pidEnvs = filterStillValidRuns(argv.time, addCloudProjectKeyToGitlabKeys, pidEnvs)
+//     }
+//     pLimitForEachHandler(6, addCloudProjectKeyToGitlabKeys, pidEnvs)
+//   }
+// )
 
 yargs.command(['project:update [pid...]', 'pu'], 
   'Update projects\' info, users, and envs', addSharedPidEnvOpts, 

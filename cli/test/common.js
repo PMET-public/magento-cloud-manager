@@ -62,7 +62,7 @@ const validSubCommands = [
     listOpts: ['s']
   },
 //  {name: 'project:find-failures', alias: 'pf'},
-  {name: 'project:grant-gitlab', alias: 'pg'},
+//  {name: 'project:grant-gitlab', alias: 'pg'},
   {name: 'project:update', alias: 'pu'},
   {name: 'user:add', alias: 'ua', numOfRequiredNonListArgs: 2},
   {name: 'user:delete', alias: 'ud', numOfRequiredNonListArgs: 1},

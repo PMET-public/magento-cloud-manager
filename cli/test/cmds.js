@@ -161,7 +161,7 @@ describe('test various batch and "--all" options', () => {
   testCmd('host:upate -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
 //  testCmd('project:find-failures -a', multipleValidTester, validTestMsg, 1000 * 60 * 30)
 
-  testCmd('project:grant-gitlab -a', multipleValidTester, validTestMsg, 1000 * 60 * 5)
+//  testCmd('project:grant-gitlab -a', multipleValidTester, validTestMsg, 1000 * 60 * 5)
   testCmd('project:update -a', multipleValidTester, validTestMsg, 1000 * 60 * 5)
 
   after(() => {
