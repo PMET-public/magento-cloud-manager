@@ -2,6 +2,19 @@ const https = require('https')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath, nets_json} = require('../.secrets.json')
 
+const sortEEVersion = (a,b) => {
+  if (a.ee_composer_version === null && b.ee_composer_version !== null) {
+    return -1
+  } else if (a.ee_composer_version !== null && b.ee_composer_version === null) {
+    return 1
+  } else if (a.ee_composer_version === b.ee_composer_version) {
+    return 0
+  } else if (a.ee_composer_version < b.ee_composer_version) {
+    return -1
+  }
+  return 1
+}
+
 const updateEnvironmentFromApi = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
   const result = exec(cmd)
@@ -368,7 +381,7 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
 exports.checkPublicUrlForExpectedAppResponse = checkPublicUrlForExpectedAppResponse
 
 const reportWebStatuses = () => {
-  const sql = `SELECT a.ee_composer_version,  e.id environment_id, e.project_id, w.*
+  const sql = `SELECT a.ee_composer_version,  e.id environment_id, e.project_id, p.title, w.*
     FROM environments e 
     LEFT JOIN projects p ON 
       e.project_id = p.id
@@ -410,28 +423,23 @@ const reportWebStatuses = () => {
     }
     numUnexpectedResponses++
   }
-  function sortEEVersion(a,b) {
-    if (a.ee_composer_version === null && b.ee_composer_version !== null) {
-      return -1
-    } else if (a.ee_composer_version !== null && b.ee_composer_version === null) {
-      return 1
-    } else if (a.ee_composer_version === b.ee_composer_version) {
-      return 0
-    } else if (a.ee_composer_version < b.ee_composer_version) {
-      return -1
-    }
-    return 1
-  }
   Object.entries(envs).map(([key, value]) => {
+    if (!value.length) {
+      return
+    }
     console.log(`\n${key} envs: ${value.length} total`)
     let urls = '',
       listOfEnvs = ''
     value.sort(sortEEVersion)
     value.forEach(r => {
-      urls += `${r.ee_composer_version ? r.ee_composer_version.padEnd(8, ' ') : '        '} | https://demo.magento.cloud/projects/${r.project_id}/environments/${r.environment_id} | https://admin:${r.project_id}@${r.host_name}/\n`
+      urls += `\`${r.ee_composer_version ? r.ee_composer_version.padStart(8, ' ') : '     n/a'}\` ` +
+      `| <https://demo.magento.cloud/projects/${r.project_id}/environments/${r.environment_id}|cloud> ` +
+      `| <https://admin:${r.project_id}@${r.host_name}|store> ` +
+      `| <https://admin:${r.project_id}@${r.host_name}/admin/|admin> ` +
+      `| ${r.title} | ${r.project_id}:${r.environment_id}\n`
       listOfEnvs += `"${r.project_id}:${r.environment_id}" `
     })
-    console.log(`${urls}${listOfEnvs}`)
+    console.log(`${urls}\`${listOfEnvs}\``)
   })
   console.log(`\nThere are ${numUnexpectedResponses} unexpected responses.`)
 }
