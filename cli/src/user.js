@@ -2,7 +2,7 @@ const {exec, execOutputHandler, db, MC_CLI, logger} = require('./common')
 
 const addUser = async (project, environment, email, role) => {
   role = environment === 'master' ? role : environment + ':' + role
-  const cmd = `${MC_CLI} user:update --no-wait --yes -p ${project} -r ${role} ${email}`
+  const cmd = `${MC_CLI} user:update --no-wait --yes -p "${project}" -r "${role}" ${email}`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -29,7 +29,7 @@ const getUser = (project, email) => {
 exports.getUser = getUser
 
 const delUser = async (project, environment, email) => {
-  const cmd = `${MC_CLI} user:delete --no-wait --yes -p ${project} ${email}`
+  const cmd = `${MC_CLI} user:delete --no-wait --yes -p "${project}" ${email}`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -42,7 +42,7 @@ const delUser = async (project, environment, email) => {
 exports.delUser = delUser
 
 const recordUsers = async project => {
-  const cmd = `${MC_CLI} user:list -p ${project} --format=tsv | sed '1d'`
+  const cmd = `${MC_CLI} user:list -p "${project}" --format=tsv | sed '1d'`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {

@@ -121,7 +121,7 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
   const path = `/tmp/${project}-${environment}-${new Date()/1000}`
   const cmd = `mkdir -p "${path}"
     cd "${path}"
-    ${MC_CLI} get --yes -e ${environment} ${project} tmp`
+    ${MC_CLI} get --yes -e "${environment}" "${project}" tmp`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -151,9 +151,9 @@ const deployEnvWithFile = async (project, environment, file, reset = false, forc
         `
       // ssh syntax will vary if using a token
       if (process.env.MAGENTO_CLOUD_CLI_TOKEN) {
-        cmd += `${MC_CLI} ssh -p ${project} -e ${environment}`
+        cmd += `${MC_CLI} ssh -p "${project}" -e "${environment}"`
       } else {
-        cmd += `ssh -n $(${MC_CLI} ssh -p ${project} -e ${environment} --pipe)`
+        cmd += `ssh -n $(${MC_CLI} ssh -p "${project}" -e "${environment}" --pipe)`
       }
       cmd += ` "php bin/magento cache:flush; { for i in {1..30}; do pkill php; sleep 60; done; } &>/dev/null &"
         git add -u
@@ -196,7 +196,7 @@ const rebuildAndRedeployUsingDummyFile = async (project, environment, file, rese
   }
   const epochTimeInSec = new Date()/1000
   const path = `/tmp/${project}-${environment}-${epochTimeInSec}`
-  const cmd = `${MC_CLI} get --yes -e ${environment} ${project} "${path}"
+  const cmd = `${MC_CLI} get --yes -e "${environment}" "${project}" "${path}"
     echo ${epochTimeInSec} > ${path}/.redeploy
     cd "${path}"
     git add -f .redeploy
@@ -209,7 +209,7 @@ const rebuildAndRedeployUsingDummyFile = async (project, environment, file, rese
 exports.rebuildAndRedeployUsingDummyFile = rebuildAndRedeployUsingDummyFile
 
 const redeployEnv = async (project, environment) => {
-  const cmd = `${MC_CLI} redeploy -p ${project} -e ${environment} -y --no-wait`
+  const cmd = `${MC_CLI} redeploy -p "${project}" -e "${environment}" -y --no-wait`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -225,7 +225,7 @@ const redeployEnv = async (project, environment) => {
 exports.redeployEnv = redeployEnv
 
 const syncEnv = async (project, environment, syncData = false) => {
-  const cmd = `${MC_CLI} sync code ${syncData ? 'data' : ''} -p ${project} -e ${environment} -y --no-wait`
+  const cmd = `${MC_CLI} sync code ${syncData ? 'data' : ''} -p "${project}" -e "${environment}" -y --no-wait`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -258,7 +258,7 @@ const setIPAccess = async (project, environment) => {
   let network_opts = `--auth admin:${project}`
   networks.forEach(n => network_opts += ` --access allow:${n.address}/${n.mask}`)
 
-  const cmd = `${MC_CLI} httpaccess -p ${project} -e ${environment} --no-wait ${network_opts} --access deny:any`
+  const cmd = `${MC_CLI} httpaccess -p "${project}" -e "${environment}" --no-wait ${network_opts} --access deny:any`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -446,7 +446,7 @@ const reportWebStatuses = () => {
 exports.reportWebStatuses = reportWebStatuses
 
 const getEnvsFromApi = async project => {
-  const cmd = `${MC_CLI} environments -p ${project} --pipe`
+  const cmd = `${MC_CLI} environments -p "${project}" --pipe`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -478,7 +478,7 @@ exports.getLiveEnvsAsPidEnvArr = getLiveEnvsAsPidEnvArr
 // need to delete from child first
 // or how to warn if inactive parent & active child?
 const deleteInactiveEnvs = async project => {
-  const cmd = `${MC_CLI} environment:delete -p ${project} --inactive --delete-branch --no-wait -y`
+  const cmd = `${MC_CLI} environment:delete -p "${project}" --inactive --delete-branch --no-wait -y`
   const result = exec(cmd)
     .then(execOutputHandler)
     .catch(error => {
@@ -501,8 +501,8 @@ const deleteEnv = async (project, environment) => {
   }
   // kill any php process up to 10 times in the next 10 min
   // that may still be running and blocking a proper shutdown before deleting
-  const cmd = `ssh -n $(${MC_CLI} ssh -p ${project} -e ${environment} --pipe) 'for i in {1..10}; do pkill php; sleep 60; done' &
-    ${MC_CLI} environment:delete -p ${project} -e ${environment} -q -y --delete-branch`
+  const cmd = `ssh -n $(${MC_CLI} ssh -p "${project}" -e "${environment}" --pipe) 'for i in {1..10}; do pkill php; sleep 60; done' &
+    ${MC_CLI} environment:delete -p "${project}" -e "${environment}" -q -y --delete-branch`
   const result = exec(cmd)
     .then(execOutputHandler)
     .catch(error => {
@@ -516,7 +516,7 @@ const deleteEnv = async (project, environment) => {
 exports.deleteEnv = deleteEnv
 
 const branchEnvFromMaster = async (project, environment) => {
-  const cmd = `${MC_CLI} branch -p ${project} -e master ${environment} --force`
+  const cmd = `${MC_CLI} branch -p "${project}" -e master "${environment}" --force`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -590,7 +590,7 @@ const getWebHostName = async (project, environment) => {
 }
 
 const getSshUserAndHost = async (project, environment) => {
-  const cmd = `${MC_CLI} ssh -p ${project} -e ${environment} --pipe`
+  const cmd = `${MC_CLI} ssh -p "${project}" -e "${environment}" --pipe`
   const result = await exec(cmd)
     .then(execOutputHandler)
     .then(async ({stdout, stderr}) => {

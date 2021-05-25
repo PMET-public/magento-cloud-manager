@@ -54,7 +54,7 @@ exports.setProjectInactive = setProjectInactive
 
 
 const getProjectInfoFromApi = async project => {
-  const cmd = `${MC_CLI} project:info -p ${project} --format=tsv`
+  const cmd = `${MC_CLI} project:info -p "${project}" --format=tsv`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -103,7 +103,7 @@ const getProjEnvsFromDB = project => {
 }
 
 const discoverEnvs = async project => {
-  const cmd = `${MC_CLI} environment:list --no-header --columns=id,status -p ${project}`
+  const cmd = `${MC_CLI} environment:list --no-header --columns=id,status -p "${project}"`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(async ({stdout, stderr}) => {

@@ -22,7 +22,7 @@ const parseActivityList = activities => {
 }
 
 const getActivitiesFromApi = async (project, type) => {
-  const cmd = `${MC_CLI} activity:list -p ${project} -e master -a ${type ? '--type=' + type : ''} --limit=9999 --format=tsv`
+  const cmd = `${MC_CLI} activity:list -p "${project}" -e master -a ${type ? '--type=' + type : ''} --limit=9999 --format=tsv`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {

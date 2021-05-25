@@ -18,7 +18,7 @@ module.exports = (req, res) => {
 
   const getCommands = () => {
     const MC_CLI = '~/.magento-cloud/bin/magento-cloud'
-    const ENV_OPT = `-p ${proj} -e ${env}`
+    const ENV_OPT = `-p "${proj}" -e "${env}"`
     const SSH = `${MC_CLI} ssh ${ENV_OPT}`
     const M_CLI = 'php bin/magento'
 

@@ -5,7 +5,7 @@ const setVar = async (project, environment, name, value) => {
   if (name == 'COMPOSER_AUTH') {
     name = 'env:COMPOSER_AUTH'
   }
-  let subcommand, cmd = `${MC_CLI} variable:get --property=value -p ${project} -e ${environment} ${name}`
+  let subcommand, cmd = `${MC_CLI} variable:get --property=value -p "${project}" -e "${environment}" ${name}`
   const status = await exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
@@ -39,7 +39,7 @@ const setVar = async (project, environment, name, value) => {
     subcommand = 'update'
   }
 
-  cmd = `${MC_CLI} variable:${subcommand} -p ${project} -e ${environment} --value='${value}' \
+  cmd = `${MC_CLI} variable:${subcommand} -p "${project}" -e "${environment}" --value='${value}' \
     ${name == 'env:COMPOSER_AUTH' ? // eslint-disable-next-line indent
       '-l project --visible-build=true --visible-runtime=false --json=true --sensitive=true' : '-l environment'} \
     ${subcommand == 'create' ? '--name=' : ''}'${name}'`
@@ -61,7 +61,7 @@ const getVar = async (project, environment, name) => {
     name = 'env:COMPOSER_AUTH'
     console.log('debug', 'Using env:COMPOSER_AUTH instead of COMPOSER_AUTH ...')
   }
-  const cmd = `${MC_CLI} variable:get --property=value -p ${project} -e ${environment} ${name}`
+  const cmd = `${MC_CLI} variable:get --property=value -p "${project}" -e "${environment}" ${name}`
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
