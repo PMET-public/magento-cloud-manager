@@ -251,12 +251,6 @@ yargs.command(['env:check-web-status [pid:env...]', 'ew'], 'Check the web status
   }
 )
 
-yargs.command(['env:report-web-status', 'er'], 'Report a summary of all envs\' web statuses', {},
-  argv => {
-    reportWebStatuses()
-  }
-)
-
 yargs.command(
   ['env:delete [pid:env...]'],
   'Delete environment(s)',
@@ -452,6 +446,12 @@ yargs.command(
       pidEnvs = filterStillValidRuns(argv.time, sendPathToRemoteTmpDir, pidEnvs, additionalArgs)
     }
     pLimitForEachHandler(6, sendPathToRemoteTmpDir, pidEnvs, additionalArgs)
+  }
+)
+
+yargs.command(['env:report-web-status', 'er'], 'Report a summary of all envs\' web statuses', {},
+  argv => {
+    reportWebStatuses()
   }
 )
 
