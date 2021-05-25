@@ -162,6 +162,15 @@
     },
     {
       "type": "node",
+      "runtimeExecutable": "${workspaceFolder}/select-node.sh",
+      "outputCapture": "std",
+      "request": "launch",
+      "name": "Report web status for all envs",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:report-web-status"
+      ]
+    },
     {
       "type": "node",
       "runtimeExecutable": "${workspaceFolder}/select-node.sh",
