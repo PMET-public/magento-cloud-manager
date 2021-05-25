@@ -37,8 +37,10 @@ const allOpt = {name: 'all', alias: 'a'}
 const timeOpt = {name: 'time', alias: 't'}
 const commonValidOpts = [verboseOpt, quietOpt, helpOpt]
 const validSubCommands = [
+  {name: 'cloud:gen-css', alias: 'cg', numOfRequiredNonListArgs: 0},
   {name: 'env:backup', alias: 'eb'},
-  {name: 'env:check-web', alias: 'ec'},
+  {name: 'env:check-app-version', alias: 'ea'},
+  {name: 'env:check-web-status', alias: 'ew'},
   {
     name: 'env:delete',
     validOpts: [{name: 'inactive', alias: 'i'}, {name: 'yes'}],
@@ -53,7 +55,19 @@ const validSubCommands = [
   {name: 'env:exec', alias: 'ee', numOfRequiredNonListArgs: 1},
   {name: 'env:get', alias: 'eg', numOfRequiredNonListArgs: 1},
   {name: 'env:put', alias: 'ep', numOfRequiredNonListArgs: 1},
-  {name: 'env:smoke-test', alias: 'es'},
+  {name: 'env:report-web-status', alias: 'er'},
+  {name: 'env:set-ip-access', alias: 'ei'},
+  {
+    name: 'env:smoke-test', 
+    alias: 'es',
+    validOpts: [{name: 'untested', alias: 'u'}],
+  }
+  ,
+  {
+    name: 'env:sync',
+    validOpts: [{name: 'data'}],
+    listOpts: ['data']
+  },
   {name: 'host:env-match', alias: 'he', numOfRequiredNonListArgs: 0},
   {
     name: 'host:update',
@@ -76,9 +90,9 @@ validSubCommands.forEach(subCmd => {
   subCmd.timeout = ['env:smoke-test', 'env:deploy'].includes(subCmd.name) ? ms5min : ms1min
   subCmd.validOpts = subCmd.validOpts || []
   subCmd.validOpts.push(...commonValidOpts)
-  if (subCmd.name !== 'host:env-match') {
+  if (!/host:env-match|cloud:gen-css|env:report-web-status/.test(subCmd.name)) {
     subCmd.validOpts.push(timeOpt)
-    if (!/env:delete|env:deploy/.test(subCmd.name)) {
+    if (!/env:delete|env:deploy|env:sync/.test(subCmd.name)) {
       subCmd.validOpts.push(allOpt)
       subCmd.requiresOneOf = ['a', 'pid:env'].concat(subCmd.listOpts || [])
     } else {
