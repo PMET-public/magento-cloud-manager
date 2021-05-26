@@ -336,8 +336,20 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
         await updateEnvironmentFromApi(project, environment)
       }
       let bodyMatches = false
-      if (/^(200|404)$/.test(response.statusCode)) {
-        bodyMatches = await checkBody(response)
+      if (/^(200|302|404)$/.test(response.statusCode)) {
+        if (/^(302)$/.test(response.statusCode) && response.headers.location.indexOf(hostName) === 8) {
+          // check the redirected page for the expected response
+          await axios.get(response.headers.location, {
+            headers: {
+              'Authorization': `Basic ${Buffer.from('admin:' + project).toString('base64')}`,
+              maxRedirects: 0
+            }
+          }).then((res) => {
+            bodyMatches = /baseUrl.*magentosite.cloud/.test(res.data)
+          })
+        } else {
+          bodyMatches = await checkBody(response)
+        }
         if (bodyMatches) {
           logger.mylog('debug', `Response body matches base url. Project: ${project} env: ${environment} ${url}`)
         }
@@ -416,6 +428,8 @@ const reportWebStatuses = (useSlackFormat = false) => {
       } else {
         continue // 200 or 404  w/ base url but not a master env is expected or allowed respectively (the latter happens when SC removes home page)
       }
+    } else if (result[i].http_status === 302 && result[i].base_url_found_in_headers_or_body === 1) {
+      continue
     } else {
       if (typeof envs[result[i].http_status] === 'undefined') {
         envs[result[i].http_status] = []
