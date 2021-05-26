@@ -410,11 +410,11 @@ const reportWebStatuses = (useSlackFormat = false) => {
       envs.Expired.push(result[i])
     } else if (result[i].http_status === null) {
         envs["Timed Out"].push(result[i])
-    } else if (/^(200|404)$/.test(result[i].http_status)) {
+    } else if (result[i].http_status === 200 || (result[i].http_status === 404 && result[i].environment_id !== 'master')) {
       if (result[i].base_url_found_in_headers_or_body === 0) {
         envs["No Base Url"].push(result[i])
       } else {
-        continue // 200 w/ base url is expected & 404 w/ base url is allowed (SC removed home page)
+        continue // 200 or 404  w/ base url but not a master env is expected or allowed respectively (the latter happens when SC removes home page)
       }
     } else {
       if (typeof envs[result[i].http_status] === 'undefined') {
