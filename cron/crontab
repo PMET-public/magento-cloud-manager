@@ -35,7 +35,7 @@ MCM_PATH=/home/ese/magento-cloud-manager/cli/bin/mcm
 # 40 1 * * * perl -le 'sleep rand 900' && $MCM_PATH project:find-failures --quiet --all -t 0
 
 # check http status every hr
-0 * * * * perl -le 'sleep rand 900' && $MCM_DIR/cron/monitor-env-urls.sh
+0 * * * * perl -le 'sleep rand 900' && $MCM_PATH env:report-web-status --slack
 
 # check app versions every 6 hrs
 10 0,6,12,18 * * * perl -le 'sleep rand 900' && $MCM_PATH env:check-app-version --quiet --all -t 0 
