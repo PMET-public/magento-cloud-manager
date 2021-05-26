@@ -335,7 +335,7 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
         await updateEnvironmentFromApi(project, environment)
       }
       let bodyMatches = false
-      if (response.statusCode === 200) {
+      if (/^(200|404)$/.test(response.statusCode)) {
         bodyMatches = await checkBody(response)
         if (bodyMatches) {
           logger.mylog('debug', `Response body matches base url. Project: ${project} env: ${environment} ${url}`)
@@ -409,11 +409,11 @@ const reportWebStatuses = () => {
       envs.Expired.push(result[i])
     } else if (result[i].http_status === null) {
         envs["Timed Out"].push(result[i])
-    } else if (result[i].http_status === 200) {
+    } else if (/^(200|404)$/.test(result[i].http_status)) {
       if (result[i].base_url_found_in_headers_or_body === 0) {
         envs["No Base Url"].push(result[i])
       } else {
-        continue // 200 w/ base url is expected
+        continue // 200 w/ base url is expected & 404 w/ base url is allowed (SC removed home page)
       }
     } else {
       if (typeof envs[result[i].http_status] === 'undefined') {
