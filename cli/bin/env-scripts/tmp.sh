@@ -14,5 +14,10 @@
 # sed -i "/'enabled' => 0/d" /app/app/etc/env.php
 
 # mysql main -sN -h database.internal -e "update core_config_data set value = replace(value, 'http:', 'https:') where path = 'web/unsecure/base_url'"
+# perl -i -pe "s/.*engine.*elasticsuite.*/'engine' => 'elasticsearch6','elasticsearch6_server_hostname' => 'elasticsearch.internal','elasticsearch6_server_port' => '9200',/" app/etc/env.php
+# bin/magento app:config:import
 # php bin/magento indexer:reindex
 # php bin/magento cache:flush
+
+# [[ -d /app/var/export ]] && chmod 775 /app/var/export && ls -al /app/var/export/
+# [[ -d /app/var/export/email ]] && chmod 775 /app/var/export/email && ls -al /app/var/export/email/
