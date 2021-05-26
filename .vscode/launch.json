@@ -176,6 +176,18 @@
       "runtimeExecutable": "${workspaceFolder}/select-node.sh",
       "outputCapture": "std",
       "request": "launch",
+      "name": "Send web status report for all envs to slack",
+      "program": "${workspaceFolder}/cli/bin/mcm",
+      "args": [
+        "env:report-web-status",
+        "--slack"
+      ]
+    },
+    {
+      "type": "node",
+      "runtimeExecutable": "${workspaceFolder}/select-node.sh",
+      "outputCapture": "std",
+      "request": "launch",
       "name": "Update sample project",
       "program": "${workspaceFolder}/cli/bin/mcm",
       "args": [

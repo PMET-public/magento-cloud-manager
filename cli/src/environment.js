@@ -1,6 +1,7 @@
 const https = require('https')
+const axios = require('axios')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
-const {localCloudSshKeyPath, nets_json} = require('../.secrets.json')
+const {localCloudSshKeyPath, nets_json, slackUrl} = require('../.secrets.json')
 
 const sortEEVersion = (a,b) => {
   if (a.ee_composer_version === null && b.ee_composer_version !== null) {
@@ -380,7 +381,7 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
 }
 exports.checkPublicUrlForExpectedAppResponse = checkPublicUrlForExpectedAppResponse
 
-const reportWebStatuses = () => {
+const reportWebStatuses = (useSlackFormat = false) => {
   const sql = `SELECT a.ee_composer_version,  e.id environment_id, e.project_id, p.title, w.*
     FROM environments e 
     LEFT JOIN projects p ON 
@@ -423,25 +424,54 @@ const reportWebStatuses = () => {
     }
     numUnexpectedResponses++
   }
+
+  let report = ''
+  
   Object.entries(envs).map(([key, value]) => {
     if (!value.length) {
       return
     }
-    console.log(`\n${key} envs: ${value.length} total`)
-    let urls = '',
-      listOfEnvs = ''
+    report += `\n${key} envs: ${value.length} total\n`
     value.sort(sortEEVersion)
-    value.forEach(r => {
-      urls += `\`${r.ee_composer_version ? r.ee_composer_version.padStart(8, ' ') : '     n/a'}\` ` +
-      `| <https://demo.magento.cloud/projects/${r.project_id}/environments/${r.environment_id}|cloud> ` +
-      `| <https://admin:${r.project_id}@${r.host_name}|store> ` +
-      `| <https://admin:${r.project_id}@${r.host_name}/admin/|admin> ` +
-      `| ${r.title} | ${r.project_id}:${r.environment_id}\n`
-      listOfEnvs += `"${r.project_id}:${r.environment_id}" `
-    })
-    console.log(`${urls}\`${listOfEnvs}\``)
+
+    let table = '',
+      listOfEnvs = ''
+    
+    if (useSlackFormat) {
+      value.forEach(r => {
+        table += `\`${r.ee_composer_version ? r.ee_composer_version.padStart(8, ' ') : '     n/a'}\` ` +
+        `| <https://demo.magento.cloud/projects/${r.project_id}/environments/${r.environment_id}|cloud> ` +
+        `| <https://admin:${r.project_id}@${r.host_name}|store> ` +
+        `| <https://admin:${r.project_id}@${r.host_name}/admin/|admin> ` +
+        `| ${r.title} | ${r.project_id}:${r.environment_id}\n`
+        listOfEnvs += `"${r.project_id}:${r.environment_id}" `
+      })
+      report += `${table}\`${listOfEnvs}\`\n`
+    } else {
+      value.forEach(r => {
+        table += `${r.ee_composer_version ? r.ee_composer_version.padStart(8, ' ') : '        '} ` +
+        `| https://demo.magento.cloud/projects/${r.project_id}/environments/${r.environment_id} ` +
+        `| https://admin:${r.project_id}@${r.host_name} ` +
+        `| ${r.title} | ${r.project_id}:${r.environment_id}\n`
+        listOfEnvs += `"${r.project_id}:${r.environment_id}" `
+      })
+      report += `${table}${listOfEnvs}\n`
+    }
   })
-  console.log(`\nThere are ${numUnexpectedResponses} unexpected responses.`)
+
+  report += `\nThere are ${numUnexpectedResponses} unexpected responses.`
+
+  if (useSlackFormat) {
+    console.log(report)
+    axios.post(slackUrl, {"type": "mrkdwn", "text": report}, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  } else {
+    console.log(report)
+  }
+
 }
 exports.reportWebStatuses = reportWebStatuses
 

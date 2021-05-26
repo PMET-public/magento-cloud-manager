@@ -449,9 +449,18 @@ yargs.command(
   }
 )
 
-yargs.command(['env:report-web-status', 'er'], 'Report a summary of all envs\' web statuses', {},
+yargs.command(
+  ['env:report-web-status', 'er'],
+  'Report a summary of all envs\' web statuses',
+  yargs => {
+    yargs.option('slack', {
+      description: 'Send report to slack channel',
+      type: 'boolean',
+      coerce: coercer
+    })
+  },
   argv => {
-    reportWebStatuses()
+    reportWebStatuses(argv.slack)
   }
 )
 
