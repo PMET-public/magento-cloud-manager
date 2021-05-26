@@ -143,7 +143,7 @@ describe('test various batch and "--all" options', () => {
   // list test individually to ease enabling/disabling them via commenting b/c they can be time consuming
   // with many -a operations, the -v will exceed the stdout buffer, so drop it
 
-  //testCmd('env:check-web -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
+  //testCmd('env:check-web-status -a', multipleValidTester, validTestMsg, 1000 * 60 * 15)
   testCmd('env:delete -a', disallowedTester, disallowedTestMsg)
   testCmd('env:delete -i', multipleValidTester, validTestMsg, 1000 * 60 * 2)
   testCmd('env:deploy -a dummy-tar', disallowedTester)
