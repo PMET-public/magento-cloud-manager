@@ -393,6 +393,18 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
 }
 exports.checkPublicUrlForExpectedAppResponse = checkPublicUrlForExpectedAppResponse
 
+const reportStatusHelp = {
+  '302': {
+    'help': pidEnvs => `In the last stages of branching, an env's base url should be changed from the parent's url to the url of the new env. A 302 redirect status may indicate incomplete branching. Run \`mcm env:exec "$MCM_DIR/cli/bin/env-scripts/fix-redirect-for-wrong-base-url.sh" ${pidEnvs}\` to resolve. Also check the cloud deploy logs for errors.`
+  },
+  '500': {
+    'help': pidEnvs => `A 500 error usually indicates the app failed to deploy. Check the deploy logs and run \`mcm env:exec "$MCM_DIR/cli/bin/env-scripts/diagnose-repair-report.sh" ${pidEnvs}\` to attempt to resolve.`
+  },
+  '502': {
+    'help': pidEnvs => `A 502 gateway error usually indicates a cloud service failed to deploy properly. Run \`mcm env:deploy ${pidEnvs}\` to attempt to resolve. Also check the cloud deploy logs for incident IDs that may need to be reported to support via Zendesk.`
+  }
+}
+
 const reportWebStatuses = (useSlackFormat = false) => {
   const sql = `SELECT a.ee_composer_version,  e.id environment_id, e.project_id, p.title, w.*
     FROM environments e 
@@ -439,7 +451,8 @@ const reportWebStatuses = (useSlackFormat = false) => {
     numUnexpectedResponses++
   }
 
-  let report = ''
+  let report = 'Report:\n',
+    statusHelp = ''
   
   Object.entries(envs).map(([key, value]) => {
     if (!value.length) {
@@ -450,6 +463,8 @@ const reportWebStatuses = (useSlackFormat = false) => {
 
     let table = '',
       listOfEnvs = ''
+
+    value.forEach(r => listOfEnvs += `"${r.project_id}:${r.environment_id}" `)
     
     if (useSlackFormat) {
       value.forEach(r => {
@@ -458,30 +473,33 @@ const reportWebStatuses = (useSlackFormat = false) => {
         `| <https://admin:${r.project_id}@${r.host_name}|store> ` +
         `| <https://admin:${r.project_id}@${r.host_name}/admin/|admin> ` +
         `| ${r.title} | ${r.project_id}:${r.environment_id}\n`
-        listOfEnvs += `"${r.project_id}:${r.environment_id}" `
       })
-      report += `${table}\`${listOfEnvs}\`\n`
     } else {
       value.forEach(r => {
         table += `${r.ee_composer_version ? r.ee_composer_version.padStart(8, ' ') : '        '} ` +
         `| https://demo.magento.cloud/projects/${r.project_id}/environments/${r.environment_id} ` +
         `| https://admin:${r.project_id}@${r.host_name} ` +
         `| ${r.title} | ${r.project_id}:${r.environment_id}\n`
-        listOfEnvs += `"${r.project_id}:${r.environment_id}" `
       })
-      report += `${table}${listOfEnvs}\n`
+    }
+
+    if (reportStatusHelp[key]) {
+      report += `${table}${reportStatusHelp[key].help(listOfEnvs.trim())}\n`
+    } else {
+      listOfEnvs = useSlackFormat ? `\`${listOfEnvs.trim()}\`` : listOfEnvs.trim()
+      report += `${table}${listOfEnvs.trim()}\n`
     }
   })
 
   report += `\nThere are ${numUnexpectedResponses} unexpected responses.`
 
   if (useSlackFormat) {
-    console.log(report)
     axios.post(slackUrl, {"type": "mrkdwn", "text": report}, {
       headers: {
         'Content-Type': 'application/json'
       }
     });
+    console.log('Sent to slack.')
   } else {
     console.log(report)
   }
