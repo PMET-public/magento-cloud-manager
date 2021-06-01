@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS "projects" (
+CREATE TABLE IF NOT EXISTS "projects_new" (
   `id` TEXT NOT NULL,
   `title` TEXT NOT NULL,
   `region` TEXT NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS "projects" (
   `timestamp` DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
   PRIMARY KEY(`id`)
 );
-CREATE TABLE IF NOT EXISTS "hosts_states" (
+CREATE TABLE IF NOT EXISTS "hosts_states_new" (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   `project_id` TEXT NOT NULL,
   `environment_id` TEXT NOT NULL,
@@ -30,13 +30,13 @@ CREATE TABLE IF NOT EXISTS "hosts_states" (
   `last_process_id` INTEGER NOT NULL,
   `timestamp` DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
-CREATE TABLE IF NOT EXISTS "users" (
+CREATE TABLE IF NOT EXISTS "users_new" (
   `project_id` TEXT NOT NULL,
   `email` TEXT NOT NULL,
   `role` TEXT NOT NULL,
   `timestamp` DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
-CREATE TABLE IF NOT EXISTS "environments" (
+CREATE TABLE IF NOT EXISTS "environments_new" (
   `id` TEXT NOT NULL,
   `title` TEXT NOT NULL,
   `project_id` TEXT NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS "environments" (
   `timestamp` DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int)),
   PRIMARY KEY(`id`,`project_id`)
 );
-CREATE TABLE IF NOT EXISTS "web_statuses" (
+CREATE TABLE IF NOT EXISTS "web_statuses_new" (
   `host_name` TEXT NOT NULL,
   `expiration` INTEGER NOT NULL,
   `http_status` INTEGER,
@@ -65,12 +65,12 @@ CREATE TABLE IF NOT EXISTS "status_reports" (
   `envs_changed` INTEGER NOT NULL,
   `timestamp` INTEGER NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
-CREATE TABLE IF NOT EXISTS "matched_envs_hosts" (
+CREATE TABLE IF NOT EXISTS "matched_envs_hosts_new" (
   `proj_env_id` TEXT NOT NULL,
   `host_id` INTEGER NOT NULL,
   PRIMARY KEY(`proj_env_id`)
 );
-CREATE TABLE IF NOT EXISTS "smoke_tests" (
+CREATE TABLE IF NOT EXISTS "smoke_tests_new" (
   `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
   `project_id` TEXT NOT NULL,
   `environment_id` TEXT NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS "smoke_tests" (
   `utilization_end` TEXT,
   `timestamp` DATETIME NOT NULL DEFAULT (cast(strftime('%s','now') as int))
 );
-CREATE TABLE IF NOT EXISTS "applications" (
+CREATE TABLE IF NOT EXISTS "applications_new" (
   `project_id` TEXT NOT NULL,
   `environment_id` TEXT NOT NULL,
   `app_yaml_md5` TEXT NOT NULL,
