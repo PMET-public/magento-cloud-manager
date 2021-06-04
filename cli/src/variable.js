@@ -59,7 +59,7 @@ exports.setVar = setVar
 const getVar = async (project, environment, name) => {
   if (name == 'COMPOSER_AUTH') {
     name = 'env:COMPOSER_AUTH'
-    console.log('debug', 'Using env:COMPOSER_AUTH instead of COMPOSER_AUTH ...')
+    logger.mylog('debug', 'Using env:COMPOSER_AUTH instead of COMPOSER_AUTH ...')
   }
   const cmd = `${MC_CLI} variable:get --property=value -p "${project}" -e "${environment}" ${name}`
   const result = exec(cmd)
