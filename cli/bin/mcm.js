@@ -453,14 +453,21 @@ yargs.command(
   ['env:report-web-status', 'er'],
   'Report a summary of all envs\' web statuses',
   yargs => {
-    yargs.option('slack', {
+    yargs.option('s', {
+      alias: 'slack',
       description: 'Send report to slack channel',
+      type: 'boolean',
+      coerce: coercer
+    })
+    yargs.option('d', {
+      alias: 'diff',
+      description: 'Only show differences since last report',
       type: 'boolean',
       coerce: coercer
     })
   },
   argv => {
-    reportWebStatuses(argv.slack)
+    reportWebStatuses(argv.slack, argv.diff)
   }
 )
 
