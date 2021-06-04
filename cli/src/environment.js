@@ -16,6 +16,8 @@ const sortEEVersion = (a,b) => {
   return 1
 }
 
+const hasEnvExpired = expiration => Math.floor(new Date() / 1000) > expiration
+
 const updateEnvironmentFromApi = async (project, environment = 'master') => {
   const cmd = `${MC_CLI} environment:info -p "${project}" -e "${environment}" --format=tsv`
   const result = exec(cmd)
@@ -323,8 +325,7 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
       const certificateInfo = response.connection.getPeerCertificate()
       const expirationDate = new Date(certificateInfo.valid_to)
       const expirationSecs = Math.floor(expirationDate / 1000)
-      const isExpired = expirationDate < new Date()
-      if (isExpired) {
+      if (hasEnvExpired(expirationSecs)) {
         logger.mylog('error', `Expired. Project: ${project} env: ${environment} ${url}`)
       }
       const statusCodeResult = checkStatusCode(response)
@@ -355,23 +356,43 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
         }
       }
 
-      const sql = `INSERT OR REPLACE INTO web_statuses (host_name, expiration, http_status, base_url_found_in_headers_or_body, timeout) 
+      // when scanning envs, we're not currently monitoring each field change
+      // so for now, we'll just note when there is a meaningful change
+      // (e.g. a cert expiration date should be updated but is not a meaningful change)
+      let envChangedMeaningfully = false,
+        sql = `SELECT * FROM web_statuses where host_name = '${hostName}'`,
+        result = db.prepare(sql).all()
+      
+      // expiration, http_status, base_url_found_in_headers_or_body, last_meaningful_change_ts
+      if (result.length) {
+        var {expiration, http_status, base_url_found_in_headers_or_body, last_meaningful_change_ts} = result[0]
+        if ((expiration !== expirationSecs && hasEnvExpired(expiration) === hasEnvExpired(expirationSecs)) ||
+          http_status !== response.statusCode || 
+          base_url_found_in_headers_or_body !== (bodyMatches ? 1 : 0)) {
+          envChangedMeaningfully= true
+        }
+      } else { // no result = 1st entry
+        envChangedMeaningfully = true
+      }
+
+      sql = `INSERT OR REPLACE INTO web_statuses (host_name, expiration, http_status, base_url_found_in_headers_or_body, timeout, last_meaningful_change_ts)
         VALUES ('${hostName}', ${expirationSecs}, ${response.statusCode}, 
           ${bodyMatches ? '1' : '0'},
-          0)`
-      const result = db.prepare(sql).run()
+          0,
+          ${envChangedMeaningfully ? Math.floor(new Date() / 1000) : last_meaningful_change_ts})`
+      result = db.prepare(sql).run()
       logger.mylog('debug', result)
 
-      resolve(!isExpired && statusCodeResult.logLevel !== 'error' && bodyMatches)
+      resolve(!hasEnvExpired(expirationSecs) && statusCodeResult.logLevel !== 'error' && bodyMatches)
     })
     // based on a report, request.abort was not a function in setTimeout when chained 
     // so break chaining as possible solution and ensure assignment completion first
     request.setTimeout(30000, () => {
 
-      const sql = `INSERT OR REPLACE INTO web_statuses (host_name, expiration, http_status, base_url_found_in_headers_or_body, timeout) 
+      const sql = `INSERT OR REPLACE INTO web_statuses (host_name, expiration, http_status, base_url_found_in_headers_or_body, timeout, last_meaningful_change_ts)
         VALUES ('${hostName}', 
           (SELECT expiration FROM web_statuses WHERE host_name = '${hostName}'),
-          null, 0, 1)`
+          null, 0, 1, Math.floor(new Date() / 1000))`
       const result = db.prepare(sql).run()
       logger.mylog('debug', result)
 
@@ -405,8 +426,14 @@ const reportStatusHelp = {
   }
 }
 
-const reportWebStatuses = (useSlackFormat = false) => {
-  const sql = `SELECT a.ee_composer_version,  e.id environment_id, e.project_id, p.title, w.*
+const reportWebStatuses = (useSlackFormat = false, diffOnly = false) => {
+  if (diffOnly) {
+    var sql = `SELECT envs_changed, timestamp FROM status_reports ORDER BY timestamp DESC LIMIT 1`,
+      result = db.prepare(sql).all(),
+      {envs_changed, timestamp} = result[0]
+  }
+
+  sql = `SELECT a.ee_composer_version, e.id environment_id, e.project_id, p.title, w.*
     FROM environments e 
     LEFT JOIN projects p ON 
       e.project_id = p.id
@@ -420,7 +447,7 @@ const reportWebStatuses = (useSlackFormat = false) => {
       AND e.missing = 0 
       AND (e.failure = 0 OR e.failure IS null)
     ORDER BY w.http_status`
-  const result = db.prepare(sql).all()
+  result = db.prepare(sql).all()
   let nextHttpStatus = false,
     numUnexpectedResponses = 0,
     envs = {
@@ -429,8 +456,11 @@ const reportWebStatuses = (useSlackFormat = false) => {
       "Timed Out" : []
     }
   for (let i = 0; i < result.length; i++) {
+    if (diffOnly && result[i].last_meaningful_change_ts < timestamp) {
+      continue
+    }
     // check if env expired
-    if (Math.floor(new Date() / 1000) > result[i].expiration) {
+    if (hasEnvExpired(result[i].expiration)) {
       envs.Expired.push(result[i])
     } else if (result[i].http_status === null) {
         envs["Timed Out"].push(result[i])
@@ -491,19 +521,27 @@ const reportWebStatuses = (useSlackFormat = false) => {
     }
   })
 
-  report += `\nThere are ${numUnexpectedResponses} unexpected responses.`
+  report += `\nThere are ${numUnexpectedResponses} new, unexpected responses.`
 
-  if (useSlackFormat) {
-    axios.post(slackUrl, {"type": "mrkdwn", "text": report}, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-    console.log('Sent to slack.')
+  if (numUnexpectedResponses !== 0) {
+    if (useSlackFormat) {
+      axios.post(slackUrl, {"type": "mrkdwn", "text": report}, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      logger.mylog('info', 'Sent to slack.')
+    } else {
+      logger.mylog('info', report)
+    }
   } else {
-    console.log(report)
+    // console.info(report)
+    logger.mylog('debug', report)
   }
 
+  sql = `INSERT INTO status_reports (envs_changed) VALUES (${numUnexpectedResponses})`
+  result = db.exec(sql)
+  logger.mylog('debug', result)
 }
 exports.reportWebStatuses = reportWebStatuses
 
