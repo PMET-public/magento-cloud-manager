@@ -521,7 +521,7 @@ const reportWebStatuses = (useSlackFormat = false, diffOnly = false) => {
     }
   })
 
-  report += `\nThere are ${numUnexpectedResponses} new, unexpected responses.`
+  report += `\nThere are ${numUnexpectedResponses}${diffOnly ? ' new,' : ''} unexpected responses.`
 
   if (numUnexpectedResponses !== 0) {
     if (useSlackFormat) {
