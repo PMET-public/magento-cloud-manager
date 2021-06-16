@@ -1,5 +1,6 @@
 const https = require('https')
 const axios = require('axios')
+const moment = require('moment')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
 const {localCloudSshKeyPath, nets_json, slackUrl} = require('../.secrets.json')
 
@@ -423,10 +424,13 @@ const reportStatusHelp = {
   },
   '502': {
     'help': pidEnvs => `A 502 gateway error usually indicates a cloud service failed to deploy properly. Run \`mcm env:deploy ${pidEnvs}\` to attempt to resolve. Also check the cloud deploy logs for incident IDs that may need to be reported to support via Zendesk.`
+  },
+  '502-stuck': {
+    'help': pidEnvs => `These 502 gateway error was checked and is a stuck process running for more than 1 hr. Please contact support via Zendesk in the cloud UI with the appropiate incident ID from the log.`
   }
 }
 
-const reportWebStatuses = (useSlackFormat = false, diffOnly = false) => {
+const reportWebStatuses = async (useSlackFormat = false, diffOnly = false) => {
   if (diffOnly) {
     var sql = `SELECT envs_changed, timestamp FROM status_reports ORDER BY timestamp DESC LIMIT 1`,
       result = db.prepare(sql).all(),
@@ -472,6 +476,48 @@ const reportWebStatuses = (useSlackFormat = false, diffOnly = false) => {
       }
     } else if (result[i].http_status === 302 && result[i].base_url_found_in_headers_or_body === 1) {
       continue
+    } else if (result[i].http_status === 502) {
+      // 3 possibilities
+      // 1. env in progress legitimately
+      // 2. env in progress (stuck)
+      // 3. env had been deactivated / deleted
+      let cmd = `${MC_CLI} activity:list --limit 1 --format csv --no-header --columns created,progress,state,description -p ${result[i].project_id} -e ${result[i].environment_id}`
+      let cmdResult = await exec(cmd)
+        .then(execOutputHandler)
+        .then(({stdout, stderr}) => {
+          if (/,complete,.* deactivated environment /.test(stdout)) {
+            setEnvironmentInactive(result[i].project_id, result[i].environment_id)
+            logger.mylog('debug', `Project: ${result[i].project_id} env: ${result[i].environment_id} deactivated. Setting it to inactive ...`)
+            return true
+          } else if (/,in progress,/.test(stdout)) {
+            let activityStartedHoursAgo = moment(stdout.split(',')[0]).diff(moment(), 'hours')
+            if (activityStartedHoursAgo < -1) {
+              result[i].http_status = result[i].http_status+'-stuck'
+              // if (typeof envs[result[i].http_status+'-stuck'] === 'undefined') {
+              //   envs[result[i].http_status+'-stuck'] = []
+              // }
+              // envs[result[i].http_status+'-stuck'].push(result[i])
+            }
+          } else {
+            logger.mylog('debug', 'test')
+          }
+        })
+        .catch(error => {
+          if (/environment not found/.test(error.message)) {
+            setEnvironmentMissing(result[i].project_id, result[i].environment_id)
+            logger.mylog('debug', `Project: ${result[i].project_id} env: ${result[i].environment_id} not found. Setting it to missing ...`)
+            return true
+          } else {
+            logger.mylog('error', error)
+          }
+        })
+        if (cmdResult) { // this 502 was further investivated and found to be a valid change
+          continue
+        }
+        if (typeof envs[result[i].http_status] === 'undefined') {
+          envs[result[i].http_status] = []
+        }
+        envs[result[i].http_status].push(result[i])
     } else {
       if (typeof envs[result[i].http_status] === 'undefined') {
         envs[result[i].http_status] = []
