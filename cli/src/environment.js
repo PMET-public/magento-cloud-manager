@@ -481,7 +481,7 @@ const reportWebStatuses = (useSlackFormat = false, diffOnly = false) => {
     numUnexpectedResponses++
   }
 
-  let report = 'Report:\n',
+  let report = `${diffOnly ? '🚨 Recent change: <@kbentrup>' : '📊 Report:'} \n`,
     statusHelp = ''
   
   Object.entries(envs).map(([key, value]) => {
