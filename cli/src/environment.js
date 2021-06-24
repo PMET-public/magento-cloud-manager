@@ -534,7 +534,7 @@ const reportWebStatuses = async (useSlackFormat = false, diffOnly = false) => {
     if (!value.length) {
       return
     }
-    report += `\n${key} envs: ${value.length} total\n`
+    report += `\n📍 ${key} envs: ${value.length} total\n`
     value.sort(sortEEVersion)
 
     let table = '',
