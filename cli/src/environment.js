@@ -527,7 +527,7 @@ const reportWebStatuses = async (useSlackFormat = false, diffOnly = false) => {
     numUnexpectedResponses++
   }
 
-  let report = `${diffOnly ? '🚨 Recent change: <@kbentrup>' : '📊 Report:'} \n`,
+  let report = `${diffOnly ? '🚨 Recent change: <@gxd-commerce-support>' : '📊 Report:'} \n`,
     statusHelp = ''
   
   Object.entries(envs).map(([key, value]) => {
