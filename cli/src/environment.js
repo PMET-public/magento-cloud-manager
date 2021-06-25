@@ -393,7 +393,7 @@ const checkPublicUrlForExpectedAppResponse = async (project, environment = 'mast
       const sql = `INSERT OR REPLACE INTO web_statuses (host_name, expiration, http_status, base_url_found_in_headers_or_body, timeout, last_meaningful_change_ts)
         VALUES ('${hostName}', 
           (SELECT expiration FROM web_statuses WHERE host_name = '${hostName}'),
-          null, 0, 1, Math.floor(new Date() / 1000))`
+          null, 0, 1, ${Math.floor(new Date() / 1000)})`
       const result = db.prepare(sql).run()
       logger.mylog('debug', result)
 
