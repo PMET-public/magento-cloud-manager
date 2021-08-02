@@ -467,7 +467,20 @@ const reportWebStatuses = async (useSlackFormat = false, diffOnly = false) => {
     if (hasEnvExpired(result[i].expiration)) {
       envs.Expired.push(result[i])
     } else if (result[i].http_status === null) {
-        envs["Timed Out"].push(result[i])
+      // check if env not responding (i.e. timed out) because it was just deactivated
+      let envInactive = false, cmd = `${MC_CLI} environment:info -p ${result[i].project_id} -e ${result[i].environment_id} -- status`
+      let cmdResult = await exec(cmd)
+        .then(execOutputHandler)
+        .then(({stdout, stderr}) => {
+          if (/inactive/i.test(stdout)) {
+            setEnvironmentInactive(result[i].project_id, result[i].environment_id)
+            envInactive = true
+          }
+        })
+      if (envInactive) {
+        continue
+      }
+      envs["Timed Out"].push(result[i])
     } else if (result[i].http_status === 200 || (result[i].http_status === 404 && result[i].environment_id !== 'master')) {
       if (result[i].base_url_found_in_headers_or_body === 0) {
         envs["No Base Url"].push(result[i])
