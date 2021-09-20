@@ -524,13 +524,13 @@ const reportWebStatuses = async (useSlackFormat = false, diffOnly = false) => {
             logger.mylog('error', error)
           }
         })
-        if (cmdResult) { // this 502 was further investivated and found to be a valid change
-          continue
-        }
-        if (typeof envs[result[i].http_status] === 'undefined') {
-          envs[result[i].http_status] = []
-        }
-        envs[result[i].http_status].push(result[i])
+      if (cmdResult) { // this 502 was further investivated and found to be a valid change
+        continue
+      }
+      if (typeof envs[result[i].http_status] === 'undefined') {
+        envs[result[i].http_status] = []
+      }
+      envs[result[i].http_status].push(result[i])
     } else {
       if (typeof envs[result[i].http_status] === 'undefined') {
         envs[result[i].http_status] = []
