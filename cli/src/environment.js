@@ -2,7 +2,7 @@ const https = require('https')
 const axios = require('axios')
 const moment = require('moment')
 const {exec, execOutputHandler, db, MC_CLI, logger, renderTmpl} = require('./common')
-const {localCloudSshKeyPath, nets_json, slackUrl} = require('../.secrets.json')
+const {localCloudSshKeyPath, nets_json, slackUrl, slackUsers} = require('../.secrets.json')
 
 const sortEEVersion = (a,b) => {
   if (a.ee_composer_version === null && b.ee_composer_version !== null) {
@@ -540,7 +540,8 @@ const reportWebStatuses = async (useSlackFormat = false, diffOnly = false) => {
     numUnexpectedResponses++
   }
 
-  let report = `${diffOnly ? '🚨 Recent change: <@gxd-commerce-support>' : '📊 Report:'} \n`,
+  let slackUsersList = slackUsers.map(user => `<@${user}>`).join(', '),
+    report = `${diffOnly ? `🚨 Recent change: ${slackUsersList}` : '📊 Report:'} \n`,
     statusHelp = ''
   
   Object.entries(envs).map(([key, value]) => {
