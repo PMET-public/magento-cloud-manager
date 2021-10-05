@@ -82,7 +82,7 @@ const generateCss = async () => {
   })
   css += `\nul#environments::after {
     color: #e0c56d;
-    content: 'GA=Generally Available (please update). RC=Release Candidate (still testing). Env available checked hourly, versions checked every 6 hrs. Last generated: ${new Date().toGMTString()}';
+    content: 'GA=Generally Available (please update). RC=Release Candidate (still testing). Env available checked hourly, versions checked every hour. Last generated: ${new Date().toGMTString()}';
     white-space: pre-wrap;
     font-size: 0.8em;
     font-weight: normal;
