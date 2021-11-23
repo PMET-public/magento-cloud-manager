@@ -272,6 +272,10 @@ test ! -z "$recent_exceptions" &&
 
 # support_report.log
 cd $app_dir/var/log
+
+# truncate log files by removing generally unhelpful lines
+sed -i '/ report.INFO: \| main.DEBUG: /d' support_report.log cron.log cache.log
+
 recent_support_reports=$(cat support_report.log | dedup_msgs)
 test ! -z "$recent_support_reports" &&
   {
