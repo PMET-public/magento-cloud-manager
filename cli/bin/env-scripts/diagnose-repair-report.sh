@@ -274,7 +274,11 @@ test ! -z "$recent_exceptions" &&
 cd $app_dir/var/log
 
 # truncate log files by removing generally unhelpful lines
-sed -i '/ report.INFO: \| main.DEBUG: /d' support_report.log cron.log cache.log
+for i in support_report.log cron.log cache.log; do
+  file="$(mktemp)"
+  sed '/ report.INFO: \| main.DEBUG: /d' "$i" > "$file"
+  mv "$file" "$i"
+done
 
 recent_support_reports=$(cat support_report.log | dedup_msgs)
 test ! -z "$recent_support_reports" &&
