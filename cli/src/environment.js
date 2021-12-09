@@ -477,6 +477,14 @@ const reportWebStatuses = async (useSlackFormat = false, diffOnly = false) => {
             envInactive = true
           }
         })
+        .catch(error => {
+          if (/Specified environment not found/.test(error.message)) {
+            return setEnvironmentMissing(project, environment)
+          } else if (/Specified project not found/.test(error.message)) {
+            return require('./project').setProjectInactive(project)
+          }
+          logger.mylog('error', error)
+        })
       if (envInactive) {
         continue
       }
