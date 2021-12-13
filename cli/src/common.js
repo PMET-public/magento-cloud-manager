@@ -127,7 +127,8 @@ const execOutputHandler = ({stdout, stderr}) => {
       /Adding the user/i,
       /Updated HTTP access/i,
       /Createing variable/i,
-      /Variable .* updated/i
+      /Variable .* updated/i,
+      /md5sum: .magento.app.yaml/i
     ]
     const result = nonErrorRegexes.filter(regex => regex.test(stderr))
     if (result.length === 0) {

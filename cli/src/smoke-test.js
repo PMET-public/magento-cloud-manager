@@ -126,6 +126,13 @@ const checkAppVersion = async (project, environment = 'master') => {
   const result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
+      // on magento cloud, .magento.app.yaml only exists in the master env (who knows why)
+      // so grab the value from the relevant master that the env would inherit
+      if (/\.magento\.app\.yaml.*file/i.test(stderr)) {
+        const sql = 'SELECT  app_yaml_md5 FROM applications WHERE project_id = ? AND environment_id = \'master\'',
+          result = db.prepare(sql).get(project)
+        stdout = stdout.replace(/app_yaml_md5\s*\n/,`app_yaml_md5 ${result['app_yaml_md5']}\n`)
+      }
       parseFormattedCmdOutputIntoDB(stdout, 'applications', true, ['project_id', 'environment_id'], [project, environment])
       logger.mylog('info', `Check app version of env: ${environment} of project: ${project} completed.`)
       return true
