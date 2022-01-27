@@ -367,7 +367,7 @@ yargs.command(
       }
     }
     if (argv.yes) {
-      pLimitForEachHandler(4, deployEnvWithFile, pidEnvs, additionalArgs)
+      pLimitForEachHandler(8, deployEnvWithFile, pidEnvs, additionalArgs)
     } else {
       const rl = readline.createInterface({input: process.stdin, output: process.stdout})
       const question = argv.reset
