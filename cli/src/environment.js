@@ -259,11 +259,27 @@ exports.getExpiringPidEnvs = getExpiringPidEnvs
 const setIPAccess = async (project, environment) => {
   const nowInMs = (new Date()).getTime()
   const networks = nets_json.networks.filter(a => Date.parse(a.available_until) > nowInMs).sort((a,b) => a.address > b.address ? 1 : -1)
-  let network_opts = `--auth admin:${project}`
+  let network_opts = `--enabled 1 --auth admin:${project}`
   networks.forEach(n => network_opts += ` --access allow:${n.address}/${n.mask}`)
 
-  const cmd = `${MC_CLI} httpaccess -p "${project}" -e "${environment}" --no-wait ${network_opts} --access deny:any`
-  const result = exec(cmd)
+  let cmd = `${MC_CLI} httpaccess -p "${project}" -e "${environment}" 2> /dev/null`,
+    result = await exec(cmd)
+      .then(execOutputHandler)
+      .then(({stdout, stderr}) => {
+        if (/Failed to identify project/.test(stderr)) {
+          throw 'Project not found.'
+        } else if (/is_enabled: true/.test(stdout) && /\*{5}/.test(stdout)) {
+          logger.mylog('info', `Env: ${environment} of project: ${project} already has password. (skipping)`)
+          return true
+        }
+      })
+      .catch(error => logger.mylog('error', error))
+  if (result) {
+    return result
+  }
+
+  cmd = `${MC_CLI} httpaccess -p "${project}" -e "${environment}" --no-wait ${network_opts} --access deny:any`
+  result = exec(cmd)
     .then(execOutputHandler)
     .then(({stdout, stderr}) => {
       if (/Failed to identify project/.test(stderr)) {
