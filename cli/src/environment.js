@@ -257,6 +257,9 @@ const getExpiringPidEnvs = () => {
 exports.getExpiringPidEnvs = getExpiringPidEnvs
 
 const setIPAccess = async (project, environment) => {
+  if (project === 'zajhc7u663lak') {
+    return true // this project hosts a css file used by all envs and is not a normal project
+  }
   const nowInMs = (new Date()).getTime()
   const networks = nets_json.networks.filter(a => Date.parse(a.available_until) > nowInMs).sort((a,b) => a.address > b.address ? 1 : -1)
   let network_opts = `--enabled 1 --auth admin:${project}`
