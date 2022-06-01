@@ -3,9 +3,9 @@ const md5 = require('md5')
 
 const generateCss = async () => {
 
-  const tags = ['ref-RC', 'ref-GA', 'demo-RC', 'demo-GA', 'b2b-RC', 'b2b-GA', 'pwa-RC', 'pwa-GA']
+  const tags = ['ref-RC', 'ref-GA', 'demo-RC', 'demo-GA', 'b2b-RC', 'b2b-GA'] // 'pwa-RC', 'pwa-GA'] no longer releasing pwa versions
   const files = [ 
-    {path: '.magento.app.yaml', col: 'app_yaml_md5'},
+    // {path: '.magento.app.yaml', col: 'app_yaml_md5'}, // don't match on file that no longer appears in cloud FS
     {path: '.magento.env.yaml', col: 'env_yaml_md5'},
     {path: 'composer.lock', col: 'composer_lock_md5'},
     {path: 'app/etc/config.php', col: 'config_php_md5'}
