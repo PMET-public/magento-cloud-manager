@@ -785,13 +785,13 @@ export default class EnvironmentsTable extends Component {
                   width: calcWidth(4),
                   Filter: this.createFilterOptionsFromAccessor('ee_composer_version')
                 },
-                {
-                  Header: 'app.yaml MD5',
-                  accessor: 'app_yaml_md5',
-                  Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
-                  maxWidth: calcWidth(3),
-                  Filter: this.createFilterOptionsFromAccessor('app_yaml_md5')
-                },
+                // {
+                //   Header: 'app.yaml MD5',
+                //   accessor: 'app_yaml_md5',
+                //   Cell: cell => (cell.value ? cell.value.slice(0, 3) : ''),
+                //   maxWidth: calcWidth(3),
+                //   Filter: this.createFilterOptionsFromAccessor('app_yaml_md5')
+                // },
                 {
                   Header: 'env.yaml MD5',
                   accessor: 'env_yaml_md5',
