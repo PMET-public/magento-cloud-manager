@@ -197,8 +197,8 @@ test $invalid_index_count -gt 0 &&
   {
     printf "$red$invalid_index_count$no_color invalid indexes found.\n"
     cd $app_dir
-    php bin/magnento indexer:reset 
-    php bin/magnento indexer:reindex
+    php bin/magento indexer:reset
+    php bin/magento indexer:reindex
   }
 
 # last admin login
